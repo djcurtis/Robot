@@ -1,0 +1,41 @@
+*** Settings ***
+Documentation     this test suite covers the following endpoint: \ /{parentId}/templatetree
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Library           Collections
+Library           XMLLibrary
+
+*** Test Cases ***
+Get Root Entities
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityCoreSequence
+    ...
+    ...    {
+    ...    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    ...    <entitySequence>
+    ...    <entity>
+    ...    \ ...
+    ...    <entityId>1</entityId>
+    ...    <entityTypeName>ROOT</entityTypeName>
+    ...
+    ...    </entity>
+    ...    <entity>
+    ...
+    ...    <entityId>5</entityId>
+    ...    <entityTypeName>USER_AREA</entityTypeName>
+    ...
+    ...    </entity>
+    ...    </entitySequence>
+    ...    }
+    ${response}=    Get Root Entities    FOLDER
+    Check Xml Contains Element    Check that there are entity elements returned    ${response}    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Count    Check that there are 2 entity elements returned    ${response}    2    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    ${list}=    Get Element Value From Xpath    ${response}    {http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityTypeName
+    List Should Contain Value    ${list}    ROOT
+    List Should Contain Value    ${list}    USER_AREA

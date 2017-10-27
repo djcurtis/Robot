@@ -1,0 +1,16 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/icons/{entityTypeName}
+Suite Setup
+Force Tags        Entity Config Service
+Library           Collections
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Can Get Entity Type Header Icon
+    [Documentation]    A successful call returns the HTTP status 200 and the entity type icon
+    ${header_icon}=    Get Entity Type Icon    EXPERIMENT
+    Response Body Should Contain    svg id="Experiment

@@ -1,0 +1,100 @@
+*** Settings ***
+Library           String
+Library           XMLLibrary
+# Library           OracleLibrary
+Library           TestDataGenerationLibrary
+
+*** Variables ***
+
+*** Keywords ***
+Insert System Setting
+    [Arguments]    ${setting_name}    ${setting_value}    ${data_type}
+    [Documentation]    Inserts a single (string currently) property into the user settings table
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${setting_name) The name of the setting e.g 'Signature/requireNonRepudiation'
+    ...
+    ...    ${setting_value} The value of the setting e.g. 'false'
+    ...
+    ...    ${data_type} the type of ${setting_value}. e.g., IMAGE, STRING, BOOLEAN.
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    The setting should not be in the database.
+    ...
+    ...    *Example*
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Comment    Creates the function string_to_blob to be used in the INSERT statement as the function utl_raw.cast_to_raw has input size limitation
+    Execute    CREATE OR REPLACE FUNCTION string_to_blob(p_config_data IN VARCHAR2) RETURN BLOB IS RESULT BLOB; BEGIN RESULT := utl_raw.cast_to_raw(p_config_data); RETURN(RESULT); END string_to_blob;
+    ${setting_pk_guid}=    Create Hex GUID
+    ${insert_image_statement}    Set Variable    INSERT INTO system_settings (system_settings_id, settings_name, order_key, data_type, blob_data) VALUES ('${setting_pk_guid}', '${setting_name}', 0, '${data_type}', utl_encode.base64_decode(string_to_blob('${setting_value}')))
+    ${insert_literal_statement}    Set Variable    INSERT INTO system_settings (system_settings_id, settings_name, order_key, data_type, string_data) VALUES ('${setting_pk_guid}', '${setting_name}', 0, '${data_type}', '${setting_value}')
+    Run Keyword If    '${data_type}' == 'IMAGE'    Execute    ${insert_image_statement}
+    Run Keyword Unless    '${data_type}' == 'IMAGE'    Execute    ${insert_literal_statement}
+    Comment    Drop the function string_to_blob to restore the default number of objects in the database
+    Execute    DROP FUNCTION string_to_blob
+    Disconnect From Database
+
+Delete System Setting
+    [Arguments]    ${setting_name}
+    [Documentation]    Deletes a single setting in the system settings table
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${setting_name) The name of the setting e.g 'Signature/requireNonRepudiation'
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    ${user settings delete statement}    Set Variable    DELETE FROM system_settings WHERE settings_name = '${setting_name}'
+    Execute    ${user settings delete statement}
+    Disconnect From Database
+
+Replace System Setting
+    [Arguments]    ${setting_name}    ${setting_value}    ${data_type}
+    [Documentation]    Updates \ a single (string currently) property into the system settings table
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${setting_name) The name of the setting e.g 'Signature/requireNonRepudiation'
+    ...
+    ...    ${setting_value} The value of the setting e.g. 'false'
+    ...
+    ...    ${data_type} the type of ${setting_value}. e.g., IMAGE, STRING, BOOLEAN.
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Delete System Setting    ${setting_name}
+    Insert System Setting    ${setting_name}    ${setting_value}    ${data_type}
+
+Insert System Digital Signature Image
+    [Arguments]    ${file_path}
+    [Documentation]    Sets the given image as value for the system setting "Signature/digitalSignatureImage"
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${file_path) The path to the image file to use as digital signature
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    The setting should not be in the database.
+    ...
+    ...    *Example*
+    ${binary_file}    Get Binary File    ${file_path}
+    ${encoded_file}=    Base64 Encode String    ${binary_file}
+    Replace System Setting    Signature/digitalSignatureImage    ${encoded_file}    IMAGE

@@ -1,0 +1,157 @@
+*** Settings ***
+Library           String
+Library           Collections
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+Library           TestDataGenerationLibrary
+Resource          ../../common_resource.txt
+
+*** Variables ***
+${JSONLD ENDPOINT}    /landscape/services/1.0/data/queries/jsonld
+
+*** Keywords ***
+JsonLd Request Setup
+    [Arguments]    ${user}=${SERVICES USERNAME}    ${password}=${SERVICES PASSWORD}
+    IDBSHttpLibrary.Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${user}    ${password}
+    Set Request Header    Accept    application/json;charset=utf-8
+    Set Request Header    Content-Type    application/json;charset=utf-8
+
+Get Term Tuple Count
+    [Arguments]    ${Term Path}    ${expected_http_status}=200
+    [Documentation]    Queries for number of tuples of a term
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    the response from the request, in the format specified (default is JSON)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    JsonLd Request Setup
+    ${uri}    Catenate    SEPARATOR=    ${JSONLD ENDPOINT}    ${Term Path}    ?query.summary=count
+    GET    ${uri}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${Response Body 1}=    Get Response Body
+    Log    ${Response Body 1}
+    [Return]    ${Response Body 1}
+
+Get Term
+    [Arguments]    ${Term Path}    ${expected_http_status}=200
+    [Documentation]    Queries for a term
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    the response from the request, in the format specified (default is JSON)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    JsonLd Request Setup
+    ${uri}    Catenate    SEPARATOR=    ${JSONLD ENDPOINT}    ${Term Path}
+    GET    ${uri}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${Response Body 1}=    Get Response Body
+    Log    ${Response Body 1}
+    [Return]    ${Response Body 1}
+
+Get Term Tuple By Key
+    [Arguments]    ${Term Path}    ${Key Prop}    ${Key val}
+    [Documentation]    Queries for a term
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    the response from the request, in the format specified (default is JSON)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    JsonLd Request Setup
+    ${uri}    Catenate    SEPARATOR=    ${JSONLD ENDPOINT}    ${Term Path}    ${Key Prop}    ${Key val}
+    GET    ${uri}
+    ${Response Body 1}=    Get Response Body
+    Log    ${Response Body 1}
+    [Return]    ${Response Body 1}
+
+Get Term Context
+    [Arguments]    ${Term Path}    ${expected_http_status}=200
+    [Documentation]    Gets all possible Term types
+    ...
+    ...    *Arguments*
+    ...    Term Path
+    ...
+    ...    *Return value*
+    ...    the response from the request, in the format specified (default is JSON)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    JsonLd Request Setup
+    ${uri}    Catenate    SEPARATOR=    ${JSONLD ENDPOINT}    ${Term Path}    .jsonld
+    GET    ${uri}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${Response Body 1}=    Get Response Body
+    Log    ${Response Body 1}
+    [Return]    ${Response Body 1}
+
+Get Term Filtered
+    [Arguments]    ${Term Path}    ${Term Filter}
+    [Documentation]    Gets all tasks based on the Term filter
+    ...
+    ...    *Arguments*
+    ...    Term Path
+    ...    Term Filter = JSON object containing the filter to be used
+    ...
+    ...    *Return value*
+    ...    the response from the request, in the format specified (default is JSON)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    JsonLd Request Setup
+    ${uri}    Catenate    SEPARATOR=    ${JSONLD ENDPOINT}    ${Term Path}    ${Term Filter}
+    Get    ${uri}
+    ${Response Body 1}=    Get Response Body
+    Log    ${Response Body 1}
+    [Return]    ${Response Body 1}
+
+Get Optional Json Value
+    [Arguments]    ${json}    ${entry}
+    [Documentation]    Attempts to retrieve the element ${entry} from the given ${json}, if it doesn't exist then returns empty.
+    ${success}    ${value}    Run Keyword And Ignore Error    Get Json Value    ${json}    ${entry}
+    ${result}=    Set Variable If    '${success}'=='PASS'    ${value}    ${EMPTY}
+    [Return]    ${result}
+
+Post Term Filter
+    [Arguments]    ${Term Path}    ${Term Filter}
+    [Documentation]    Gets all tasks based on the Term filter
+    ...
+    ...    *Arguments*
+    ...    Term Path
+    ...    Term Filter = JSON object containing the filter to be used
+    ...
+    ...    *Return value*
+    ...    the response from the request, in the format specified (default is JSON)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    JsonLd Request Setup
+    ${uri}    Catenate    SEPARATOR=    ${JSONLD ENDPOINT}    ${Term Path}
+    Set Request Body    ${Term Filter}
+    POST    ${uri}
+    ${Response Body 1}=    Get Response Body
+    Log    ${Response Body 1}
+    [Return]    ${Response Body 1}

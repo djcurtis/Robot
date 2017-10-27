@@ -1,0 +1,9 @@
+*** Settings ***
+Library           InstrumentSimulatorLibrary/
+
+*** Test Cases ***
+Example Test Case
+    ${port}=    Start Simulator    localhost    50018
+    #Update the Configuration table with the returned port number before listening and sending the readings.
+    Send Reading    +003.141500gms    500
+    Stop Simulator

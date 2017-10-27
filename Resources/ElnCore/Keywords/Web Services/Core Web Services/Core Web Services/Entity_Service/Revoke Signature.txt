@@ -1,0 +1,139 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/{entityId}/signatures
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Revke Signature
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Library           String
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+
+*** Test Cases ***
+Revoke signature
+    [Documentation]    A successful call returns the HTTP status 204 and the signature is revoked
+    ${experiment_name}=    Set Variable    RSI-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}    204
+    Lock Entity    ${experiment_id}
+    Revoke Signature    ${text_item_id}    TestReason    TestComment
+    Set Cache Entity Data Text    ${text_item_id}    HTML_TEXT    .html    text/html    ${EMPTY}    Modified Uploaded Document
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    # Checking expectations
+    # As signature has been revoked, it should be possible to sign it again
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}    204
+    Should Not Be Empty    ${signature_id}
+
+Revoke signature with missing reason
+    [Documentation]    If the call parameter ‘reason’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    RSI-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}    204
+    # missing reson
+    Revoke Signature    ${text_item_id}    ${EMPTY}    TestComment    400
+
+Revoke signature with not existing entity
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    RSI-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}    204
+    # missing entity id
+    Revoke Signature    ${EMPTY}    TestReason    TestComment    404
+    # not existing entity id
+    Revoke Signature    WrngEntityId    TestReason    TestComment    404
+
+Revoke signature with no existing signature
+    [Documentation]    If a signature does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    RSI-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    # missing signature
+    Revoke Signature    ${text_item_id}    TestReason    TestComment    204
+
+Revoke signature with no EDIT_SIGNED_ITEM permission
+    [Documentation]    A client requires the EDIT_SIGNED_ITEM permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    RSI-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}    204
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # no permissions
+    Revoke Signature    ${text_item_id}    TestReason    TestComment    403
+
+*** Keywords ***
+Add Text Entity
+    [Arguments]    ${parent_entity_id}    ${text_data}=Test text data
+    [Documentation]    Add a Text entity and save record as version.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _parent_entity_id_ - the parent entity id
+    ...
+    ...    _text_data_ - the text data. Default set to "Test text data"
+    ...
+    ...    *Return value*
+    ...
+    ...    The Text entity id
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${text_entity_id}=    Add DOCUMENT With String Data    ${experiment_id}    ${text_data}    text/html    HTML_TEXT    Uploaded Document
+    ...    .html
+    ${document_version_id}=    Get Entity Version ID    ${text_entity_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    [Return]    ${text_entity_id}    # The newly created entity id
+
+Sign Entity
+    [Arguments]    ${experiment_id}    ${item_id}    ${expected_http_status}=204
+    [Documentation]    Sign an item entity and returns its signature id. As locking is required, it locks, signs, and unlocks the record entity.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _record_id_ - the record id
+    ...
+    ...    _item_id_ - the record item id of the enity to sign
+    ...
+    ...    _expected_http_status_ - the expected http status for Sign Entity. Defaulf set to 204
+    ...
+    ...    *Return value*
+    ...
+    ...    The signature id
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    Lock Entity    ${experiment_id}
+    rest_entity_service_resource.Sign Entity    ${experiment_id}    ${item_id}    TestSigningReason    TestSigningAdditionalComment    ${expected_http_status}
+    Unlock Entity    ${experiment_id}
+    ${item_version_id}=    Get Entity Version ID    ${item_id}
+    ${entity_dto}=    Get Entity    ${item_id}    ${item_version_id}    false    false    false
+    ...    true    fasle    false    false    false    false
+    ...    false
+    @{signature_image_url}=    XMLLibrary.Get Element Value    ${entity_dto}    http://entity.services.ewb.idbs.com    imageUrl
+    # Parses signature image URL
+    ${from_index}=    Get Length    /services/1.0/entities/${item_id}/signatures/    # exampe URL: /services/1.0/entities/11c0d720189211e48761782bcb93cfa7/signatures/1248a4c0189211e48761782bcb93cfa7/image?entityVersionId=11cac230189211e48761782bcb93cfa7
+    ${to_index}=    Evaluate    ${from_index}+${32}    # 32 is the lenght of an entity id
+    ${signature_id}=    String.Get Substring    @{signature_image_url}[0]    ${from_index}    ${to_index}
+    [Return]    ${signature_id}

@@ -1,0 +1,21 @@
+*** Settings ***
+Documentation     Resource file containing keywords specific to favorites entiry
+Library           IDBSSelenium2Library
+Resource          general_resource.txt
+
+*** Variables ***
+
+*** Keywords ***
+Go To Favorites
+    Go To Root    #added to get the favorites in view to be clickable on few browsers
+    Refresh Navigator Tree    #added to get the favorites in view to be clickable on few browsers
+    Expand Favorites In Navigator
+    Click Navigator Link    Favorites
+    Wait Until Element Is Visible    xpath=//div[contains(@class, 'ewb-panel-header-label') and text()='Favorites']
+
+Expand Favorites In Navigator
+    [Documentation]    Expand Favorites In Navigator
+    ...    - open favorite entity in navigator via UI
+    ${favorite is available}    ${value}=    Run Keyword And Ignore Error    Element Should Be Visible    xpath=//div[contains(@class, 'ewb-entity-treenode-type-user_favorites')]
+    Run Keyword If    '${favorite is available}'=='FAIL'    Expand Individual Navigator Node    "My Work"
+    Expand Individual Navigator Node    Favorites

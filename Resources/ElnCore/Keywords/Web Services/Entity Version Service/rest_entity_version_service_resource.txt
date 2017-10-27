@@ -1,0 +1,99 @@
+*** Settings ***
+Library           String
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+Resource          ../../common_resource.txt
+Resource          ../../HTTP Common/http_common_resource.txt
+
+*** Variables ***
+${ENTITY VERSION SERVICE ENDPOINT}    /ewb/services/1.0/entities
+
+*** Keywords ***
+Get Entity Versions
+    [Arguments]    ${entity_id}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entities/{entityId}/versions
+    ...
+    ...    Returns a list of versions for a given entity.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_id} The entity id to look up
+    ...
+    ...    *Return value*
+    ...
+    ...    ${version_info} A SAPIEntityVersionInfoSequence containing a list of SAPIEntityVersionInfo details
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY VERSION SERVICE ENDPOINT}/${entity_id}/versions
+    Response Status Code Should Equal    ${expected_http_status}
+    ${version_info}=    Get Response Body
+    [Return]    ${version_info}    # A SAPIEntityVersionInfoSequence containing each SAPIEntityVersionInfo entity version
+
+Can Restore Entity Version
+    [Arguments]    ${entity_id}    ${entity_version_id}    ${child_entity_id}=${EMPTY}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entities/{entityId}/versions/restorable
+    ...
+    ...    Verifies that record or record documents can be restored.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_id} The entity id to look up
+    ...
+    ...    ${entity_version_id} The record entity version Id to use
+    ...
+    ...    ${child_entity_id} \ A string array of child entity Ids
+    ...
+    ...    *Return value*
+    ...
+    ...    A SAPIResponseStatus, set to 'True' if record can be restored
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    ${url}=    Set Variable If    '${child_entity_id}'!='${EMPTY}'    ${ENTITY VERSION SERVICE ENDPOINT}/${entity_id}/versions/restorable?entityVersionId=${entity_version_id}&childEntityId=${child_entity_id}    ${ENTITY VERSION SERVICE ENDPOINT}/${entity_id}/versions/restorable?entityVersionId=${entity_version_id}
+    Log    Check can restore entity...    INFO
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${result}=    Get Response Body
+    [Return]    ${result}    # A SAPIResponseStatus, set to 'True' if record can be restored
+
+Restore Entity Version
+    [Arguments]    ${entity_id}    ${entity_version_id}    ${child_entity_id}    ${expected_http_status}=204
+    [Documentation]    POST : /services/1.0/entities/{entityId}/versions
+    ...
+    ...    Either restores record version by copying all the documents from the specified version or restores selected record documents by copying the documents from the specified record version into the latest record version.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_id} The entity id to use
+    ...
+    ...    ${entity_version_id} The record entity version Id to use
+    ...
+    ...    ${child_entity_id} A string array of entity Ids of the selected record documents
+    ...
+    ...    *Return value*
+    ...
+    ...    None
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    ${url}=    Set Variable If    '${child_entity_id}'!='${EMPTY}'    ${ENTITY VERSION SERVICE ENDPOINT}/${entity_id}/versions?entityVersionId=${entity_version_id}&childEntityId=${child_entity_id}    ${ENTITY VERSION SERVICE ENDPOINT}/${entity_id}/versions?entityVersionId=${entity_version_id}
+    Next Request May Not Succeed
+    POST    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${void_response}=    Get Response Body
+    [Return]    ${void_response}

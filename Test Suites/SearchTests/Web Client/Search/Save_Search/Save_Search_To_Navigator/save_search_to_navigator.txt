@@ -1,0 +1,73 @@
+*** Settings ***
+Documentation     jira story SH-800
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Login To EWB
+Test Teardown     Close Browser
+Library           IDBSHttpLibrary
+Library           OperatingSystem
+Library           IDBSSelenium2Library
+Resource          ../../../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          ../../../../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Library           EntityAPILibrary
+Resource          ../../../../../Resources/UI/Navigator_Page/navigator_ui.txt
+Library           DateTime
+
+*** Variables ***
+
+*** Test Cases ***
+Verify Saved Search Visibility For User With Permissions
+    [Documentation]    Verify \ Saved Search Visibility For User With Permissions
+    ...    - Save Search to Navigator via UI
+    ...    - Verify Search Could be restored with non-creator permissions
+    [Tags]    SRCH-SAV-NAV    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Create User And Don't Fail If It Exists    srch_01    srch_011    Search User01    user01@idbs.com    Testing    assignable_role_level=STANDARD_ROLES
+    Assign User System Role    srch_01    EWB_WEB_CLIENT_USER
+    Assign User Entity Role    srch_01    All Entity Permissions    ${groupId}
+    Navigate Search Screen
+    Perform Advanced Search    text    Report|Keywords|is|word1
+    Save Search To Navigator Via UI    ${search1}    ${groupName}/Restore Saves
+    Logout
+    Supply Non Default User Credentials    srch_01    srch_011
+    Verify Search In Navigator In Path    Root/${groupName}/Restore Saves    ${search1}
+    Navigate Search Screen
+    Perform Text Search    text
+    Verify Search In Saving Search Navigator    ${search1}    ${groupName}/Restore Saves
+
+Verify Saved Search Visibility For Creator
+    [Documentation]    Verify \ Saved Search Visibility For Creator
+    ...    - Save Search to Navigator via UI
+    ...    - Verify Search Could be restored with creator permissions
+    [Tags]    SRCH-SAV-NAV    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Navigate Search Screen
+    Perform Advanced Search    text    Report|Keywords|is|word1
+    Save Search To Navigator Via UI    ${search1}    ${groupName}/Restore Saves
+    Verify Search In Saving Search Navigator    ${search1}    ${groupName}/Restore Saves
+    Navigate Navigator Screen
+    Verify Search In Navigator In Path    Root/${groupName}/Restore Saves    ${search1}
+
+*** Keywords ***
+setup
+    [Documentation]    - create Ms. Robot with project as Administrator user
+    ...    - open browser and login with test credentials
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Restore Saves
+    ${recordId}=    EntityAPILibrary.Create Experiment    ${projectId}    RestoreSaveSearch    Completed
+    EntityAPILibrary.Version Save    ${recordId}    Data Added
+    : FOR    ${i}    IN    0    1
+    \    ${templateId}=    EntityAPILibrary.Create Template    ${projectId}    FreeTextAdvancedSearchSave    Planned    keywords:::Unique
+    \    EntityAPILibrary.Version Save    ${templateId}    Data Added
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    Set Suite Variable    ${search1}
+
+teardown
+    [Documentation]    - delete Mr. Roboto as Administrator user
+    ...    - close browser
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended

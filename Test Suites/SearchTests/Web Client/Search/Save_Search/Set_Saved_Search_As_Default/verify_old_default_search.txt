@@ -1,0 +1,94 @@
+*** Settings ***
+Documentation     Verify behaviour with default search previously saved 10.1 version
+Suite Setup       Login To EWB
+Suite Teardown    Close Browser
+Test Setup        Delete All Searches Via API
+Test Teardown     testteardown
+Resource          ../../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+
+*** Test Cases ***
+Verify Old Default Search Restored Correctly By Default
+    [Documentation]    Verify Restored Correctly
+    ...    - delete all searches
+    ...    - create one 10.1 default saved search using API
+    ...    - verify that the search restored correctly after reload/relogin
+    [Tags]    SRCH-SAV-DEFAULT
+    Delete All Searches Via API
+    Create Old Default Search Via API
+    Reload Page
+    Navigate Search Screen
+    Verify Advanced Search Item    Name    starts with    SrchFltr
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    1    1
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Verify Advanced Search Item    Name    starts with    SrchFltr
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    1    1
+    Navigate Navigator Screen
+    Navigate Search Screen
+    Verify Advanced Search Item    Name    starts with    SrchFltr
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    1    1
+
+Verify Old Default Search On My Searches Dialog
+    [Documentation]    Verify Old Default Search On My Searches Dialog
+    ...    - insure all searches are deleted
+    ...    - create old default Search using API
+    ...    - open "My Searches" dialog
+    ...    - verify previously saved default search is marked as default and had appropriate name and description
+    [Tags]    SRCH-SAV-DEFAULT
+    Delete All Searches Via API
+    Create Old Default Search Via API
+    Navigate Search Screen
+    Open My Searches Dialog
+    Verify Name And Description By Index    0    Default search    This search was set as default in a previous version of E-WorkBook.
+    Verfy Number Of Default Saved Searches    1
+    Close My Searches Dialog
+    Create Searches Via API    Search 1    Search 2    Search 3
+    Open My Searches Dialog
+    Verify Name And Description By Index    3    Default search    This search was set as default in a previous version of E-WorkBook.
+    Verfy Number Of Default Saved Searches    1
+
+Verify Old Default Search Restored Correctly from "My Searches"
+    [Documentation]    Verify Old Default Search (10.1 default saved search) Restored Correctly from "My searches"
+    ...    - insure ald searches are deleted
+    ...    - create one old saved search via API
+    ...    - restore this search from "My Searches", verify that it is restored correctly
+    ...    - create one more searches, restore one, verify it is restored correctly
+    ...    - restore default search from "My Searches", verify that it is restored correctly
+    [Tags]    SRCH-SAV-DEFAULT
+    Delete All Searches Via API
+    Create Old Default Search Via API
+    Navigate Search Screen
+    Restore Saved Search    Default search    0
+    Verify Advanced Search Item    Name    starts with    SrchFltr
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    1    1
+    Create Searches Via API    Search 1    Search 2
+    Restore Saved Search    Search 1    0
+    Verify Search Text Field    Search_Template
+    Verify Number Of Advanced Search Items    0    0
+    Restore Saved Search    Default search    2
+    Verify Advanced Search Item    Name    starts with    SrchFltr
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    1    1
+
+Verify Old Links For Saving And Restoring Default Searches Are Absent
+    [Documentation]    Verify Old Links For Saving And Restoring Default \ Searches Are Absent
+    ...    - navigate Search Screen
+    ...    - populate free text search
+    ...    - verify no "Save as default search" \ and "Restore default search" \ links are present
+    [Tags]    SRCH-SAV-DEFAULT
+    Perform Text Search    text
+    Wait Until Page Does Not Contain Element    //*[text()="Save as default search"]
+    Wait Until Page Does Not Contain Element    //*[text()="Restore default search"]
+
+*** Keywords ***
+testteardown
+    Delete All Searches Via API
+    Reload Page

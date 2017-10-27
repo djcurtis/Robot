@@ -1,0 +1,17 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that have property units in the filter condition. \ \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"\n
+Resource          query_resources.txt
+
+*** Keywords ***
+Run Units Query
+    [Arguments]    ${term path}    ${unit column}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}
+    ...    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have property units in the filter condition. \ \n\nThis is testing HUB-API-SSP-QUE-QLC S004.\n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${unit column} = The name of the property with units in the term in ${term path}.\n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.
+    # UNIT_OF() function
+    Execute Data Query and Verify Values    SELECT ${unit column} FROM ${term path} WHERE UNIT_OF(${unit column}) = 'kV'    -219.2    -0.001    3.001
+    # UNIT_OF() function, AND operator, = operator
+    Execute Data Query and Verify Values    SELECT ${booleanColumn}, ${floatColumn}, ${integerColumn} FROM ${term path} AS t WHERE t.${unit column} = 0.1 AND UNIT_OF(${unit column}) = 'm\\s'    ${null value},0.1,-1
+    # UNIT_OF() function, AND operator, <=, > operator
+    Execute Data Query and Verify Values    SELECT ${booleanColumn},${stringColumn} FROM ${term path} AS t WHERE t.${unit column} > -500 AND t.${unit column} <= 0 AND UNIT_OF(${unit column}) = 'kV'    F,Mixed Case String    F,${null value}
+    # UNIT_OF() function. Should return 0 results.
+    Execute Data Query and Verify Values    SELECT * FROM ${term path} WHERE UNIT_OF(${unit column}) = 'kgh gh bn'

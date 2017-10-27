@@ -1,0 +1,143 @@
+*** Settings ***
+Documentation     It deletes an entity from the cache.
+...
+...               *end point:* DELETE /services/1.0/cache/entities/{entityId}
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags           Delete Cache Entity
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Delete entity
+    [Documentation]    A successful call returns the HTTP status 204 and the entity is deleted
+    [Setup]
+    ${experiment_name}=    Set Variable    DEN-S001
+    ${web_link_id}=    Create Experiment And Add Web Link    ${experiment_name}
+    # Checking expectations
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Delete Cache Entity    ${web_link_id}    ${web_link_version_id}
+    ${children_count}=    Get Entity Child Count    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Delete entity with invalid entity version id
+    [Documentation]    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    DEN-S002
+    ${web_link_id}=    Create Experiment And Add Web Link    ${experiment_name}
+    # Worng version id
+    Delete Cache Entity    ${web_link_id}    WrongVersionId    404
+    # Missing version id
+    Delete Cache Entity    ${web_link_id}    ${EMPTY}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Delete entity which does not exist
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    DEN-S003
+    ${web_link_id}=    Create Experiment And Add Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    # Worng entity id
+    Delete Cache Entity    WrongEntityId    ${web_link_version_id}    404
+    # Missing entity id
+    Delete Cache Entity    ${EMPTY}    ${web_link_version_id}    404
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Delete entity not locked
+    [Documentation]    If the container entity is not lock, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    DEN-S003
+    ${web_link_id}=    Create Experiment And Add Web Link    ${experiment_name}
+    Save As Draft Entity    ${experiment_id}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Unlock Entity    ${experiment_id}
+    # Unlocked record
+    Delete Cache Entity    ${web_link_id}    ${web_link_version_id}    403
+    [Teardown]
+
+Delete entity with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    DEN-S005
+    ${web_link_id}=    Create Experiment And Add Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # Unlocked record
+    Delete Cache Entity    ${web_link_id}    ${web_link_version_id}    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Delete entity from confined tempate
+    [Documentation]    If the container entity is confined, then the HTTP status code 400 is returned to the client.
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Tags]       exclusive_access
+    [Setup]    Disable Template Show Reviewed    # EWB default state for this setting is disabled
+    # Create a template, add a web link, set the template as confined and version save
+    ${experiment_name}=    Set Variable    DEN-S006
+    ${template_id}=    Rest_Entity_Service_Resource.Create Template    ${project_id}    ${experiment_name}-TEM
+    Lock Entity    ${template_id}
+    ${web_link_id}=    Add Web Link Entity    ${template_id}    http://www.idbs.com
+    ${sapi_entity_version_sequence}=    Set Template Confined    ${template_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Create an experiment from the template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${experiment_name}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${experiment_dto}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true
+    # Obtains the web link id
+    @{entity_ids}    XMLLibrary.Get Element Value    ${experiment_dto}    http://entity.services.ewb.idbs.com    entityId
+    ${web_link_id}=    Set Variable    @{entity_ids}[1]
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Lock Entity    ${experiment_id}
+    # Deletes the web link from the confined experiment
+    Delete Cache Entity    ${web_link_id}    ${web_link_version_id}    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Delete entity when pinned
+    [Documentation]    If the container entity is confined, then the HTTP status code 400 is returned to the client.
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Tags]       exclusive_access
+    [Setup]    Disable Template Show Reviewed    # EWB default state for this setting is disabled
+    # Create a template, add a web link, set the web link as pinned and version save
+    ${experiment_name}=    Set Variable    DEN-S006
+    ${template_id}=    Rest_Entity_Service_Resource.Create Template    ${project_id}    ${experiment_name}-TEM
+    Lock Entity    ${template_id}
+    ${web_link_id}=    Add Web Link Entity    ${template_id}    http://www.idbs.com
+    ${sapi_entity_version_sequence}=    Set Entity Pinned    ${web_link_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Create an experiment from the template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${experiment_name}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${experiment_dto}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true
+    # Obtains the web link id
+    @{entity_ids}    XMLLibrary.Get Element Value    ${experiment_dto}    http://entity.services.ewb.idbs.com    entityId
+    ${web_link_id}=    Set Variable    @{entity_ids}[1]
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Lock Entity    ${experiment_id}
+    # Deletes the web link from the confined experiment
+    Delete Cache Entity    ${web_link_id}    ${web_link_version_id}    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+*** Keywords ***

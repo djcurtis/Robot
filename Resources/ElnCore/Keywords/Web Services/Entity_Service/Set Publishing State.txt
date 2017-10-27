@@ -1,0 +1,139 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-SPS    Set Publishing State
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Entity Lock Servcie
+
+*** Test Cases ***
+Set publishing state
+    [Documentation]    EWB-SAPI-SSP-ENT-SPS-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and the item entity publishing state is set
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S001
+    ${experiment_name}=    Set Variable    SPS-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    Set Publishing State    ${web_link_id}    ${web_link_version_id}    Published
+    # Checking expectations
+    ${sapi_attribute_sequence}=    Rest_Entity_Service_Resource.Get Attributes    ${web_link_id}    ${web_link_version_id}
+    Should Contain    ${sapi_attribute_sequence}    Published
+
+Set publishing state with mising entity version id
+    [Documentation]    EWB-SAPI-SSP-ENT-SPS-S002
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S002
+    ${experiment_name}=    Set Variable    SPS-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    # Missing entity version id
+    Set Publishing State    ${web_link_id}    ${EMPTY}    Published    400
+    # Wrong entity version id
+    Set Publishing State    ${web_link_id}    WrongEntityVersionId    Published    404
+
+Set publishing state with wrong publishing state
+    [Documentation]    EWB-SAPI-SSP-RES-SPS-S003
+    ...
+    ...    If the call parameter ‘publishingState’ is missing or not defined in the relevant catalog term, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S003
+    ${experiment_name}=    Set Variable    SPS-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    # Missing publishing state
+    Set Publishing State    ${web_link_id}    ${web_link_version_id}    ${EMPTY}    400
+    # Wrong publishing state
+    Set Publishing State    ${web_link_id}    ${web_link_version_id}    WrongPublishingState    400
+
+Set publishing state with not exisiting entity
+    [Documentation]    EWB-SAPI-SSP-RES-SPS-S004
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S004
+    ${experiment_name}=    Set Variable    SPS-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    # Not existing enitity
+    Set Publishing State    WrongEntityId    WrongEntityVersionId    Published    404
+
+Set publishing state on non document entities
+    [Documentation]    EWB-SAPI-SSP-RES-SPS-S005
+    ...
+    ...    If the call parameter ‘publishingState’ is missing or not defined in the relevant catalog term, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S005
+    ${experiment_name}=    Set Variable    SPS-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    # Non document entity
+    Set Publishing State    ${experiment_id}    ${entity_version_id}    Published    400
+
+Set publishing state when locked
+    [Documentation]    EWB-SAPI-SSP-RES-SPS-S006
+    ...
+    ...    The item container can be optionally locked. If locked and the client does not own the lock, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S006
+    ${experiment_name}=    Set Variable    SPS-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    # With someone else lock
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}    EDIT_EXPERIMENT
+    Set Publishing State    ${web_link_id}    ${web_link_version_id}    Published    403
+
+Set publishing state with no permissions
+    [Documentation]    EWB-SAPI-SSP-RES-SPS-S007
+    ...
+    ...    A client requires the EDIT_<CONTAINER_ ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S007
+    ${experiment_name}=    Set Variable    SPS-S007
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${web_link_id}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_id}    www.idbs.com
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    # With no permissions
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    Set Publishing State    ${web_link_id}    ${web_link_version_id}    Published    403
+
+*** Keywords ***

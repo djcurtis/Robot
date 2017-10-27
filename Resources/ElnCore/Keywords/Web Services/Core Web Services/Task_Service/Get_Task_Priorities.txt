@@ -1,0 +1,15 @@
+*** Settings ***
+Resource          ../../../Libraries/Core Web Services/Task_Service/task_service_resource.txt    # task service library
+Library           XMLLibrary
+Library           Collections
+
+*** Test Cases ***
+Get list of all possible task priority values
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPITaskPrioritySequence
+    ${priorities}=    Get Task Priorities
+    ${list}=    Get Element Value From Xpath    ${priorities}    .//{http://workflow.services.ewb.idbs.com}priority
+    List Should Contain Value    ${list}    Critical
+    List Should Contain Value    ${list}    High
+    List Should Contain Value    ${list}    Low
+    List Should Contain Value    ${list}    Medium
+    List Should Contain Value    ${list}    Normal

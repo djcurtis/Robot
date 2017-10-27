@@ -1,0 +1,46 @@
+*** Settings ***
+Documentation     Keywords for "Save Search" dialog
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          locators/search_ui.txt
+Resource          locators/save_search_dialog.txt
+
+*** Keywords ***
+Open Save Search Dialog
+    [Documentation]    Open 'Save Search" dialog from search screen
+    unselect frame
+    Wait Until Page Contains Element    ${searchFrame}    20s
+    select frame    ${searchFrame}
+    Robust Click    ${optionsDropdown}
+    Robust click    save
+    Wait Until Page Contains Element    ${saveSearchDialogTitle}    30s
+
+Select From Save Search DropDown
+    [Arguments]    ${itemName}
+    [Documentation]    Select saving otpion from DropDown on Save Search screen by its name ${itemName}
+    IDBSSelenium2Library.Select From List    ${savingOptions}    ${itemName}
+
+Verify Items In the Saved Search List
+    [Arguments]    @{items}    # search items names to be verified in save search to navigator list
+    [Documentation]    Verify that items @{items} are in the save search to navigator list to replace.
+    : FOR    ${item}    IN    @{items}
+    \    ${item}    set variable    css=#searchToReplace li[data-title='${item}']
+    \    Wait Until Element Is Visible    ${item}    10s
+
+Select Saved Search
+    [Arguments]    ${itemName}    # enter Search name to be selected
+    [Documentation]    Select 'Search' items from search list by name ${itemName}
+    ${itemName}    set variable    css=#searchToReplace li[data-title='${itemName}']
+    Robust click    ${itemName}
+
+Click Save
+    [Documentation]    Perform Clicking Save button on 'Save Search' dialog.
+    Wait Until Element Is Visible    ${saveSearchButton}
+    Click Button    ${saveSearchButton}
+    sleep    2s
+
+Close Save Search Dialog
+    [Documentation]    Perform clicking 'Cancel' button on 'Save Search' dialog.
+    Wait Until Element Is Visible    ${cancelSaveSearchButton}
+    Click Button    ${cancelSaveSearchButton}
+    sleep    2s

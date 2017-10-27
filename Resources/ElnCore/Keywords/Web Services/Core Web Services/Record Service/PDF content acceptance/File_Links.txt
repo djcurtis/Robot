@@ -1,0 +1,14 @@
+*** Settings ***
+Documentation     This test suite looks at File Links in isolation
+Suite Setup       Setup standard suite
+Resource          test utilities.txt
+Resource          add_items_to_experiments.txt
+
+*** Test Cases ***
+File link added to experiment
+    [Documentation]    This test looks at adding a single file link to an experiment before PDFing it
+    [Tags]    EWB-WEB-PI002-W022-01
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add Link    ${experiment_id}    File Link    FILE_LINK    file://c:\\SomeDirectory\\Some file.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

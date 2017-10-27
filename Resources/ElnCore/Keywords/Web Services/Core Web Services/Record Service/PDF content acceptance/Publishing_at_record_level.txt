@@ -1,0 +1,69 @@
+*** Settings ***
+Suite Setup       Setup standard suite
+Suite Teardown
+Test Setup        Setup standard test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ..\\..\\..\\..\\Libraries\\common_resource.txt
+Resource          ..\\..\\..\\..\\Libraries\\Core Web Services\\Record Service\\rest_record_service_resource.txt
+Library           OperatingSystem
+Library           String
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+
+*** Variables ***
+${configuration_file}    basic item config - print publish configuration.xml    # The PDF configuration
+
+*** Test Cases ***
+Published record
+    [Documentation]    *Note:* ${experiment_id} is set at test suite level
+    ...
+    ...    Test ensures that
+    ...    - A PDF is generated when publishing on the web client
+    ...    - The content is correct
+    ...    - The publishing flag is present if the client is configured to include icons
+    [Tags]    EWB-WEB-PI002-W027-01
+    Comment    default config settings here
+    ${print_conf_xml}=    Load Print Config - Basic Options For Item    true
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    Lock Entity    ${experiment_id}
+    ${pdf_entity_id}=    Publish Record    ${experiment_id}    200
+    Unlock Entity    ${experiment_id}
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Load Print Config - Basic Options For Item
+    [Arguments]    ${item_inc_icon}=false    ${item_inc_version}=false    ${item_inc_type}=false    ${item_inc_caption}=false    ${item_inc_properties}=false    ${item_inc_signoffs}=false
+    [Documentation]    Loads PDF configuration for items and sets its variables. By default all parameters are set to false. The configuration is read from ${basic_item_config}.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${item_inc_icon} Include item icon (true | false).
+    ...
+    ...    ${item_inc_version} Include item version (true | false).
+    ...
+    ...    ${item_inc_type} Include item type (true | false).
+    ...
+    ...    ${item_inc_caption} Include item caption (true | false).
+    ...
+    ...    ${item_inc_properties} Include item properties (true | false).
+    ...
+    ...    ${item_inc_signoffs} Include item signoffs (true | false).
+    ...
+    ...    *Return value*
+    ...    The configuration as XML string
+    ...
+    ...    *Precondition*
+    ...    Variable ${basic_item_config} needs to be set.
+    ...
+    ...    *Example*
+    ${configuration_xml}=    Get File    ${input_folder}\\${configuration_file}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [item_inc_icon]    ${item_inc_icon}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [item_inc_version]    ${item_inc_version}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [item_inc_type]    ${item_inc_type}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [item_inc_caption]    ${item_inc_caption}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [item_inc_properties]    ${item_inc_properties}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [item_inc_signoffs]    ${item_inc_signoffs}
+    [Return]    ${configuration_xml}

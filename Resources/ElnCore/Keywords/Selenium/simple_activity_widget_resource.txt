@@ -1,0 +1,190 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains keywords used for validating the simple activity widget functionality. This file is loaded by the common_resource.txt file which is automatically loaded when running tests through the Robot Framework.
+...
+...               *Version: E-WorkBook Web Client 9.3.0*
+Library           OracleLibrary
+Library           IDBSSelenium2Library
+Resource          general_resource.txt
+Resource          system_resource.txt
+
+*** Variables ***
+${load newer activities button}    aw_newactivities
+${load older activities button}    aw_oldactivities
+${activity list}    aw_activities
+
+*** Keywords ***
+Check Forward Activity Button Visible
+    [Documentation]    The forward activity button should only be available if there are new activities to be loaded
+    Wait Until Page Contains Element    ${load newer activities button}    30s
+
+Check Forward Activity Button Invisible
+    [Documentation]    The forward activity button should only be available if there are new activities to be loaded
+    Element Should Not Be Visible    ${load newer activities button}
+
+Click Forward Activity Button
+    [Documentation]    The clicks the forward activity button causing new activities to be loaded
+    Wait Until Keyword Succeeds    60s    5s    Robust Click    xpath=//*[@id="${load newer activities button}"]
+
+Check Backward Activity Button Visible
+    [Documentation]    The backward activity button should only be available if there are old activities to be loaded
+    Wait Until Page Contains Element    ${load older activities button}    10s
+    Scroll Element Into View    ${load older activities button}
+    Element Should Be Visible    ${load older activities button}
+
+Check Backward Activity Button Invisible
+    [Documentation]    The backward activity button should only be available if there are old activities to be loaded
+    Element not should be visible    ${load older activities button}    More activities...
+
+Click Backward Activity Button
+    [Documentation]    The clicks the backward activity button causing old activities to be loaded
+    Robust Click    xpath=//*[@id="${load older activities button}"]
+
+Select Activity Widget Frame
+    [Documentation]    The selects the activity widget frame (it relies on the frame being the only widget displayed)
+    Wait Until Keyword Succeeds    30s    1s    select frame    xpath=//*[@class="ewb-portlet-widget-frame"]
+
+Select Top Frame
+    [Documentation]    The selects the top level gui frame
+    unselect frame
+
+Get Activity Count
+    [Documentation]    Returns the number of activities currently present
+    ${activity count} =    Get Matching Xpath Count    //li[contains(@class, 'aws_listitem')]
+    [Return]    ${activity count}    # The number of activities on the page
+
+Expected Activity Count Equals
+    [Arguments]    ${expected activity count}
+    [Documentation]    Tests whether the page contains a certain number of activities
+    ${widget count} =    Get Activity Count
+    ${fail}    Evaluate    ${widget count} != ${expected activity count}
+    Run Keyword If    ${fail}    Fail    Activity count does not meet expectation
+
+Expected Activity User Name Equals
+    [Arguments]    ${activity number}    ${activity user name}
+    [Documentation]    For a given activity and xpath checks the activity user name value
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[2]/span[1][@class='aws_activityusername']    ${activity user name}    30s
+
+Expected Activity Title Contains
+    [Arguments]    ${activity number}    ${activity title}
+    [Documentation]    For a given activity and xpath checks the activity title value
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[2]/span[2][@class='aws_activitytitle']    ${activity title}    30s
+
+Expected Activity URL Name Equals
+    [Arguments]    ${activity number}    ${activity URL name}
+    [Documentation]    For a given activity and xpath checks the activity URL name value
+    ...
+    ...    For ${activity URL name } it is the text name of the URL not the URL itself
+    ...
+    ...    For deleted entities, the URL name is that of the parent entity not the deleted entity
+    ...
+    ...    For document items, the URL name is that of the document not the entity
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[2]/a[@class='aws_activityURL']    ${activity URL name}    30s
+
+Expected Activity New Status Equals
+    [Arguments]    ${activity number}    ${activity new status}
+    [Documentation]    For a status change activity and xpath checks the activity's new status value
+    ...
+    ...    For ${activity new status} it is the name of the new status:
+    ...
+    ...    Started
+    ...    Planned
+    ...    Completed
+    ...    Postponed
+    ...    Archived
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[5]/span[@class='aws_activityData']    ${activity new status}    30s
+
+Expected Activity Previous Status Equals
+    [Arguments]    ${activity number}    ${activity previous status}
+    [Documentation]    For a status change activity and xpath checks the activity's previous status value
+    ...
+    ...    For ${activity previous status} it is the name of the new status:
+    ...
+    ...    Started
+    ...    Planned
+    ...    Completed
+    ...    Postponed
+    ...    Archived
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[6]/span[@class='aws_activityData']    ${activity previous status}    30s
+
+Expected Activity Tag Equals
+    [Arguments]    ${activity number}    ${tag number}    ${activity tag}
+    [Documentation]    For a tag activity and xpath checks the activity's tag value
+    ...
+    ...    For ${activity tag} it is the name of the new status:
+    ...
+    ...    Started
+    ...    Planned
+    ...    Completed
+    ...    Postponed
+    ...    Archived
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[4]/a[@id='aw_activitytag_${tag number}']    ${activity tag}    30s
+
+Expected Activity Comment Equals
+    [Arguments]    ${activity number}    ${activity comment}
+    [Documentation]    For a comment activity and xpath checks the activity's comment value
+    Wait Until Element Text Contains    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[4]    ${activity comment}    30s
+
+Click Activity Widget Menu Item
+    [Arguments]    ${arg1}    ${arg2}
+    Wait Until Page Contains Element    xpath=//a[(@id,'ewb-widget-expand-collapse') and text()="Minimize"]    30s
+    Wait Until Page Does Not Contain Element    xpath=//a[(@id,'ewb-widget-expand-collapse') and text()="Restore"]    30s
+    Robust Click    xpath=//id('ewb-widget-expand-collapse')
+
+Open Single Activity Widget Menu
+    [Documentation]    Opens the widget menu for the activity widget where the only widget in a single collumn
+    Robust Click    xpath=//div[@id="ewb-landing-page-root-Single-Column"]/div/div/div[1]/span/img
+
+Expected activity Type Filter Is Checked
+    [Arguments]    ${activity type}
+    [Documentation]    To be used when editing the activity feed widget. Asserts that the value of the activity type filter is selected.
+    ...
+    ...    Note that this only works with the persisted settings.
+    ...
+    ...
+    ...    ENTITY_VERSION_SAVED
+    ...    ENTITY_DRAFT_SAVED
+    ...    ENTITY_DELETED
+    ...    COMMENT_ADDED
+    ...    COMMENT_UPDATED
+    ...    COMMENT_DELETED
+    ...    TAG_ADDED
+    ...    TAG_DELETED
+    ...    DOCUMENT_PUBLISHED
+    ...    DOCUMENT_SIGNED
+    ...    STATUS_PROPERTY_CHANGED
+    Wait Until Keyword Succeeds    30s    0.1s    Checkbox Should Be Selected    xpath=//input[@id='${activity type}_id']
+
+Expected Activity Type Filter Is Unchecked
+    [Arguments]    ${activity type}
+    [Documentation]    To be used when editing the activity feed widget. Asserts that the value of the activity type filter is unselected.
+    ...
+    ...    Note that this only works with the persisted settings.
+    ...
+    ...
+    ...    ENTITY_VERSION_SAVED
+    ...    ENTITY_DRAFT_SAVED
+    ...    ENTITY_DELETED
+    ...    COMMENT_ADDED
+    ...    COMMENT_UPDATED
+    ...    COMMENT_DELETED
+    ...    TAG_ADDED
+    ...    TAG_DELETED
+    ...    DOCUMENT_PUBLISHED
+    ...    DOCUMENT_SIGNED
+    ...    STATUS_PROPERTY_CHANGED
+    Wait Until Keyword Succeeds    30s    0.1s    Checkbox Should Not Be Selected    xpath=//input[@id='${activity type}_id']
+
+Click Activity Type Filter Option
+    [Arguments]    ${activity type}
+    [Documentation]    Opens the widget menu for the activity widget where the only widget in a single collumn
+    Robust Click    xpath=//input[@id='${activity type}_id']
+
+Activity Title Not Present
+    [Arguments]    ${activity number}    ${activity title}
+    [Documentation]    For a given activity and xpath checks the activity title value is not present
+    Wait Until Page Does Not Contain Element    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[2]/span[2][@text()='${activity title}']    30s
+
+Activity URL Name Not Present
+    [Arguments]    ${activity number}    ${activity URL name}
+    [Documentation]    For a given activity and xpath checks the activity title value is not present
+    Wait Until Page Does Not Contain Element    xpath=//ul[@id='aw_activities']/li[${activity number}]/div/div[2]/a[@text()='${activity URL name}']    30s

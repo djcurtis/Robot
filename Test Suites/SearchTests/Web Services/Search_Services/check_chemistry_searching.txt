@@ -1,0 +1,520 @@
+*** Settings ***
+Documentation     This test suite checks the Chemistry Searching functionality is working using REST API calls.
+Suite Setup       Suite Setup
+Suite Teardown    Suite Teardown
+Force Tags
+Default Tags
+Library           IDBSHttpLibrary
+Library           JSONLibrary
+Library           OperatingSystem
+Library           OracleLibrary
+Resource          ../../../../Libraries/common_resource.txt
+Library           EntityAPILibrary
+Library           SecurityAPILibrary
+
+*** Test Cases ***
+Exact - Molecule
+    [Documentation]    This test checks an admin user can perform an exact molecule search and validates the correct results are returned. The correct result should be 1 result with molecule A, 1 result with reaction A.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${MolAExactSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch01.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${MolAExactSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${1}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${1}
+    # Check molecule A count
+    ${response_body_01}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolAID}
+    ${molA_count}    Get JSON Number Value    ${response_body_01}    /count
+    Should Be Equal As Integers    ${molA_count}    ${1}
+    # Check reaction A count
+    ${response_body_02}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_02}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+
+Substructure - Molecule
+    [Documentation]    This test checks an admin user can perform an substructure molecule search and validates the correct results are returned. The correct result should be 3 molecule results (molecule A count = 1, molecule B count = 3, molecule C count = 2), 4 reaction results (1 count for each reaction).
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${3}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${4}
+    # Check molecule A count = 1
+    ${response_body_01}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolAID}
+    ${molA_count}    Get JSON Number Value    ${response_body_01}    /count
+    Should Be Equal As Integers    ${molA_count}    ${1}
+    # Check molecule B count = 3
+    ${response_body_02}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolBID}
+    ${molB_count}    Get JSON Number Value    ${response_body_02}    /count
+    Should Be Equal As Integers    ${molB_count}    ${3}
+    # Check molecule C count = 2
+    ${response_body_03}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolCID}
+    ${molC_count}    Get JSON Number Value    ${response_body_03}    /count
+    Should Be Equal As Integers    ${molC_count}    ${2}
+    # Check reaction A count
+    ${response_body_04}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_04}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+    # Check reaction B01 count
+    ${response_body_05}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB01ID}
+    ${rxnB01_count}    Get JSON Number Value    ${response_body_05}    /count
+    Should Be Equal As Integers    ${rxnB01_count}    ${1}
+    # Check reaction B02 count
+    ${response_body_06}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB02ID}
+    ${rxnB02_count}    Get JSON Number Value    ${response_body_06}    /count
+    Should Be Equal As Integers    ${rxnB02_count}    ${1}
+    # Check reaction B03 count
+    ${response_body_07}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB03ID}
+    ${rxnB03_count}    Get JSON Number Value    ${response_body_07}    /count
+    Should Be Equal As Integers    ${rxnB03_count}    ${1}
+
+Exact - Reaction
+    [Documentation]    This test checks an admin user can perform an exact reaction search and validates the correct results are returned. The correct result should be 0 molecule results (with no "molecule" entry in response body), and 1 reaction result.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${RxnAExactSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch03.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${RxnAExactSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${0}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${1}
+    # Check reaction A count
+    ${response_body_04}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_04}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+
+Substructure - Reaction
+    [Documentation]    This test checks an admin user can perform an substructure reaction search and validates the correct results are returned. The correct result should be 0 molecule results (with no "molecule" entry in response body), and 2 reaction results (substructure search for Molecule B as a reactant).
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${RxnBSubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch04.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${RxnBSubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${0}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${2}
+    # Check reaction B02 count
+    ${response_body_06}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB01ID}
+    ${rxnB02_count}    Get JSON Number Value    ${response_body_06}    /count
+    Should Be Equal As Integers    ${rxnB02_count}    ${1}
+    # Check reaction B03 count
+    ${response_body_07}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB02ID}
+    ${rxnB03_count}    Get JSON Number Value    ${response_body_07}    /count
+    Should Be Equal As Integers    ${rxnB03_count}    ${1}
+
+No Results
+    [Documentation]    This test checks an admin user can perform a substructure molecule and reaction search with zero expect returns and that the returned request is correct.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search - molecule
+    ${NoResultsSearchA}    Get File    ${CURDIR}/Test_Data/ChemSearch05A.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${NoResultsSearchA}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${0}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${0}
+    # Set the search - reaction
+    ${NoResultsSearchB}    Get File    ${CURDIR}/Test_Data/ChemSearch05B.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${NoResultsSearchB}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${0}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${0}
+
+User permissions check 1
+    [Documentation]    This test checks that "srch_01" user (which only has access to entities under the Chemistry Search project level) can search for all test data set up for this suite.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_01    srch_011    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${3}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${4}
+    # Check molecule A count = 1
+    ${response_body_01}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolAID}
+    ${molA_count}    Get JSON Number Value    ${response_body_01}    /count
+    Should Be Equal As Integers    ${molA_count}    ${1}
+    # Check molecule B count = 3
+    ${response_body_02}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolBID}
+    ${molB_count}    Get JSON Number Value    ${response_body_02}    /count
+    Should Be Equal As Integers    ${molB_count}    ${3}
+    # Check molecule C count = 2
+    ${response_body_03}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolCID}
+    ${molC_count}    Get JSON Number Value    ${response_body_03}    /count
+    Should Be Equal As Integers    ${molC_count}    ${2}
+    # Check reaction A count
+    ${response_body_04}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_04}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+    # Check reaction B01 count
+    ${response_body_05}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB01ID}
+    ${rxnB01_count}    Get JSON Number Value    ${response_body_05}    /count
+    Should Be Equal As Integers    ${rxnB01_count}    ${1}
+    # Check reaction B02 count
+    ${response_body_06}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB02ID}
+    ${rxnB02_count}    Get JSON Number Value    ${response_body_06}    /count
+    Should Be Equal As Integers    ${rxnB02_count}    ${1}
+    # Check reaction B03 count
+    ${response_body_07}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB03ID}
+    ${rxnB03_count}    Get JSON Number Value    ${response_body_07}    /count
+    Should Be Equal As Integers    ${rxnB03_count}    ${1}
+
+User permissions check 2
+    [Documentation]    This test checks that "srch_02" user (which only has access to entities containing A+B type chemistry) can search for all A+B type chemistry test data.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_02    srch_021    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${2}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${4}
+    # Check molecule A count = 1
+    ${response_body_01}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolAID}
+    ${molA_count}    Get JSON Number Value    ${response_body_01}    /count
+    Should Be Equal As Integers    ${molA_count}    ${1}
+    # Check molecule B count = 3
+    ${response_body_02}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolBID}
+    ${molB_count}    Get JSON Number Value    ${response_body_02}    /count
+    Should Be Equal As Integers    ${molB_count}    ${3}
+    # Check reaction A count
+    ${response_body_04}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_04}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+    # Check reaction B01 count
+    ${response_body_05}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB01ID}
+    ${rxnB01_count}    Get JSON Number Value    ${response_body_05}    /count
+    Should Be Equal As Integers    ${rxnB01_count}    ${1}
+    # Check reaction B02 count
+    ${response_body_06}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB02ID}
+    ${rxnB02_count}    Get JSON Number Value    ${response_body_06}    /count
+    Should Be Equal As Integers    ${rxnB02_count}    ${1}
+    # Check reaction B03 count
+    ${response_body_07}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnB03ID}
+    ${rxnB03_count}    Get JSON Number Value    ${response_body_07}    /count
+    Should Be Equal As Integers    ${rxnB03_count}    ${1}
+
+User permissions check 3
+    [Documentation]    This test checks that "srch_03" user (which only has access to Experiment C, and not Record C) can search for only Experiment C.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_03    srch_031    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${1}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${0}
+    # Check molecule C count = 2
+    ${response_body_03}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolCID}
+    ${molC_count}    Get JSON Number Value    ${response_body_03}    /count
+    Should Be Equal As Integers    ${molC_count}    ${1}
+
+User permissions check 4
+    [Documentation]    The API access for a user is not removed when a user's EDIT_WEB_CHEMISTRY role is removed. This is *by design* at present and so this test is not relevant.
+    ...
+    ...    This test checks that if EDIT_WEB_CHEMISTRY role is removed for "srch_03" user, then then user can no longer perform Chemistry Searches through the API. The test also checks that if the role is restored for the user, then Chemistry Searching ability is restored.
+    [Tags]    SRCH-CHEM    ignore    BUILD_ACCEPTANCE
+    # Remove user with web chemistry permissions
+    Remove System Role From User    srch_03    EDIT_WEB_CHEMISTRY
+    # Check chemistry search not possible
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_03    srch_031    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    401
+    # Restore user with web chemistry permissions
+    Assign System Role To User    srch_03    EDIT_WEB_CHEMISTRY
+    # Check chemistry search again possible
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_03    srch_031    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    ${response_body}    Get Response Body
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${1}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${0}
+
+User permissions check 5
+    [Documentation]    This test checks that if the Entity Permissions for "srch_03" user is changed to include Experiment A, then the user will now be able to search for this result.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    [Setup]    Setup - User permissions check 5
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_03    srch_031    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${2}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${1}
+    # Check molecule A count = 1
+    ${response_body_01}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolAID}
+    ${molA_count}    Get JSON Number Value    ${response_body_01}    /count
+    Should Be Equal As Integers    ${molA_count}    ${1}
+    # Check molecule C count = 1
+    ${response_body_03}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolCID}
+    ${molC_count}    Get JSON Number Value    ${response_body_03}    /count
+    Should Be Equal As Integers    ${molC_count}    ${1}
+    # Check reaction A count
+    ${response_body_04}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_04}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+    [Teardown]    Teardown - User permissions check 5
+
+User permissions check 6
+    [Documentation]    This test checks that if the Entity Permissions for "srch_03" user is changed to exclude Experiment C, then the user will no longer be able to search for this result.
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    [Setup]    Setup - User permissions check 6
+    # Set the search
+    ${MolASubstructureSearch}    Get File    ${CURDIR}/Test_Data/ChemSearch02.json
+    # Call the search function
+    ${status}    ${response_body}    POST and Response    srch_03    srch_031    ${MolASubstructureSearch}
+    # Check POST request successful
+    Should Start With    ${status}    200
+    # Check total molecule count
+    ${mol_total_count}    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${mol_total_count}    ${1}
+    # Check total reaction count
+    ${rxn_total_count}    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${rxn_total_count}    ${1}
+    # Check molecule A count = 1
+    ${response_body_01}    Get JSON Dictionary From List    ${response_body}    /molecule/data    /cd_id    ${ChemMolAID}
+    ${molA_count}    Get JSON Number Value    ${response_body_01}    /count
+    Should Be Equal As Integers    ${molA_count}    ${1}
+    # Check reaction A count
+    ${response_body_04}    Get JSON Dictionary From List    ${response_body}    /reaction/data    /cd_id    ${ChemRxnAID}
+    ${rxnA_count}    Get JSON Number Value    ${response_body_04}    /count
+    Should Be Equal As Integers    ${rxnA_count}    ${1}
+    [Teardown]    Teardown - User permissions check 6
+
+*** Keywords ***
+POST and Response
+    [Arguments]    ${testcase_username}    ${testcase_password}    ${request_body}
+    [Documentation]    This keyword constructs the HTTP POST request, from the arguments passed in by the test case, to perform a Chemistry Search using the API. The POST results (HTTP status and response body) are passed back as return values to the calling test case.
+    # Construct POST request
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${testcase_username}    ${testcase_password}
+    Set Request Header    accept    application/json, text/javascript, */*; q=0.01
+    Set Request Header    content-type    application/json
+    Set Request Body    ${request_body}
+    # POST to REST API
+    POST    /ewb/services/1.0/chemistry/data/search
+    # Check POST result
+    ${status}    Get Response Status
+    ${response_body}    Get Response Body
+    [Return]    ${status}    ${response_body}
+
+Suite Setup
+    [Documentation]    Data Structure:
+    ...
+    ...    Group: Mr. Roboto
+    ...    Project: Chemistry Search
+    ...
+    ...    3 "types of Chemistry: A,B,C (A is a substructure of both types B and C)
+    ...
+    ...    > Experiment A -- Mol A + Rxn A
+    ...
+    ...    > Experiment B -- Mol B ×2 + Rxn B1 (Mol B is reactant in this reaction)
+    ...    > Report B -- Mol B + Rxn B2 (Mol B is reactant in this reaction)
+    ...    > Template B -- Mol B + Rxn B3 (Mol B is product in this reaction)
+    ...
+    ...    > Experiment C -- Mol C
+    ...    > Report C -- Mol C
+    ...
+    ...    Permissions model:
+    ...
+    ...    srch_01 > Access to all "Chemistry Search" project (A+B+C chemistry)
+    ...    srch_02 is inside "Srch Team Restricted" group > Access only to records with A+B chemistry
+    ...    srch_03 > Access only to "Experiment C" chemistry (NOT Report C)
+    # Setting data variables
+    ${ChemMol_A_Data}    Get File    ${CURDIR}/Test_Data/Selenophene.xml
+    ${ChemMol_B_Data}    Get File    ${CURDIR}/Test_Data/Selenoselenophene.xml
+    ${ChemMol_B_Data2}    Get File    ${CURDIR}/Test_Data/Selenoselenophene-b.xml
+    ${ChemMol_C_Data}    Get File    ${CURDIR}/Test_Data/Biselenophene.xml
+    ${ChemRxn_A_Data}    Get File    ${CURDIR}/Test_Data/RxnSelenopheneBrn.xml
+    ${ChemRxn_B01_Data}    Get File    ${CURDIR}/Test_Data/RxnSelenoselenopheneBrn.xml
+    ${ChemRxn_B02_Data}    Get File    ${CURDIR}/Test_Data/RxnSelenoselenopheneIn.xml
+    ${ChemRxn_B03_Data}    Get File    ${CURDIR}/Test_Data/RxnSelenoselenopheneFrmn.xml
+    # Initial setup
+    ${GroupID}    Ensure Group Is Present    1    Mr. Roboto    # Set as suite var
+    Set Suite Variable    ${GroupID}
+    ${ProjectID}    Create Project    ${GroupID}    Chemistry Search    # Set as suite var
+    # Create Experiment with Selenophene
+    ${RecordA01ID}    EntityAPILibrary.Create Experiment    ${ProjectID}    Experiment A    # Set as suite var
+    ${ChemMol_A01_ID}    EntityAPILibrary.Create Chemistry item    ${RecordA01ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_A01_ID}    ${RecordA01ID}    ${ChemMol_A_Data}
+    ${ChemRxn_A01_ID}    EntityAPILibrary.Create Chemistry item    ${RecordA01ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemRxn_A01_ID}    ${RecordA01ID}    ${ChemRxn_A_Data}
+    EntityAPILibrary.Version Save    ${RecordA01ID}    Data Added
+    # Create Experiment, Report, Template with Selenoselenophene
+    ${RecordB01ID}    EntityAPILibrary.Create Experiment    ${ProjectID}    Experiment B    # Set as suite var
+    ${ChemMol_B01_ID}    EntityAPILibrary.Create Chemistry Item    ${RecordB01ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_B01_ID}    ${RecordB01ID}    ${ChemMol_B_Data}
+    ${ChemMol_B01_ID2}    EntityAPILibrary.Create Chemistry Item    ${RecordB01ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_B01_ID2}    ${RecordB01ID}    ${ChemMol_B_Data2}
+    ${ChemRxn_B01_ID}    EntityAPILibrary.Create Chemistry Item    ${RecordB01ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemRxn_B01_ID}    ${RecordB01ID}    ${ChemRxn_B01_Data}
+    EntityAPILibrary.Version Save    ${RecordB01ID}    Data Added
+    #
+    ${RecordB02ID}    EntityAPILibrary.Create Report    ${ProjectID}    Report B    # Set as suite var
+    ${ChemMol_B02_ID}    EntityAPILibrary.Create Chemistry Item    ${RecordB02ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_B02_ID}    ${RecordB02ID}    ${ChemMol_B_Data}
+    ${ChemRxn_B02_ID}    EntityAPILibrary.Create Chemistry Item    ${RecordB02ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemRxn_B02_ID}    ${RecordB02ID}    ${ChemRxn_B02_Data}
+    EntityAPILibrary.Version Save    ${RecordB02ID}    Data Added
+    #
+    ${RecordB03ID}    EntityAPILibrary.Create Template    ${ProjectID}    Template B    # Set as suite var
+    ${ChemMol_B03_ID}    EntityAPILibrary.Create Chemistry Item    ${RecordB03ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_B03_ID}    ${RecordB03ID}    ${ChemMol_B_Data}
+    ${ChemRxn_B03_ID}    EntityAPILibrary.Create Chemistry Item    ${RecordB03ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemRxn_B03_ID}    ${RecordB03ID}    ${ChemRxn_B03_Data}
+    EntityAPILibrary.Version Save    ${RecordB03ID}    Data Added
+    # Create Experiment, Custom Rec Type with Biselenophene
+    ${RecordC01ID}    EntityAPILibrary.Create Experiment    ${ProjectID}    Experiment C    # Set as suite var
+    ${ChemMol_C01_ID}    EntityAPILibrary.Create Chemistry item    ${RecordC01ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_C01_ID}    ${RecordC01ID}    ${ChemMol_C_Data}
+    EntityAPILibrary.Version Save    ${RecordC01ID}    Data Added
+    #
+    ${RecordC02ID}    EntityAPILibrary.Create Report    ${ProjectID}    Report C    # Set as suite var
+    ${ChemMol_C02_ID}    EntityAPILibrary.Create Chemistry item    ${RecordC02ID}
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_C02_ID}    ${RecordC02ID}    ${ChemMol_C_Data}
+    EntityAPILibrary.Version Save    ${RecordC02ID}    Data Added
+    # Get ChemAxon molecule+reaction IDs from database
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${ChemMolAID}    Query    select t.Chemaxon_Molecule_Id from LATEST_ENTITY_VERSION_MOLECULE t where t.entity_id = '${ChemMol_A01_ID}'    # Set as suite var
+    ${ChemMolBID}    Query    select t.Chemaxon_Molecule_Id from LATEST_ENTITY_VERSION_MOLECULE t where t.entity_id = '${ChemMol_B01_ID}'    # Set as suite var
+    ${ChemMolCID}    Query    select t.Chemaxon_Molecule_Id from LATEST_ENTITY_VERSION_MOLECULE t where t.entity_id = '${ChemMol_C01_ID}'    # Set as suite var
+    ${ChemRxnAID}    Query    select t.Chemaxon_Reaction_Id from LATEST_ENTITY_VERSION_Reaction t where t.entity_id = '${ChemRxn_A01_ID}'    # Set as suite var
+    ${ChemRxnB01ID}    Query    select t.Chemaxon_Reaction_Id from LATEST_ENTITY_VERSION_Reaction t where t.entity_id = '${ChemRxn_B01_ID}'    # Set as suite var
+    ${ChemRxnB02ID}    Query    select t.Chemaxon_Reaction_Id from LATEST_ENTITY_VERSION_Reaction t where t.entity_id = '${ChemRxn_B02_ID}'    # Set as suite var
+    ${ChemRxnB03ID}    Query    select t.Chemaxon_Reaction_Id from LATEST_ENTITY_VERSION_Reaction t where t.entity_id = '${ChemRxn_B03_ID}'    # Set as suite var
+    Disconnect from Database
+    # Setting Suite Variables
+    Set Suite Variable    ${ProjectID}
+    Set Suite Variable    ${RecordA01ID}
+    Set Suite Variable    ${RecordB01ID}
+    Set Suite Variable    ${RecordB02ID}
+    Set Suite Variable    ${RecordB03ID}
+    Set Suite Variable    ${RecordC01ID}
+    Set Suite Variable    ${RecordC02ID}
+    Set Suite Variable    ${ChemMolAID}    ${ChemMolAID[0][0]}
+    Set Suite Variable    ${ChemMolBID}    ${ChemMolBID[0][0]}
+    Set Suite Variable    ${ChemMolCID}    ${ChemMolCID[0][0]}
+    Set Suite Variable    ${ChemRxnAID}    ${ChemRxnAID[0][0]}
+    Set Suite Variable    ${ChemRxnB01ID}    ${ChemRxnB01ID[0][0]}
+    Set Suite Variable    ${ChemRxnB02ID}    ${ChemRxnB02ID[0][0]}
+    Set Suite Variable    ${ChemRxnB03ID}    ${ChemRxnB03ID[0][0]}
+    # Setting user permissions
+    # Create users
+    Create User    srch_01    Search User01    srch_011    assignable_roles=STANDARD_ROLES
+    Create User    srch_02    Search User02    srch_021    assignable_roles=STANDARD_ROLES
+    Create User    srch_03    Search User03    srch_031    assignable_roles=STANDARD_ROLES
+    Create User Group    SearchTeam    Restricted to A+B
+    Add User To User Group    SearchTeam    srch_02    ${False}
+    # Create web chemistry system role
+    Create System Role    EDIT_WEB_CHEMISTRY    Permission to use Web Chemistry    EDIT_WEB_CHEMISTRY
+    # Assign system roles to users
+    Assign System Role To User    srch_01    EWB_WEB_CLIENT_USER
+    Assign System Role To User    srch_01    EDIT_WEB_CHEMISTRY
+    Assign System Role To User    srch_02    EWB_WEB_CLIENT_USER
+    Assign System Role To User    srch_02    EDIT_WEB_CHEMISTRY
+    Assign System Role To User    srch_03    EWB_WEB_CLIENT_USER
+    Assign System Role To User    srch_03    EDIT_WEB_CHEMISTRY
+    # Assign users+groups entity permissions
+    Assign Entity Role To User    srch_01    All Entity Permissions    ${ProjectID}
+    Assign Entity Role To User    srch_03    All Entity Permissions    ${RecordC01ID}
+    Assign Entity Role To Group    SearchTeam    All Entity Permissions    ${RecordA01ID}
+    Assign Entity Role To Group    SearchTeam    All Entity Permissions    ${RecordB01ID}
+    Assign Entity Role To Group    SearchTeam    All Entity Permissions    ${RecordB02ID}
+    Assign Entity Role To Group    SearchTeam    All Entity Permissions    ${RecordB03ID}
+
+Teardown - User permissions check 5
+    [Documentation]    Teardown for "User permissions check 5" - restores all entity permissions to Suite Setup default state
+    Remove Entity Role From User    srch_03    All Entity Permissions    ${RecordA01ID}
+
+Suite Teardown
+    [Documentation]    Teardown for whole Suite. Due to technical limitations, this deletion cannot completely remove all security-related entries created during setup. Remnants remaining are:
+    ...
+    ...    Users "srch_01", "srch_02", and "srch_03" remain.
+    ...    Group "SearchTeam" remain.
+    # Delete data
+    EntityAPILibrary.Unlock Entity And Children    ${GroupID}
+    EntityAPILibrary.Delete Entity    ${GroupID}    As intended    As intended
+    # User permissions teardown
+    Remove System Role From User    srch_01    EWB_WEB_CLIENT_USER
+    Remove System Role From User    srch_01    EDIT_WEB_CHEMISTRY
+    Remove System Role From User    srch_02    EWB_WEB_CLIENT_USER
+    Remove System Role From User    srch_02    EDIT_WEB_CHEMISTRY
+    Remove System Role From User    srch_03    EWB_WEB_CLIENT_USER
+    Remove System Role From User    srch_03    EDIT_WEB_CHEMISTRY
+    Delete Role    EDIT_WEB_CHEMISTRY    Automation Deletion
+    Remove User From User Group    SearchTeam    srch_02
+
+Teardown - User permissions check 6
+    [Documentation]    Teardown for "User permissions check 6" - restores all entity permissions to Suite Setup default state
+    Remove Entity Role From User    srch_03    All Entity Permissions    ${RecordA01ID}
+    Assign Entity Role To User    srch_03    All Entity Permissions    ${RecordC01ID}
+
+Setup - User permissions check 5
+    [Documentation]    Setup for "User permissions check 5" - assigns "srch_03" user with an additional Entity Permission
+    Assign Entity Role To User    srch_03    All Entity Permissions    ${RecordA01ID}
+
+Setup - User permissions check 6
+    [Documentation]    Setup for "User permissions check 6" - assigns "srch_03" user with additional Entity Permissions
+    Assign Entity Role To User    srch_03    All Entity Permissions    ${RecordA01ID}
+    Remove Entity Role From User    srch_03    All Entity Permissions    ${RecordC01ID}

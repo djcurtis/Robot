@@ -1,0 +1,55 @@
+*** Settings ***
+Documentation     This test suite checks the Advanced Search saving and restoring functionality is working at the API level.
+Default Tags
+Library           IDBSHttpLibrary
+Library           JSONLibrary
+Resource          ../../../../Libraries/common_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+Save Default Search
+    [Documentation]    This test verifies a user can successfully save an Advanced Search constructed with a single search term.
+    [Tags]    SRCH-SAV-DEFAULT
+    # Fetch the search configuration
+    ${savedAdvSearch}=    Get File    ${CURDIR}/Test_Data/SaveDefault.xml
+    # Call the save function
+    ${status}    ${responseBody}    PUT and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${savedAdvSearch}
+    # Check PUT response
+    Should Start With    ${status}    204
+
+Edit Default Search
+    [Documentation]    This test verifies a user can successfully overwrite the previously saved Advanced Search, and save a new search constructed with multiple search terms.
+    [Tags]    SRCH-SAV-DEFAULT
+    # Fetch the search configuration
+    ${editedAdvSearch}=    Get File    ${CURDIR}/Test_Data/EditDefault.xml
+    # Call the save function
+    ${status}    ${responseBody}    PUT and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${editedAdvSearch}
+    # Check PUT response
+    Should Start With    ${status}    204
+
+Clear Default Search
+    [Documentation]    This test verifies a user can successfully clear a saved Advanced Search, through saving a "blank" search.
+    [Tags]    SRCH-SAV-DEFAULT
+    # Fetch the search configuration
+    ${clearedAdvSearch}    Get File    ${CURDIR}/Test_Data/ClearDefault.xml
+    # Call the save function
+    ${status}    ${responseBody}    PUT and Response    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    ${clearedAdvSearch}
+    # Check PUT response
+    Should Start With    ${status}    204
+
+*** Keywords ***
+PUT and Response
+    [Arguments]    ${testcaseUsername}    ${testcasePassword}    ${requestBody}
+    [Documentation]    This keyword constructs the HTTP PUT request, from the arguments passed in by the test case, to perform a Save Search operation using the API. The PUT response (HTTP status and response body) are passed back as return values to the calling test case.
+    # Construct PUT request
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${testcaseUsername}    ${testcasePassword}
+    Set Request Header    accept    */*
+    Set Request Header    content-type    application/json; charset=UTF-8
+    Set Request Body    ${requestBody}
+    # PUT to REST API
+    PUT    /ewb/services/1.0/settings/usersettings/structuredsearch
+    # Check POST result
+    ${status}=    Get Response Status
+    ${responseBody}=    Get Response Body
+    [Return]    ${status}    ${responseBody}

@@ -1,0 +1,528 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains keywords specific to testing the search functionality contained within the web client.
+...               This file is loaded by the common_resource.txt file which is automatically loaded when running tests through the Robot Framework.
+...               *Version: E-WorkBook Web Client 9.1.0*
+Resource          search_UI_resource.txt
+Library           IDBSSelenium2Library
+Library           CheckLibrary
+Resource          general_resource.txt
+
+*** Variables ***
+${RESULT LINK ID}    0
+${RESULT SCORE ID}    0
+${RESULT SNIPPET ID}    0
+${RESULT PATH ID}    0
+${RESULT TYPE ID}    0
+${search header}    xpath=//span[text()="Search"]
+${USER DISPLAY ID}    0
+${USER DELETE ID}    0
+${searching mask}    Querying
+${RECORD SCOPE}    ewb-search-option-records
+${RUNNING TOTAL COUNT}    ${EMPTY}
+
+*** Keywords ***
+Search Suite Startup
+    Open Browser    ${SEARCH URL}    ${BROWSER}
+    Run Keyword And Ignore Error    Maximize Browser Window
+    Set Selenium Speed    ${DELAY}
+
+Search Test Startup
+    Go To    ${SEARCH URL}
+    Log In Via Login Dialog    ${VALID USER}    ${VALID PASSWD}
+    Wait Until Page Contains Element    xpath=//div[contains(@class, 'ewb-panel-header-label') and text()="Search"]
+
+Search Test Teardown
+    [Documentation]    Search test teardown which clears cookies regardless of test run state to ensure next test run in the file starts from the correct starting point
+    # Attempt to logout through client
+    Run Keyword And Ignore Error    Logout of Application
+    # Forceably clear cookies - in case test failed such that logout function cannot be accessed
+    Run Keyword If Test Failed    Cleanup Search Window    # Clear cookies before closing on failure
+    Run Keyword If Test Passed    Cleanup Search Window    # Clear cookies before closing on pass
+    Run Keyword If Timeout Occurred    Cleanup Search Window    # Clear cookies before closing on timeout
+
+Cleanup Search Window
+    Run Keyword And Ignore Error    Delete Cookie    JSESSIONID
+    Run Keyword And Ignore Error    Delete All Cookies
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    login-userid
+    Run Keyword Unless    '${status}'=='PASS'    Go To    ${TEMP URL}
+    Run Keyword Unless    '${status}'=='PASS'    Go To Login Page
+
+Set Search Term
+    [Arguments]    ${term}
+    [Documentation]    Enters the text defined by the ${term} into the search text field
+    Input Text    ${search text field}    ${term}
+
+Clear Search
+    [Documentation]    Clears any text currently contained within the search text field
+    Click Element    ${clear search button}    don't wait
+
+Run Search
+    [Documentation]    Runs the search with the search options and search text currently displayed in the UI
+    Click Element    ${run search button}
+    #Wait for the querying mask to appear - might not appear at all so only wait 5 seconds max, then assume it isn't appearing and continue
+    Run Keyword And Ignore Error    Wait Until Page Contains Element    xpath=//div[@class="ewb-web-mask"]    5s
+
+Set Search Term And Run
+    [Arguments]    ${text}
+    [Documentation]    Sets search string using the ${text} variable amd runs the search
+    Set Search Term    ${text}
+    Run Search
+    Wait For Query
+
+Wait For Query
+    [Documentation]    Waits for query to execute
+    Wait For No Mask
+
+Set Search In Properties
+    Robust Click    ${search in properties}
+
+Set Search In Content
+    Robust Click    ${search in content}
+
+Set Search In Comments
+    Robust Click    ${search in comments}
+
+Set Search Scope Records
+    Wait Until Keyword Succeeds    30s    0.1s    Click Element    ${RECORD SCOPE}
+
+Set Search Scope Everything
+    Wait Until Keyword Succeeds    30s    0.1s    Click Element    ${search scope everything}
+
+Set Search Date Created
+    Robust Click    xpath=//div[@id='${search date selector link}']/a
+    Robust Click    ${search date created}
+
+Set Search Date Modified
+    Robust Click    xpath=//div[@id='${search date selector link}']/a
+    Robust Click    ${search date modified}
+
+Set Search Date Created and Modified
+    Robust Click    xpath=//div[@id='${search date selector link}']/a
+    Robust Click    ${search date modified or created}
+
+Set Search Date Any
+    Robust Click    ${search date any}
+
+Set Search Date Week
+    Robust Click    ${search date week}
+
+Set Search Date Month
+    Robust Click    ${search date month}
+
+Set Search Date Custom
+    Robust Click    ${search date custom}
+
+Set Search User Created
+    Robust Click    xpath=//div[@id='${search user selector link}']/a
+    Robust Click    ${search user created}
+
+Set Search User Modified
+    Robust Click    xpath=//div[@id='${search user selector link}']/a
+    Robust Click    ${search user modified}
+
+Set Search User Created and Modified
+    Robust Click    xpath=//div[@id='${search user selector link}']/a
+    Robust Click    ${search user modified or created}
+
+Add Search User From User Name
+    [Arguments]    ${user name}    ${full name}
+    ${user_count}=    Get Matching Xpath Count    //div[contains(@id, 'userPanel')]
+    Input Text    ${search user selection}    ${user name}
+    Robust Click    xpath=//span[text()="${username} (${full name})"]
+    Click Element    ${search text field}
+    Check Search User Present    ${user name}    ${full name}
+
+Delete Search User
+    [Arguments]    ${search user name}
+    # user number starts from 1
+    ${USER DISPLAY ID}    IDBSSelenium2Library.Get Element Attribute    xpath=//div[contains(text(), '${search user name}')]@id
+    Work Out User Delete ID
+    Focus    ${USER DELETE ID}
+    Press Key Native    10    # 10=enter
+    Page Should Not Contain Element    ${USER DELETE ID}
+    Page Should Not Contain    ${search user name}
+
+Work Out User Delete ID
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_1'    Set Delete User ID    1
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_2'    Set Delete User ID    2
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_3'    Set Delete User ID    3
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_4'    Set Delete User ID    4
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_5'    Set Delete User ID    5
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_6'    Set Delete User ID    6
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_7'    Set Delete User ID    7
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_8'    Set Delete User ID    8
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_9'    Set Delete User ID    9
+    Run Keyword If    '${USER DISPLAY ID}'=='userPanel1_10'    Set Delete User ID    10
+
+Set Delete User ID
+    [Arguments]    ${user ID value}
+    Set Global Variable    ${USER DELETE ID}    deleteUser1_${user ID value}
+
+Check Search User Present
+    [Arguments]    ${username}    ${fullname}
+    # Username and full name check
+    Page Should Contain Element    xpath=//div[contains(@id, 'userPanel') and text()="${username}"]
+
+Check Search Username Present
+    [Arguments]    ${username}
+    # Username check only
+    Page Should Contain Element    xpath=//div[text()="${username}"]
+
+Check Number Of Results
+    [Arguments]    ${no of results}
+    [Documentation]    Checks the number of results returned by the search
+    Wait For Query    #ensure query has completed before checking for results
+    ${countpage1}=    Get Matching Xpath Count    //div[@id='Results1Link']/../../../../../../../../../../../../../../tr
+    ${running total}=    Set Variable    ${countpage1}
+    ${status1}    ${value1}=    Run Keyword And Ignore Error    Page Should Contain Element    EWB-PagerControls-Above-Page2
+    ${running total temp}=    Run Keyword If    '${status1}'=='PASS'    loop through pages    ${running total}    2
+    ${running total}=    Set Variable If    '${status1}'=='PASS'    ${running total temp}    ${running total}
+    Check Number Equals    Check number of search results is equal to ${no of results}    ${running total}    ${no of results}    precision=0
+
+Check No Results Returned
+    Wait For Query    #ensure query has completed before checking for results
+    Page Should Contain    There are no results matching your search criteria
+
+Check Search Result
+    [Arguments]    ${res number}    ${res name}    ${res score}    ${res snippet}    ${res path}    ${res type}
+    [Documentation]    Checks a search result block
+    ...
+    ...    *Arguments*
+    ...
+    ...    - _res number_ = Result number in search results - note: first result = 1
+    ...    - _res name_ = Result Name
+    ...    - _res score_ = Result Score
+    ...    - _res snippet_ = Result Snippet Text
+    ...    - _res path_ = Result Path
+    ...    - _res type_ = Result Type
+    ${found}    ${message}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    EWB-PagerControls-Above-Page1    2s
+    Run Keyword IF    "${found}"=="PASS"    Robust Click    EWB-PagerControls-Above-Page1
+    Wait For No Mask
+    ${found}    ${message}=    Run Keyword And Ignore Error    __Check page    ${res name}    ${res snippet}    ${res path}
+    ...    ${res type}
+    Run Keyword Unless    "${found}"=="PASS"    Wait Until Keyword Succeeds    30s    2s    __Check next page    ${res name}
+    ...    ${res snippet}    ${res path}    ${res type}
+
+Work Out Search Result Variables
+    Run Keyword If    '${RESULT LINK ID}'=='Results1Link'    Set Search Variables    1
+    Run Keyword If    '${RESULT LINK ID}'=='Results2Link'    Set Search Variables    2
+    Run Keyword If    '${RESULT LINK ID}'=='Results3Link'    Set Search Variables    3
+    Run Keyword If    '${RESULT LINK ID}'=='Results4Link'    Set Search Variables    4
+    Run Keyword If    '${RESULT LINK ID}'=='Results5Link'    Set Search Variables    5
+    Run Keyword If    '${RESULT LINK ID}'=='Results6Link'    Set Search Variables    6
+    Run Keyword If    '${RESULT LINK ID}'=='Results7Link'    Set Search Variables    7
+    Run Keyword If    '${RESULT LINK ID}'=='Results8Link'    Set Search Variables    8
+    Run Keyword If    '${RESULT LINK ID}'=='Results9Link'    Set Search Variables    9
+    Run Keyword If    '${RESULT LINK ID}'=='Results10Link'    Set Search Variables    10
+
+Set Search Variables
+    [Arguments]    ${search result number}
+    # Set Test Variable ${RESULT SCORE ID} Results${search result number}Score
+    # Set Test Variable ${RESULT SNIPPET ID} Results${search result number}Snippet
+    Set Test Variable    ${RESULT PATH ID}    Results${search result number}Path
+    Set Test Variable    ${RESULT TYPE ID}    Results${search result number}DocumentType
+
+Check Search Result Name
+    [Arguments]    ${result number}    ${name}
+    # Checks the displayed result name for the specified search result
+    Scroll Element Into View    ${RESULT LINK ID}
+    Element Should Contain    ${RESULT LINK ID}    ${name}
+
+Check Search Result Name Present
+    [Arguments]    ${result string}
+    # Checks a search result name is not present within the search results
+    Page Should Contain    ${result string}
+
+Check Search Result Name Not Present
+    [Arguments]    ${result string}
+    # Checks a search result name is not present within the search results
+    Page Should Not Contain    ${result string}
+
+Check Search Result Score
+    [Arguments]    ${result number}    ${score}
+    # Checks the displayed result score for the specified search result
+    # To Implement
+
+Check Search Result Snippet
+    [Arguments]    ${result number}    ${snippet}
+    # Checks the displayed result snippet for the specified search result
+    Page Should Contain    ${snippet}
+
+Check Search Result Path
+    [Arguments]    ${result number}    ${path}
+    # Checks the displayed result path for the specified search result
+    Scroll Element Into View    ${RESULT PATH ID}
+    Element Should Contain    ${RESULT PATH ID}    ${path}
+
+Check Search Result Type
+    [Arguments]    ${result number}    ${result type}
+    # Checks the displayed result type for the specified search result
+    Scroll Element Into View    ${RESULT TYPE ID}
+    Element Should Contain    ${RESULT TYPE ID}    ${result type}
+
+Exercise Search In Options
+    # Need to find a way to assert that the search options are selected...
+    Set Search In Content    # Selected
+    Set Search In Comments    # Selected
+    Set Search In Content    # Not Selected
+    Set Search In Comments    # Not Selected
+
+Exact Properties Record Search
+    [Arguments]    ${search string}
+    Set Search Scope Records
+    Set Search Term And Run    ${search string}
+    Validate Search URL Default Search In Values
+    Validate Search URL Scope    RECORD
+
+Exact Properties Everything Search
+    [Arguments]    ${search string}
+    # Default search
+    Set Search Term And Run    ${search string}
+    Validate Search URL Default Search In Values
+    Validate Search URL Default Scope Values
+    # Start of Search Option Validation ###
+    # Search In Validation
+
+Validate Search In Options
+    [Arguments]    ${properties}    ${content}    ${comments}
+    Run Keyword If    '${content}'=='Checked'    Content Checked
+    Run Keyword Unless    '${content}'=='Checked'    Content Unchecked
+    Run Keyword If    '${comments}'=='Checked'    Comments Checked
+    Run Keyword Unless    '${comments}'=='Checked'    Comments Unchecked
+
+Properties Checked
+    Checkbox Should Be Selected    ${search in properties checkbox}
+
+Properties Unchecked
+    Checkbox Should Not Be Selected    ${search in properties checkbox}
+
+Content Checked
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-searchin"]/div/div/table/tbody/tr/td/table@border-left-color
+    Should Not Contain    ${content_style}    transparent    Search content option not selected when expected.
+
+Content Unchecked
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-searchin"]/div/div/table/tbody/tr/td/table@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent    Search content option selected when not expected.
+
+Comments Checked
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-searchin"]/div/div/table/tbody/tr[2]/td/table@border-left-color
+    Should Not Contain    ${content_style}    transparent    Search comments option not selected when expected.
+
+Comments Unchecked
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-searchin"]/div/div/table/tbody/tr[2]/td/table@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent    Search comments option selected when not expected.
+
+Validate Search Scope Options
+    [Arguments]    ${scope selection}
+    Run Keyword If    '${scope selection}'=='record'    Record Selected
+    Run Keyword Unless    '${scope selection}'=='record'    Everything Selected
+
+Record Selected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-records"]/../../../..@border-left-color
+    Should Not Contain    ${content_style}    transparent    Record search option not selected when expected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-anything"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent    Everything search option selected when not expected
+
+Everything Selected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-records"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent    Record search option selected when not expected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-anything"]/../../../..@border-left-color
+    Should Not Contain    ${content_style}    transparent    Everything search option not selected when expected
+
+Validate Search Date Checkbox Options
+    [Arguments]    ${created}    ${modified}
+    Run Keyword If    '${created}'=='Checked' and '${modified}'=='Checked'    Element Text Should Be    xpath=//div[@id="dateTimestampOption"]/a    Either created or modified..
+    Run Keyword If    '${created}'=='Checked' and not '${modified}'=='Checked'    Element Text Should Be    xpath=//div[@id="dateTimestampOption"]/a    Created..
+    Run Keyword If    '${modified}'=='Checked' and not '${created}'=='Checked'    Element Text Should Be    xpath=//div[@id="dateTimestampOption"]/a    Last modified..
+
+Date Created Checked
+    Checkbox Should Be Selected    ${search date created checkbox}
+
+Date Created Unchecked
+    Checkbox Should Not Be Selected    ${search date created checkbox}
+
+Date Modified Checked
+    Checkbox Should Be Selected    ${search date modified checkbox}
+
+Date Modified Unchecked
+    Checkbox Should Not Be Selected    ${search date modified checkbox}
+    # Search Date Radiobutton Validation
+
+Validate Search Date Radiobutton Options
+    [Arguments]    ${date selection}
+    # Only "any", "week", "month", "custom" are accepted, all other will cause the test to fail
+    Run Keyword If    '${date selection}'=='any'    Any Selected
+    Run Keyword If    '${date selection}'=='week'    Week Selected
+    Run Keyword If    '${date selection}'=='month'    Month Selected
+    Run Keyword If    '${date selection}'=='custom'    Custom Selected
+    Run Keyword Unless    '${date selection}'=='any'    Date Variable Check 1    ${date selection}
+
+Date Variable Check 1
+    [Arguments]    ${date selection}
+    Run Keyword Unless    '${date selection}'=='week'    Date Variable Check 2    ${date selection}
+
+Date Variable Check 2
+    [Arguments]    ${date selection}
+    Run Keyword Unless    '${date selection}'=='month'    Date Variable Check 3    ${date selection}
+
+Date Variable Check 3
+    [Arguments]    ${date selection}
+    Run Keyword Unless    '${date selection}'=='custom'    Date Variable Invalid
+
+Date Variable Invalid
+    Fail    Invalid Date Radiobutton Variable Provided
+
+Any Selected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-any-time"]/../../../..@border-left-color
+    Should Not Contain    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-week"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-month"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-custom-range"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+
+Week Selected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-any-time"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-week"]/../../../..@border-left-color
+    Should Not Contain    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-month"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-custom-range"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+
+Month Selected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-any-time"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-week"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-month"]/../../../..@border-left-color
+    Should Not Contain    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-custom-range"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+
+Custom Selected
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-any-time"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-week"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-in-the-past-month"]/../../../..@border-left-color
+    Should Be Equal As Strings    ${content_style}    transparent
+    ${content_style}=    Get Element Css Value    xpath=//div[@id="ewb-search-option-custom-range"]/../../../..@border-left-color
+    Should Not Contain    ${content_style}    transparent
+
+Validate Search User Checkbox Options
+    [Arguments]    ${created}    ${modified}
+    Run Keyword If    '${created}'=='Checked' and '${modified}'=='Checked'    Element Text Should Be    xpath=//div[@id="userTimestampOption"]/a    Either created or modified content..
+    Run Keyword If    '${created}'=='Checked' and not '${modified}'=='Checked'    Element Text Should Be    xpath=//div[@id="userTimestampOption"]/a    Created content..
+    Run Keyword If    '${modified}'=='Checked' and not '${created}'=='Checked'    Element Text Should Be    xpath=//div[@id="userTimestampOption"]/a    Modified content..
+
+User Created Checked
+    Checkbox Should Be Selected    ${search user created checkbox}
+
+User Created Unchecked
+    Checkbox Should Not Be Selected    ${search user created checkbox}
+
+User Modified Checked
+    Checkbox Should Be Selected    ${search user modified checkbox}
+
+User Modified Unchecked
+    Checkbox Should Not Be Selected    ${search user modified checkbox}
+    # Search Users Selected Validation
+
+Validate Search Users Selected
+    [Arguments]    ${user}
+    # Repeat for every user that should be present
+    Run Keyword Unless    '${user}'=='None'    Check Search Username Present    ${user}
+
+Check Options Changed Flag Not Present
+    Wait Five Seconds
+    Page Should Not Contain Element    xpath=//div[text()="(options changed)"]
+
+Check Options Changed Flag Present
+    Wait Five Seconds
+    Page Should Contain Element    xpath=//div[text()="(options changed)"]
+    Element Should Be Visible    xpath=//div[text()="(options changed)"]
+
+loop through pages
+    [Arguments]    ${running total}    ${page number}
+    Robust Click    EWB-PagerControls-Above-Page${page number}
+    ${countpage2}=    Get Matching Xpath Count    //div[@id='Results1Link']/../../../../../../../../../../../../../../tr
+    ${running total}=    Evaluate    ${running total} + ${countpage2}
+    ${page number}=    Evaluate    ${page number}+1
+    ${status1}    ${value}=    Run Keyword And Ignore Error    Page Should Contain Element    EWB-PagerControls-Above-Page${page number}
+    ${running total temp}=    Run Keyword If    '${status1}'=='PASS'    loop through pages    ${running total}    ${page number}
+    ${running total}=    Set Variable If    ${running total temp}==${None}    ${running total}    ${running total temp}
+    [Return]    ${running total}
+
+Add Search User From Department
+    [Arguments]    ${department}    ${user name}    ${full name}
+    [Documentation]    This keyword types into the search user field the value *${department}* then looks for the user identified by *${user name}* and *${full name}* and then selects that user and confirms that user has been added t th elist of searched upon users.
+    ...
+    ...    *${department}* = the, case sensitive, department name of the users you wish to search for, e.g.: Testing.
+    ...    *${user name}* = the, case sensitive, username of the user you wish to search for, e.g.: Steve
+    ...    *${full name}* = the, case sensitive, full name of th euser you wish to search for e.g.: Steve Jefferies
+    ...
+    ...    *Example*
+    ...
+    ...    *Add Search User From Department* | Testing | Steve | Steve Jefferies
+    ${user_count}=    Get Matching Xpath Count    //div[contains(@id, 'userPanel')]
+    Input Text    ${search user selection}    ${department}
+    Robust Click    xpath=//span[text()="${username} (${full name})"]
+    Click Element    ${search text field}
+    Check Search User Present    ${user name}    ${full name}
+
+__Check page
+    [Arguments]    ${res name}    ${res snippet}    ${res path}    ${res type}
+    #could be more than one match by name, need to check all of them
+    ${name_res}    Set Variable    ${EMPTY}
+    ${snippet_res}    Set Variable    ${EMPTY}
+    ${path_res}    Set Variable    ${EMPTY}
+    ${type_res}    Set Variable    ${EMPTY}
+    ${element_count}=    Get Matching Xpath Count    //div[contains(@id, 'Results')]/a[contains(text(), '${res name}')]
+    : FOR    ${result_index}    IN RANGE    ${element_count}
+    \    Sleep    1s    #need to increment the timestamp
+    \    ${ID_TIME}=    Get Time
+    \    ${xpath_index}=    Evaluate    ${result_index}+1
+    \    Assign Id To Element    xpath=(//div[contains(@id, 'Results')]/a[contains(text(), '${res name}')])[${xpath_index}]    WD_SEARCH_RESULT_LINK_${ID_TIME}
+    \    ${RESULT LINK ID}    IDBSSelenium2Library.Get Element Attribute    xpath=//a[@id='WD_SEARCH_RESULT_LINK_${ID_TIME}']/..@id
+    \    Work Out Search Result Variables
+    \    ${name_res}    ${value}=    Run Keyword And Ignore Error    Check Search Result Name    ${RESULT LINK ID}    ${res name}
+    \    ${snippet_res}    ${value}=    Run Keyword And Ignore Error    Check Search Result Snippet    ${RESULT SNIPPET ID}    ${res snippet}
+    \    ${path_res}    ${value}=    Run Keyword And Ignore Error    Check Search Result Path    ${RESULT PATH ID}    ${res path}
+    \    ${type_res}    ${value}=    Run Keyword And Ignore Error    Check Search Result Type    ${RESULT TYPE ID}    ${res type}
+    \    #If all checks pass, exit the for loop, we have found the matching search result
+    \    Run Keyword If    '${name_res}'=='PASS' and '${snippet_res}'=='PASS' and '${path_res}'=='PASS' and '${type_res}'=='PASS'    Exit For Loop
+    Run Keyword Unless    '${name_res}'=='PASS' and '${snippet_res}'=='PASS' and '${path_res}'=='PASS' and '${type_res}'=='PASS'    Capture Page Screenshot
+    Run Keyword Unless    '${name_res}'=='PASS' and '${snippet_res}'=='PASS' and '${path_res}'=='PASS' and '${type_res}'=='PASS'    Fail    Did not find search result
+
+__Check next page
+    [Arguments]    ${res name}    ${res snippet}    ${res path}    ${res type}
+    Robust Click    EWB-PagerControls-Above-PageNext
+    Wait For No Mask
+    __Check page    ${res name}    ${res snippet}    ${res path}    ${res type}
+
+Update Created TIMESTAMP for Latest entities
+    [Arguments]    ${NoDays}    ${EntityName}
+    [Documentation]    Keyword updates the timestamp for entities in the LATEST entity Version table (Applicable only to NON CDC world)
+    ...
+    ...    This assumes you are already logged in as EWB_SUB user for now.
+    ...
+    ...    ${noDays} - is the number of days you want to roll back the timestamp e.g. 1
+    ...
+    ...    ${EntityName} - the name of the entity you want to modify e.g. SEARCH_DATE_${unique_id}_Created Yesterday
+    Execute    update latest_entity_versions set TIME_STAMP = TIME_STAMP - INTERVAL '${NoDays}' DAY, created_time_stamp = created_time_stamp - INTERVAL '${NoDays}' DAY where ENTITY_NAME='${EntityName}'
+
+Update Timestamp for OLD Entities
+    [Arguments]    ${NoDays}    ${EntityID}    ${Version}
+    [Documentation]    Keyword updates the timestamp for Old entity Versions (Applicable only to NON CDC world)
+    ...
+    ...    This assumes you are already logged in as EWB_SUB user for now.
+    ...
+    ...    ${noDays} - is the number of days you want to roll back the timestamp e.g. 1
+    ...
+    ...    ${EntityName} - the name of the entity you want to modify e.g. SEARCH_DATE_${unique_id}_Created Yesterday
+    ...
+    ...    ${Version} - the historic version you want to update e.g. 2
+    Execute    update entity_versions set TIME_STAMP = TIME_STAMP - INTERVAL '${NoDays}' DAY where ENTITY_ID='${EntityID}' AND ENTITY_VERSION='${version}'

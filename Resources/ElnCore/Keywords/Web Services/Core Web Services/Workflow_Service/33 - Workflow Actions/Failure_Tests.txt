@@ -1,0 +1,22 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows/{workflowid}/actions* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+Non Requesting User Without VIEW_ANY_TASKS permission
+    [Documentation]    Call as user without permissions to use the endpoint, should get 403 response
+    [Tags]       EWB-WEB-ICM-PI004-W004-01
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    Set Suite Variable    ${SERVICES USERNAME}    WorkflowWSUser7
+    Set Suite Variable    ${SERVICES PASSWORD}    WorkflowWSUser71
+    Get Workflow Actions And Expect Error    ${sign off workflow id}    403
+
+Invalid Workflow Id
+    [Documentation]    Call for a invalid workflow id, should get 404 response
+    [Tags]       EWB-WEB-ICM-PI004-W004-02
+    Get Workflow Actions And Expect Error    IDONTEXIST    404

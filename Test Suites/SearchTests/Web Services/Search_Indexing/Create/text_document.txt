@@ -1,0 +1,65 @@
+*** Settings ***
+Documentation     Created for story SH-1296
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Document - Not Save
+    [Documentation]    Record - Add Document - Not Save
+    ...    - verify record is not searchable by document text \ without saving
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    Sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+
+Record - Add Document - Draft
+    [Documentation]    Record - Add Document - Draft
+    ...    - verify record is searchable by document text \ after draft saving
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    sleep    ${wait}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Document - Version
+    [Documentation]    Record - Add Document - Version
+    ...    - verify record is searchable by document text after version saving
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    sleep    ${wait}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    Project
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${testCaseTime}=    Get Current Date
+    Set Suite Variable    ${testCaseTime}
+    ${uniqueSearchText}=    Generate Random String    10    [NUMBERS]abcdef    # generates a 10 char "hex" string
+    Set Suite Variable    ${uniqueSearchText}
+    ${experimentName}=    Set Variable    Experiment ${testCaseTime}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Set Suite Variable    ${experimentId}
+    Set Suite Variable    ${experimentName}
+    Set Suite Variable    ${documentId}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

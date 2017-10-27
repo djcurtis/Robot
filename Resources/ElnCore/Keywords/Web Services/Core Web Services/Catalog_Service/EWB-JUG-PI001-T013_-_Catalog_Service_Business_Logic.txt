@@ -1,0 +1,191 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+...
+...               EWB-SAPI-SSP-CAT-TERM.S008
+...               EWB-SAPI-SSP-CAT-TERM.S009
+...               EWB-SAPI-SSP-CAT-TERM.S010
+...               EWB-SAPI-SSP-CAT-TERM.S012
+...               EWB-SAPI-SSP-CAT-PROP.S009
+...               EWB-SAPI-SSP-CAT-PROP.S010
+...               EWB-SAPI-SSP-CAT-PROP.S011
+...               EWB-SAPI-SSP-CAT-PROP.S012
+...               EWB-SAPI-SSP-CAT-DIC.S004
+...               EWB-SAPI-SSP-CAT-DIC.S005
+...               EWB-SAPI-SSP-CAT-DIC.S006
+...               EWB-SAPI-SSP-CAT-DIC.S007
+Test Setup        Catalog Business Logic Setup
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+13-01 - Term and Property Creation
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to create a term.
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Create Root Element And Expect Error    TERM    401    SecurityTerm1    SecurityTerm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Create Root Element    TERM    SecurityTerm1    SecurityTerm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+13-02 - Term and Property Editing
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to edit a term.
+    ${new element id}=    Create Root Element    TERM    SecurityTerm2    SecurityTerm2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Update Element And Expect Error    ${new element id}    TERM    401    SecurityTerm2    SecurityTerm2Update    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Update Element    ${new element id}    TERM    SecurityTerm2    SecurityTerm2Update    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+13-03 - Term and Property Deletion
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to delete a term.
+    ${new element id}=    Create Root Element    TERM    SecurityTerm3    SecurityTerm3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Delete Element And Expect Error    ${new element id}    401
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Delete Element    ${new element id}
+
+13-04 - Term and Property Viewing
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to view a term.
+    ${new element id}=    Create Root Element    TERM    SecurityTerm4    SecurityTerm4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Get Root Element    ${new element id}
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Get Root Element    ${new element id}
+
+13-05 - Dictionary Creation
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to create a dictionary.
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Create Root Element And Expect Error    DICTIONARY    401    SecurityDictionary1    SecurityDictionary1    true
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Create Root Element    DICTIONARY    SecurityDictionary1    SecurityDictionary1    true
+
+13-06 - Dictionary Editing
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to edit a dictionary.
+    ${new element id}=    Create Root Element    DICTIONARY    SecurityDictionary2    SecurityDictionary2    true
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Update Element And Expect Error    ${new element id}    DICTIONARY    401    SecurityDictionary2    SecurityDictionary2Update    true
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Update Element    ${new element id}    DICTIONARY    SecurityDictionary2    SecurityDictionary2Update    true
+
+13-07 - Dictionary Deletion
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to delete a dictionary.
+    ${new element id}=    Create Root Element    DICTIONARY    SecurityDictionary3    SecurityDictionary3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Delete Element And Expect Error    ${new element id}    401
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Delete Element    ${new element id}
+
+13-08 - Dictionary Viewing
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to view a dictionary.
+    ${new element id}=    Create Root Element    DICTIONARY    SecurityDictionary4    SecurityDictionary4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Get Root Element    ${new element id}
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Get Root Element    ${new element id}
+
+13-09 - Tuple Creation
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to create a tuple.
+    ${new element id}=    Create Root Element    TERM    SecurityTuples1    SecurityTuples1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Create Tuple And Expect Error    ${new element id}    401    example    value1    value1    true
+    ...    true
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+
+13-10 - Tuple Editing
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to edit a tuple.
+    ${new element id}=    Create Root Element    TERM    SecurityTuples2    SecurityTuples2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new tuple id}=    Create Tuple    ${new element id}    example    value1    value1    true
+    ...    true
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Update Tuple And Expect Error    ${new element id}    ${new tuple id}    401    false    true
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Update Tuple    ${new element id}    ${new tuple id}    false    true
+
+13-11 - Tuple Deletion
+    [Documentation]    Checks that the authenticated user must have the DICTIONARIES_ADMINISTRATION permission to delete a tuple.
+    ${new element id}=    Create Root Element    TERM    SecurityTuples3    SecurityTuples3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new tuple id}=    Create Tuple    ${new element id}    example    value1    value1    true
+    ...    true
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Delete Tuple And Expect Error    ${new element id}    ${new tuple id}    401
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Delete Tuple    ${new element id}    ${new tuple id}
+
+13-12 - Tuple Viewing
+    [Documentation]    Checks that the authenticated user does not need any permission to view tuples.
+    ${new element id}=    Create Root Element    TERM    SecurityTuples4    SecurityTuples4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new tuple id}=    Create Tuple    ${new element id}    example    value1    value1    true
+    ...    true
+    Set Suite Variable    ${SERVICES USERNAME}    Stephen
+    Set Suite Variable    ${SERVICES PASSWORD}    Stephen1
+    Get Tuple    ${new element id}    ${new tuple id}
+
+*** Keywords ***
+Catalog Business Logic Setup
+    Set Suite Variable    ${SERVICES USERNAME}    Administrator
+    Set Suite Variable    ${SERVICES PASSWORD}    Administrator
+    Run Keyword And Ignore Error    Delete User System Role    Stephen    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    Delete User System Role    Stephen    DICTIONARY_ADMINISTRATOR_ROLE
+    Catalog Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/Stephen
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+    Comment    ${User System Roles}=    Get Json Value    ${RESPONSE BODY}    /systemRoles
+    Comment    Should Be Equal    ${User System Roles}    null

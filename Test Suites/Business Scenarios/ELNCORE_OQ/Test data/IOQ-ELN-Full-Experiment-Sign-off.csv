@@ -1,0 +1,7 @@
+USER_NAME,HISTORY_TYPE,MESSAGE
+*** USERNAME ***,LOGIN_SUCCEEDED,User '*** USERNAME ***' logged in successfully
+*** USERNAME ***,ENTITY_LOCKED, entity 'Locked' of type '/Root/Administrators/OQ Project/*** EXPERIMENT ***'
+*** USERNAME ***,ENTITY_VERSION_SIGNED,Actioner signed off item 'Example Excel Document.xlsx' (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) from entity '/Root/Administrators/OQ Project/*** EXPERIMENT ***' (Experiment Completed [Actioner])
+*** USERNAME ***,ENTITY_VERSION_SIGNED,Actioner signed off item 'Example Office Document.docx' (application/vnd.openxmlformats-officedocument.wordprocessingml.document) from entity '/Root/Administrators/OQ Project/*** EXPERIMENT ***' (Experiment Completed [Actioner])
+*** USERNAME ***,ENTITY_UNLOCKED, entity 'Unlocked' of type '/Root/Administrators/OQ Project/*** EXPERIMENT ***'
+*** USERNAME ***,LOGOUT,User '*** USERNAME ***' logged out

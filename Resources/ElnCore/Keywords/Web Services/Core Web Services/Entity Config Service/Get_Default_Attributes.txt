@@ -1,0 +1,21 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/entitytypes/{entityTypeName}/attributes/defaultattributes
+Suite Setup
+Force Tags        Entity Config Service
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+
+*** Test Cases ***
+Can get default attributes for a specific entity type
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIAttributeSequence
+    ${xml_response}=    Get Default Attributes    EXPERIMENT
+    Check Xml Contains Element    check attribute element exists    ${xml_response}    attribute    elementNamespace=http://entity.services.ewb.idbs.com
+    @{value}=    Get Element Attribute    ${xml_response}    attribute    name    elementNamespace=http://entity.services.ewb.idbs.com
+
+Cannot get default attributes for a invalid entity type
+    [Documentation]    If the entity type does not exist, then the HTTP status code 404 is returned to the client
+    ${xml_response}=    Get Default Attributes    BADID    404
+    Response Body Should Contain    Resource not found for given ID: No entity type name found.

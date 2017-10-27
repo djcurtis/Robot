@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cat:dictionary xmlns:cat="http://www.idbs.com/xml/ewb/catalog/catalog-2.0" id="e50abdd034b911e7b34a00000a14151d" enabled="true">
+  <cat:path><![CDATA[/OQ Test Catalog]]></cat:path>
+  <cat:description><![CDATA[OQ Test Catalog]]></cat:description>
+  <cat:dictionary id="ebbdad4034b911e7b34a00000a14151d" enabled="true">
+    <cat:path><![CDATA[/OQ Test Catalog/Spreadsheet OQ]]></cat:path>
+    <cat:description><![CDATA[Spreadsheet OQ]]></cat:description>
+    <cat:term id="097ae5a134ba11e7b34a00000a14151d" enabled="true" abstract="false">
+      <cat:path><![CDATA[/OQ Test Catalog/Spreadsheet OQ/OQ Half-Life]]></cat:path>
+      <cat:hierarchy>
+        <cat:inherited_term>
+          <cat:inherited_term_path><![CDATA[/IDBS-Applications/Core/Results Hub/Measure]]></cat:inherited_term_path>
+          <cat:inherited_term_id><![CDATA[7285F29DBC9B4271BAA9C963E15FA83F]]></cat:inherited_term_id>
+        </cat:inherited_term>
+      </cat:hierarchy>
+      <cat:properties>
+        <cat:property id="00d3793034ba11e7b34a00000a14151d" type="NUMBER" key="true" displayed="true" hidden="false">
+          <cat:name><![CDATA[value]]></cat:name>
+        </cat:property>
+      </cat:properties>
+      <cat:tuples />
+    </cat:term>
+    <cat:term id="2736494034ba11e7b34a00000a14151d" enabled="true" abstract="false">
+      <cat:path><![CDATA[/OQ Test Catalog/Spreadsheet OQ/OQ Sample]]></cat:path>
+      <cat:hierarchy>
+        <cat:inherited_term>
+          <cat:inherited_term_path><![CDATA[/IDBS-Applications/Core/Results Hub/Object]]></cat:inherited_term_path>
+          <cat:inherited_term_id><![CDATA[75F5C118A5304605A0235D85736C4FB1]]></cat:inherited_term_id>
+        </cat:inherited_term>
+      </cat:hierarchy>
+      <cat:properties>
+        <cat:property id="26d7395034ba11e7b34a00000a14151d" type="STRING" key="true" displayed="true" hidden="false">
+          <cat:name><![CDATA[name]]></cat:name>
+          <cat:constraint><![CDATA[<= 1000]]></cat:constraint>
+        </cat:property>
+      </cat:properties>
+      <cat:tuples />
+    </cat:term>
+    <cat:term id="198fdef134ba11e7b34a00000a14151d" enabled="true" abstract="false">
+      <cat:path><![CDATA[/OQ Test Catalog/Spreadsheet OQ/OQ Series]]></cat:path>
+      <cat:hierarchy>
+        <cat:inherited_term>
+          <cat:inherited_term_path><![CDATA[/IDBS-Applications/Core/Results Hub/General Condition]]></cat:inherited_term_path>
+          <cat:inherited_term_id><![CDATA[87892C4B47744e9dBA5AA1891AB0CC23]]></cat:inherited_term_id>
+        </cat:inherited_term>
+      </cat:hierarchy>
+      <cat:properties>
+        <cat:property id="1456702034ba11e7b34a00000a14151d" type="NUMBER" key="true" displayed="true" hidden="false">
+          <cat:name><![CDATA[value]]></cat:name>
+        </cat:property>
+      </cat:properties>
+      <cat:tuples />
+    </cat:term>
+    <cat:term id="4183af4034ba11e7b34a00000a14151d" enabled="true" abstract="false">
+      <cat:path><![CDATA[/OQ Test Catalog/Spreadsheet OQ/OQ Study]]></cat:path>
+      <cat:hierarchy>
+        <cat:inherited_term>
+          <cat:inherited_term_path><![CDATA[/IDBS-Applications/Core/Results Hub/General Condition]]></cat:inherited_term_path>
+          <cat:inherited_term_id><![CDATA[87892C4B47744e9dBA5AA1891AB0CC23]]></cat:inherited_term_id>
+        </cat:inherited_term>
+      </cat:hierarchy>
+      <cat:properties>
+        <cat:property id="3ff1ebb034ba11e7b34a00000a14151d" type="STRING" key="false" displayed="false" hidden="false">
+          <cat:name><![CDATA[Study Code]]></cat:name>
+          <cat:constraint><![CDATA[<= 1000]]></cat:constraint>
+        </cat:property>
+        <cat:property id="3c00663034ba11e7b34a00000a14151d" type="STRING" key="true" displayed="true" hidden="false">
+          <cat:name><![CDATA[Study Name]]></cat:name>
+          <cat:constraint><![CDATA[<= 1000]]></cat:constraint>
+        </cat:property>
+      </cat:properties>
+      <cat:tuples>
+        <cat:tuple id="46f5ba4034ba11e7b34a00000a14151d" enabled="true" default="false">
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Name]]></cat:name>
+            <cat:value><![CDATA[Study 1]]></cat:value>
+          </cat:data>
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Code]]></cat:name>
+            <cat:value><![CDATA[S1]]></cat:value>
+          </cat:data>
+        </cat:tuple>
+        <cat:tuple id="4dc3f9e034ba11e7b34a00000a14151d" enabled="true" default="false">
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Name]]></cat:name>
+            <cat:value><![CDATA[Study 2]]></cat:value>
+          </cat:data>
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Code]]></cat:name>
+            <cat:value><![CDATA[S2]]></cat:value>
+          </cat:data>
+        </cat:tuple>
+        <cat:tuple id="51c2028034ba11e7b34a00000a14151d" enabled="true" default="false">
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Name]]></cat:name>
+            <cat:value><![CDATA[Study 3]]></cat:value>
+          </cat:data>
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Code]]></cat:name>
+            <cat:value><![CDATA[S3]]></cat:value>
+          </cat:data>
+        </cat:tuple>
+        <cat:tuple id="55d4567034ba11e7b34a00000a14151d" enabled="true" default="false">
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Name]]></cat:name>
+            <cat:value><![CDATA[Study 4]]></cat:value>
+          </cat:data>
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Code]]></cat:name>
+            <cat:value><![CDATA[S4]]></cat:value>
+          </cat:data>
+        </cat:tuple>
+        <cat:tuple id="5abf7e3034ba11e7b34a00000a14151d" enabled="true" default="false">
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Name]]></cat:name>
+            <cat:value><![CDATA[Study 5]]></cat:value>
+          </cat:data>
+          <cat:data>
+            <cat:name><![CDATA[OQ Study:Study Code]]></cat:name>
+            <cat:value><![CDATA[S5]]></cat:value>
+          </cat:data>
+        </cat:tuple>
+      </cat:tuples>
+    </cat:term>
+  </cat:dictionary>
+</cat:dictionary>
+

@@ -1,0 +1,53 @@
+*** Settings ***
+Documentation     Test cases covering POST requests on the mount point: /services/1.0/catalog/elements/{idorpath}
+...
+...               This test covers the following SSP items:
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+05-01 - POST Root Dictionary Update
+    [Documentation]    Updates a standard root dictionary using a POST request
+    ${new element id}=    Create Root Element    DICTIONARY    NonUpdatedDictionary    NonUpdatedDictionary    true
+    Update Element    ${new element id}    DICTIONARY    aUpdatedDictionary    aUpdatedDescription    true
+
+05-02 - POST Root Dictionary Update 255 Characters in name
+    ${new element id}=    Create Root Element    DICTIONARY    08-02    08-02    true
+    Update Element    ${new element id}    DICTIONARY    b11112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111    b255Name2    true
+
+05-03 - POST Root Dictionary Update 256 Characters
+    ${new element id}=    Create Root Element    DICTIONARY    08-03    08-03    true
+    Update Element And Expect Error    ${new element id}    DICTIONARY    400    b22221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    b256Name2    true
+
+05-04 - POST Root Dictionary Update Spaces In Name
+    ${new element id}=    Create Root Element    DICTIONARY    08-04    08-04    true
+    Update Element    ${new element id}    DICTIONARY    bSpaces Name2    bSpacesName2    true
+
+05-05 - POST Root Dictionary Update 255 Characters in Description
+    ${new element id}=    Create Root Element    DICTIONARY    08-05    08-05    true
+    Update Element    ${new element id}    DICTIONARY    b255Description2    b11112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111    true
+
+05-06 - POST Root Dictionary 256 Characters In Description
+    ${new element id}=    Create Root Element    DICTIONARY    08-06    08-06    true
+    Update Element And Expect Error    ${new element id}    DICTIONARY    400    b256Description2    b22221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    true
+
+05-07 - POST Root Dictionary Spaces In Description
+    ${new element id}=    Create Root Element    DICTIONARY    08-07    08-07    true
+    Update Element    ${new element id}    DICTIONARY    bSpacesDescription2    bSpaces Description2    true
+
+05-08 - POST Root Dictionary Enable
+    ${new element id}=    Create Root Element    DICTIONARY    08-08    08-08    false
+    Update Element    ${new element id}    DICTIONARY    08-08    08-08    true
+
+05-09 - POST Root Dictionary Disable
+    ${new element id}=    Create Root Element    DICTIONARY    08-09    08-09    true
+    Update Element    ${new element id}    DICTIONARY    08-09    08-09    false
+
+05-10 - POST Root Dictionary Invalid State
+    [Documentation]    Deferred defect = QC13864
+    ${new element id}=    Create Root Element    DICTIONARY    08-10    08-10    true
+    Update Element And Expect Error    ${new element id}    DICTIONARY    500    08-10    08-10    invalid
+
+05-11 - POST Root Dictionary Invalid ID
+    Update Element And Expect Error    12300000123    DICTIONARY    404    UpdatedDictionary    UpdatedDescription    true

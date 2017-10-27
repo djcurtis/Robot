@@ -1,0 +1,148 @@
+*** Settings ***
+Documentation     Script for SH-1225 - data creation script to be run:
+...               - on a EWB 10.1.3 system
+...
+...               (this script is written to work with the corresponding data verification scripts)
+Suite Setup       setup suite
+Library           Collections
+Library           DateTime
+Library           EntityAPILibrary
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../migration_tool_variables.txt
+
+*** Test Cases ***
+V - Delete item - Vsave
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - version save experiment
+    ...    - delete the text entity
+    ...    - version save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Version_Delete_Version    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    Delete_Text_Document_Version_Delete_Version
+    sleep    ${wait}
+    entity_api.Delete Document    ${experimentId}    ${documentId}
+    Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+
+V - Delete item - Dsave
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - version save experiment
+    ...    - delete the text entity
+    ...    - draft save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Version_Delete_Draft    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    Delete_Text_Document_Version_Delete_Draft
+    sleep    ${wait}
+    entity_api.Delete Document    ${experimentId}    ${documentId}
+    Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+
+V - Delete item - Cache
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - version save experiment
+    ...    - delete the text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Version_Delete_NotSave    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    Delete_Text_Document_Version_Delete_NotSave
+    sleep    ${wait}
+    entity_api.Delete Document    ${experimentId}    ${documentId}
+
+D - Delete item - Vsave
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - draft save experiment
+    ...    - delete the text entity
+    ...    - version save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Draft_Delete_Version    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    Delete_Text_Document_Draft_Delete_Version
+    sleep    ${wait}
+    entity_api.Delete Document    ${experimentId}    ${documentId}
+    Version Save    ${experimentId}    Data Added
+
+D - Delete item - Dsave
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - draft save experiment
+    ...    - delete the text entity
+    ...    - draft save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Draft_Delete_Draft    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    Delete_Text_Document_Draft_Delete_Draft
+    sleep    ${wait}
+    entity_api.Delete Document    ${experimentId}    ${documentId}
+    Draft Save    ${experimentId}
+
+D - Delete item - Cache
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - draft save experiment
+    ...    - delete the text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Draft_Delete_NotSave    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    Delete_Text_Document_Draft_Delete_NotSave
+    sleep    ${wait}
+    entity_api.Delete Document    ${experimentId}    ${documentId}
+
+V - Delete record
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - version save experiment
+    ...    - delete the experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Version_DeleteRecord    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    Delete_Text_Document_Version_DeleteRecord
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended
+
+D - Delete record
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - draft save experiment
+    ...    - delete the experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Delete_Experiment_Document_Draft_DeleteRecord    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    Delete_Text_Document_Draft_DeleteRecord
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended
+
+V - Delete project
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - version save experiment
+    ...    - delete the project containing experiment
+    ${projectId2}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Project_Delete2
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId2}    Delete_Experiment_Document_Version_DeleteProject    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    Delete_Text_Document_Version_DeleteProject
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${projectId2}    As Intended    As Intended
+
+D - Delete project
+    [Documentation]    Script to:
+    ...    - create experiment + text entity
+    ...    - draft save experiment
+    ...    - delete the project containing experiment
+    ${projectId3}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Project_Delete3
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId3}    Delete_Experiment_Document_Draft_DeleteProject    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem1
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    Delete_Text_Document_Draft_DeleteProject
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${projectId3}    As Intended    As Intended
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    0s
+    Set Suite Variable    ${wait}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${GROUP_NAME}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Project_Delete
+    Set Suite Variable    ${projectId}

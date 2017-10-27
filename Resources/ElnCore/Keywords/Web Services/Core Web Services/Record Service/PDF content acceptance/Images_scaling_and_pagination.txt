@@ -1,0 +1,97 @@
+*** Settings ***
+Documentation     This set of tests look at the webclient being able to correctly PDF an experiment containing rastered images that require different ratios of scaling and pagination.
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup image test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           OperatingSystem
+Resource          add_image_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Fits - full page
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that fits almost exactly into the page space
+    [Tags]    EWB-WEB-PI002-W017-01
+    Do Image Test
+
+Fits - remaining easy
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that occupies part of the page leaving plenty of space and then a second image that easily fits into the remaining space
+    [Tags]    EWB-WEB-PI002-W017-02
+    Do Image Test With Spacer
+
+Fits - remaining just
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that occupies part of the page leaving plenty of space and then a second image that only just fits into the remaining space
+    [Tags]    EWB-WEB-PI002-W017-03
+    Do Image Test With Spacer
+
+Fits once scaled
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that is wider than the page (but not taller) and must scale to fit
+    [Tags]    EWB-WEB-PI002-W017-04
+    Do Image Test
+
+Fits once scaled - vertical needs scale to fit
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that is wider than the page, and also taller than the page, but the scaling implied by fitting to the width means the image will also fit by height once scaled
+    [Tags]    EWB-WEB-PI002-W017-05
+    Do Image Test
+
+Fits once scaled - remaining
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that occupies part of the page and a second image that is wider than the page (but not taller) and must scale to fit in the remaining space
+    [Tags]    EWB-WEB-PI002-W017-06
+    Do Image Test With Spacer
+
+Fits once scaled - remaining vertical needs scale to fit
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when it contains an image that is wider than the page, and also taller than the remaining space, but the scaling implied by fitting to the width means the image will also fit the remaining height once scaled
+    [Tags]    EWB-WEB-PI002-W017-07
+    Do Image Test With Spacer
+
+Too long moved to next - remaining
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when less than the full page is available for the item, and the image added is taller than the remaining space (but not wider). In this case, the item is added to next page unscaled.
+    [Tags]    EWB-WEB-PI002-W017-08
+    Do Image Test With Spacer
+
+Scaled image too long moved to next - remaining
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when less than the full page is available for the item, and the item's image is too wide for the page so needs some scaling anyway, but the image would be rendered with less scaling (higher resolution) if placed in the next page (as placing it in the available area on the same page would mean extra scaling so the image could fit by height). So in this case the item is rendered on the next page.
+    [Tags]    EWB-WEB-PI002-W017-09
+    Do Image Test With Spacer
+
+Image too long for full is scaled
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when less than the full page is available for the item, and the image is too tall even for a full page (but not wider than the page). In this case the image is rendered on a new page and scaled to fit.
+    [Tags]    EWB-WEB-PI002-W017-10
+    Do Image Test With Spacer
+
+Scaled image still too long for full is scaled
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web is correct when less than the full page is available for the item, and the image, which is too wide to fit the page, is too tall even for a full page once scaled for width. In this case the image is rendered on a new page and scaled to fit into the page by height (as scaling to fit by height implies a greater scaling factor).
+    [Tags]    EWB-WEB-PI002-W017-11
+    Do Image Test With Spacer
+
+*** Keywords ***
+Do Image Test
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.jpg    test JPG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Do Image Test With Spacer
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.jpg    test JPG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Setup image test case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${configuration_xml}=    Get File    ${test_data_folder}\\input\\print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${configuration_xml}
+    Set Suite Variable    ${experiment_id}

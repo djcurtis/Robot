@@ -1,0 +1,53 @@
+*** Settings ***
+Documentation     This test suite looks at putting page breaks into an experiment before PDFing it and asserting if this resolves as expected
+Suite Setup       Setup standard suite
+Resource          test utilities.txt
+Resource          add_image_items_to_experiments.txt
+Resource          add_items_to_experiments.txt
+
+*** Test Cases ***
+Two items split by page Break
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains two items separated by a page break
+    [Tags]    EWB-WEB-PI002-W026-01
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Add Page Break    ${experiment_id}
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Page Break followed by an Item
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a page break on the first page and then an item after it
+    [Tags]    EWB-WEB-PI002-W026-02
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add Page Break    ${experiment_id}
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Item followed by two page breaks
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains an item and then two page breaks (should be the item on page 1, white space on page 1 and then a blank page 2)
+    [Tags]    EWB-WEB-PI002-W026-03
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Add Page Break    ${experiment_id}
+    Add Page Break    ${experiment_id}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Two items split by 4 page Breaks
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains two items separated by 4 page breaks (should be item on page 1, white space on page 1, 3 blank pages and item 4 on page 5)
+    [Tags]    EWB-WEB-PI002-W026-04
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Add Page Break    ${experiment_id}
+    Add Page Break    ${experiment_id}
+    Add Page Break    ${experiment_id}
+    Add Page Break    ${experiment_id}
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

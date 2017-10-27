@@ -1,0 +1,222 @@
+*** Settings ***
+Library           OracleLibrary
+Library           IDBSSelenium2Library
+Resource          general_resource.txt
+Resource          system_resource.txt
+Resource          attributes_resource.txt
+
+*** Variables ***
+${web link widget formal name}    http://ewb.idbs.com/widgets/ewb-web-links
+${add link button}    new-link
+${delete link button}    ${EMPTY}
+${move link up button}    ${EMPTY}
+${move link down button}    ${EMPTY}
+${save link button}    save-changes
+${cancel link button}    cancel-changes
+${add link title field}    title-textbox
+${add link address field}    address-textbox
+
+*** Keywords ***
+Open Add Link Panel
+    [Arguments]    ${widget caption}
+    [Documentation]    Clicks on the Add Link button to open the Add Links panel of a Web Links Widget identified by ${widget caption}.
+    ...
+    ...    If two web links widgets are present with the same caption this keyword will not be able to select the one you want (will default to first instance in the column of it). Ensure all web links widgets on the page have a unique caption - use the Change Widget Caption keyword from landing_page_resource.txt to do this.
+    ...
+    ...    *This keyword puts focus on the iframe. When you have completed acting within the frame (e.g.: have entered the title, address and pressed Save for a link) use the Unselect Frame keyword before continuing the test*
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Robust Click    ${add link button}
+    Wait Until Page Contains Element    ${add link title field}
+    Wait Until Element Is Visible    ${add link title field}    10s
+    Wait Until Element Is Visible    ${add link address field}    10s
+    Sleep    1s    Wait for widget animation to complete
+
+Add Link To Widget
+    [Arguments]    ${widget caption}    ${title}    ${address}
+    [Documentation]    Adds a link with title ${title} and address ${address} to a web links widget identified by ${widget caption}.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${address} is the web address (which must contain http:// or https:// to be valid) of the link
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    Open Add Link Panel    ${widget caption}
+    Input Text    ${add link title field}    ${title}
+    Input Text    ${add link address field}    ${address}
+    Robust Click    ${save link button}
+    Wait Five Seconds
+    Unselect Frame
+    Check Link Is Present    ${widget caption}    ${title}
+    Unselect Frame
+
+Check Link Is Present
+    [Arguments]    ${widget caption}    ${title}
+    [Documentation]    *Precede this keyword with an Unselect Widget keyword*
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Element Should be Visible    xpath=//div[@class="ui-block-a"]/a[contains(text(),'${title} ')]
+    Unselect Frame
+
+Title of Link In Position Should Be
+    [Arguments]    ${widget caption}    ${title}    ${position}
+    [Documentation]    Check that the link in a web links widget identified by ${widget caption} in a position identified by ${position} is ${title}.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Unselect Frame
+    Wait Until Keyword Succeeds    15s    1s    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    ${link name in position}=    Get Text    xpath=//div[id('editable-listview')]/div[${position}]/div/a
+    Should Be Equal As Strings    ${link name in position}    ${title}
+    Unselect Frame
+
+Move Link Up
+    [Arguments]    ${widget caption}    ${position}    ${title}
+    [Documentation]    This keyword moves a link in a web links widget (identified by ${widget caption}) identified by ${title} and ${position} up one position and confirms the new position after the action is ${position}-1.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Title of Link In Position Should Be    ${widget caption}    ${title}    ${position}
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Robust Click    xpath=//div[@id=('editable-listview')]/div[${position}]/div[2]/div[3]/button
+    ${new position}=    Evaluate    ${position} -1
+    Unselect Frame
+    Title of Link In Position Should Be    ${widget caption}    ${title}    ${new position}
+
+Move Link Down
+    [Arguments]    ${widget caption}    ${position}    ${title}
+    [Documentation]    This keyword moves a link in a web links widget (identified by ${widget caption}) identified by ${title} and ${position} down one position and confirms the new position after the action is ${position}+1.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Title of Link In Position Should Be    ${widget caption}    ${title}    ${position}
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Robust Click    xpath=//div[@id=('editable-listview')]/div[${position}]/div[2]/div[2]/button
+    ${new position}=    Evaluate    ${position} +1
+    Unselect Frame
+    Title of Link In Position Should Be    ${widget caption}    ${title}    ${new position}
+
+Move Link
+    [Arguments]    ${widget caption}    ${position}    ${title}    ${direction}
+    [Documentation]    In a Web Links widget identified by ${widget caption} this moves a link identified by ${title} and ${position} and confirms that the link has moved to the expected position. The direction of movement is specified by the user as either UP or DOWN.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...    ${direction} specifies the direction to move the link and accepts values of *UP* or *DOWN*
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Run Keyword If    '${direction}' == 'UP'    Move Link Up    ${widget caption}    ${position}    ${title}
+    Run Keyword If    '${direction}' == 'DOWN'    Move Link Down    ${widget caption}    ${position}    ${title}
+
+Delete Link
+    [Arguments]    ${widget caption}    ${title}    ${position}
+    [Documentation]    In a web links widget identified by ${widget caption} this selects and deletes a link identified by ${title} and ${position} and checks that the ${title} is no longer present.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    Title of Link In Position Should Be    ${widget caption}    ${title}    ${position}
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Robust Click    xpath=//div[@id=('editable-listview')]/div[${position}]/div[2]/div[1]/button
+    Page Should Not Contain    ${title}
+    Unselect Frame
+
+Open Edit Link Panel
+    [Arguments]    ${widget caption}    ${position}    ${title}
+    [Documentation]    In a web links widget identified by ${widget caption} this clicks on a link identified by ${title} and ${position} and confirms that the Edit Link Panel is open
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    ...
+    ...    *This leaves the iframe selected, if you wish to continue the test outside of the iframe use the Unselect Frame keyword after this keyword*
+    Title of Link In Position Should Be    ${widget caption}    ${title}    ${position}
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Robust Click    xpath=//div[id('editable-listview')]/div[${position}]/div/a
+    Wait Until Element Is Visible    ${add link title field}    10s
+    Wait Until Element Is Visible    ${add link address field}    10s
+
+Edit Link
+    [Arguments]    ${widget caption}    ${title}    ${position}    ${new title}    ${new address}
+    [Documentation]    In a web links widget identified by ${widget caption} select a link identified by ${title} and ${position} and replace ${title} with ${new title} and the address with ${address} and save, then check that the ${new title} is present in the same ${position}
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${new title} is the new value to input for title, if this is to stay the same then enter the value of ${title}
+    ...    ${new address} is the new value to input for the address field, if this is to stay the same then enter the already present value. This must have either http:// or https:// at te start to be valid.
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Open Edit Link Panel    ${widget caption}    ${position}    ${title}
+    Input Text    ${add link title field}    ${new title}
+    Input Text    ${add link address field}    ${new address}
+    Robust Click    ${save link button}
+    Comment    MouseDown    ${save link button}
+    Comment    MouseUp    ${save link button}
+    Wait Five Seconds
+    Unselect Frame
+    Title of Link In Position Should Be    ${widget caption}    ${new title}    ${position}
+    Address of Link in Position Should Be    ${widget caption}    ${new address}    ${position}
+
+Follow Link
+    [Arguments]    ${widget caption}    ${title}    ${position}    ${new window}    ${new URL}
+    [Documentation]    *This leaves focus on the newly opened browser window. To return to the original browser window use the Switch Browser keyword*
+    ...
+    ...    In a web links widget identified by ${widget caption} this clicks on a link identified by ${title} and ${position} and checks that a new web page opens identified by ${new URL}.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...    ${new window} is the page title (e.g.: BBC - Homepage) of the newly opened window
+    ...    ${new URL} is the address of the page that should be opened when following the link
+    Title of Link In Position Should Be (Non-Edit)    ${widget caption}    ${title}    ${position}
+    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Robust Click    //a[contains(@class,'wl-link') and text()='${title} ']
+    Unselect Frame
+    Wait Five Seconds
+    Wait Five Seconds
+    Select Window    ${new window}
+    ${page URL}=    Get Location
+    ${page URL}=    Evaluate    '${page URL}'.lower()
+    ${new URL}=    Evaluate    '${new URL}'.lower()
+    Should Be Equal As Strings    ${page URL}    ${new URL}
+    Close Window
+    Select Window    Main
+
+Address of Link in Position Should Be
+    [Arguments]    ${widget caption}    ${address}    ${position}
+    [Documentation]    Check that the link in a web links widget identified by ${widget caption} in a position identified by ${position} has the address ${address}.
+    ...
+    ...    ${address} is the address of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Wait Until Keyword Succeeds    15s    1s    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    Page Should Contain Element    xpath=//div[@id='editable-listview']/div[${position}]/div/a[@title='${address}']
+    Unselect Frame
+
+Title of Link In Position Should Be (Non-Edit)
+    [Arguments]    ${widget caption}    ${title}    ${position}
+    [Documentation]    Check that the link in a web links widget identified by ${widget caption} in a position identified by ${position} is ${title}.
+    ...
+    ...    ${title} is the displayed name of the link
+    ...    ${position} is the number of the link in the list, integer value with 1 being top of the list, 2 being second in list, etc.
+    ...    ${widget caption} is the displayed name of the widget, if multiple widgets have the same caption the first instance of the widget will be selected (leftmost column, top most position) - To set the name of a widget caption use the *Change Widget Caption* keyword found in landing_page_resource.txt.
+    ...
+    ...    *Precede use of this keyword with the Unselect Frame keyword*
+    Wait Until Keyword Succeeds    10s    1s    Select Frame    xpath=//div[contains(@class, 'ewb-label header-title') and text()="${widget caption}"]/../../../div[2]/iframe
+    ${link name in position}=    Get Text    xpath=//ul[@id='link-data']/li[${position}]/a
+    Should Be Equal As Strings    ${link name in position}    ${title}
+    Unselect Frame
+
+Wait Until Element Contains
+    [Arguments]    ${arg1}    ${arg2}

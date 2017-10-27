@@ -1,0 +1,73 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows/{workflowid}* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Library           XMLLibrary
+Library           OperatingSystem
+
+*** Test Cases ***
+BEGINS_WITH
+    Validate Property Constraint    BEGINS_WITH    0    0    0    0    0
+    ...    0    1    tasks
+
+BETWEEN
+    Validate Property Constraint    BETWEEN    0    0    0    0    1
+    ...    0    0    tasks
+
+CONTAINS
+    Validate Property Constraint    CONTAINS    0    0    0    0    0
+    ...    0    1    tasks
+
+DOES_NOT_CONTAIN
+    Validate Property Constraint    DOES_NOT_CONTAIN    0    0    0    0    0
+    ...    0    1    tasks
+
+EXISTS
+    Validate Property Constraint    EXISTS    1    0    0    0    0
+    ...    1    0    tasks
+
+GREATER_THAN
+    Validate Property Constraint    GREATER_THAN    0    1    1    0    0
+    ...    0    0    tasks
+
+GREATER_THAN_OR_EQUAL_TO
+    Validate Property Constraint    GREATER_THAN_OR_EQUAL_TO    0    1    1    0    0
+    ...    0    0    tasks
+
+IN
+    Validate Property Constraint    IN    0    0    0    0    0
+    ...    1    0    tasks
+
+IS
+    Validate Property Constraint    IS    0    1    1    1    0
+    ...    1    1    tasks
+
+IS_NOT
+    Validate Property Constraint    IS_NOT    0    1    1    0    0
+    ...    1    1    tasks
+
+IS_THIS_MONTH
+    Validate Property Constraint    IS_THIS_MONTH    0    0    0    1    0
+    ...    0    0    tasks
+
+IS_THIS_WEEK
+    Validate Property Constraint    IS_THIS_WEEK    0    0    0    1    0
+    ...    0    0    tasks
+
+LESS_THAN
+    Validate Property Constraint    LESS_THAN    0    1    1    0    0
+    ...    0    0    tasks
+
+LESS_THAN_OR_EQUAL_TO
+    Validate Property Constraint    LESS_THAN_OR_EQUAL_TO    0    1    1    0    0
+    ...    0    0    tasks
+
+NOT_BETWEEN
+    Validate Property Constraint    NOT_BETWEEN    0    0    0    0    1
+    ...    0    0    tasks
+
+NOT_EXISTS
+    Validate Property Constraint    NOT_EXISTS    1    0    0    0    0
+    ...    1    0    tasks

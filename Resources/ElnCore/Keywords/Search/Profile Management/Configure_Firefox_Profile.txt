@@ -1,0 +1,30 @@
+*** Settings ***
+Documentation     Used by the automation system to configure automated client machines to have the correct Firefox profile configurations.
+...
+...               Performs 3 Actions:
+...               - Adds a server certification exception for the server hosting the web application server
+...               - Adds a preferences file which supresses some redundant security, performance and update settings
+...               - Adds a mime types file which contains an entry for the EWB spreadsheet type to supress the open type dialog
+Library           OperatingSystem
+
+*** Variables ***
+${PROFILE_DIR}    ${EMPTY}
+${CERT_KEY}       OID.2.16.840.1.101.3.4.2.1\tB9:92:2D:8E:76:9B:AE:E2:5E:50:C1:54:BE:81:A4:1A:40:63:58:DB:BF:FB:B3:09:BF:61:72:28:4B:33:3D:6F\tMU\tAAAAAAAAAAAAAAAEAAAAbwQk/jIwbTEfMB0GCSqGSIb3DQEJARYQc3VwcG9ydEBp \ ZGJzLmNvbTELMAkGA1UEBhMCR0IxEjAQBgNVBAcTCUd1aWxkZm9yZDENMAsGA1UE \ ChMESURCUzEaMBgGA1UEAxMRRS1Xb3JrQm9vayBTZXJ2ZXI=
+${SERVER}         ${EMPTY}
+${SSL_PORT}       8443
+
+*** Test Cases ***
+Add Server Certificate Exception to Firefox Profile
+    [Documentation]    Adds a server certification exception for the server hosting the web application server
+    ${lowercase_server}=    Evaluate    '${SERVER}'.lower()
+    ${cert_override_string}=    Set Variable    ${lowercase_server}:${SSL_PORT}\t${cert_key}
+    Append To File    ${PROFILE_DIR}/cert_override.txt    ${cert_override_string}\n
+
+Add Preferences File to Firefox Profile
+    [Documentation]    Adds a preferences file which supresses some redundant security, performance and update settings
+    ...
+    Copy File    ${CURDIR}/SeleniumProfile/prefs.js    ${PROFILE_DIR}/prefs.js
+
+Add Mime Types File to Firefox Profile
+    [Documentation]    Adds a mime types file which contains an entry for the EWB spreadsheet type to supress the open type dialog
+    Copy File    ${CURDIR}/SeleniumProfile/mimeTypes.rdf    ${PROFILE_DIR}/mimeTypes.rdf

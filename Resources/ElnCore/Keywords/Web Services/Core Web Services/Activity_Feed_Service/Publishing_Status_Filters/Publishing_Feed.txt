@@ -1,0 +1,1064 @@
+*** Settings ***
+Documentation     *Test Suite Coverage*
+...
+...               EWB Publishing Service Public API: tests the ability to retrieve publishing state changes filtered by one or more criteria.
+...
+...               *Request Endpoint*
+...               | Action | URL | Query Parameters | Optional |
+...               | POST | ewb/services/1.0/feeds/publishing | \ n/a |
+Suite Setup       Suite Setup
+Suite Teardown    #Suite Teardown
+Force Tags        requires_desktop
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ../../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Resource          ../../../../Libraries/Web Services/REST_ActivityFeedService/rest_activity_service_resource.txt
+Resource          ../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_document_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_non_record_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_printing_publishing_options_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_record_entity_actions_resource.txt
+# Library           EntityAPILibrary
+Library           CheckPDFLibrary    # Library to compare PDFs
+Library           RobotRemoteAgent
+Library           TestDataGenerationLibrary
+Library           FileLibrary
+Library           Collections
+# Library           OracleLibrary
+Resource          ../../Record Service/PDF content acceptance/add_items_to_experiments.txt
+Library           XMLLibrary
+Library           CheckLibrary
+Library           IDBSSwingLibrary
+Library           IDBSHttpLibrary
+Library           String
+
+*** Variables ***
+${PUBLISHING_STATUS_TERM_PATH}    /Experiment%20Dictionaries/Publishing%20Status    # The Catalog path of the Publishing Status term
+
+*** Test Cases ***
+Filter by: DATATYPE
+    [Documentation]    *Tests that data can be filtered by DATATYPE*
+    ...
+    ...    *Testdata*
+    ...    Note: each item will have 2 records in the PUBLISHING_EVENTS table. As the state changes are for
+    ...    - Unpublished to Published
+    ...    - Published to (state as defined in test)
+    ...
+    ...    | *DATATYPE* | *RecordITEMS* |
+    ...    | FILE | \ ANTELOPE.xlsx , \ BEAR.docx , \ KOALA_PDFfile.pdf |
+    ...    | CHEMISTRY | CATS.chembss |
+    ...    | \ HTML_TEXT | DINGO.html, JACKAL_text.txt |
+    ...    | WEB_LINK | www.idbs.com |
+    ...    | \ FORM | FIREFLY_form.dsf |
+    ...    | \ FILE_LINK | GIRAFFE_filelink.txt |
+    ...    | \ SKETCH | HORSE.svg |
+    ...    | \ SPREADSHEET | IGUANA.bss |
+    ${Experiment_Name}=    Set Variable    FilterbyDATATYPE
+    ${StartTime}=    Get Time    epoch    NOW - 1s
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Completed    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Deactivated    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    Withdrawn    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    Pending    204
+    Update Publishing State    ${Item5_ID}    ${Item5_EVID}    Completed    204
+    Update Publishing State    ${Item6_ID}    ${Item6_EVID}    Deactivated    204
+    Update Publishing State    ${Item7_ID}    ${Item7_EVID}    Withdrawn    204
+    Update Publishing State    ${Item8_ID}    ${Item8_EVID}    Pending    204
+    Update Publishing State    ${Item9_ID}    ${Item9_EVID}    Completed    204
+    Update Publishing State    ${Item10_ID}    ${Item10_EVID}    Deactivated    204
+    Update Publishing State    ${Item11_ID}    ${Item11_EVID}    Withdrawn    204
+    Unlock Entity    ${experiment_ID}
+    ${EndTime}=    Get Time    epoch    NOW + 2s
+    ${fromTime}=    Set Variable    ${StartTime}000
+    ${toTime}=    Set Variable    ${EndTime}000
+    #Filter by DataTYPE=FILE    Note: includes time filters put in place so not to bring back data from other testcases.
+    ${dataType}=    Set Variable    FILE
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><dataTypes>${dataType}</dataTypes></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    Comment    #extracts from the response, the elements containing the testPath
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    6
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/ANTELOPE.xlsx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[1]    /${Project_PATH1}/${Experiment_Name}/ANTELOPE.xlsx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[2]    /${Project_PATH1}/${Experiment_Name}/BEAR.docx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[3]    /${Project_PATH1}/${Experiment_Name}/BEAR.docx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[4]    /${Project_PATH1}/${Experiment_Name}/KOALA_PDFfile.pdf
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[5]    /${Project_PATH1}/${Experiment_Name}/KOALA_PDFfile.pdf
+    #Filter by DataTYPE=FILE    Note: includes time filters put in place so not to bring back data from other testcases.
+    ${dataType}=    Set Variable    HTML_TEXT
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><dataTypes>${dataType}</dataTypes></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    4
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/DINGO.html
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[1]    /${Project_PATH1}/${Experiment_Name}/DINGO.html
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[2]    /${Project_PATH1}/${Experiment_Name}/JACKAL_text.txt
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[3]    /${Project_PATH1}/${Experiment_Name}/JACKAL_text.txt
+    #Filter by DataTYPE=CHEMISTRY    Just verifies expected count
+    ${dataType}=    Set Variable    CHEMISTRY_SPREADSHEET
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><dataTypes>${dataType}</dataTypes></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    2
+    #Filter by DataTYPE=FORM    Just verifies expected count
+    ${dataType}=    Set Variable    FORM
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><dataTypes>${dataType}</dataTypes></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    2
+    #Filter by DataTYPE=WEB_LINK    Just verifies expected count
+    ${dataType}=    Set Variable    WEB_LINK
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><dataTypes>${dataType}</dataTypes></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    2
+    #Filter by DataTYPE=SPREADSHEET    Just verifies expected count
+    ${dataType}=    Set Variable    SPREADSHEET
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><dataTypes>${dataType}</dataTypes></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    2
+
+Filter by: PATH
+    [Documentation]    *Test Coverage:*
+    ...    Filter Feed by PATH
+    ${Experiment_Name}=    Set Variable    FilterbyPATH
+    Create initial testdata-small    ${Experiment_Name}    ${Project_ID1}
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Completed    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Pending    204
+    Unlock Entity    ${experiment_ID}
+    ${testPath}=    Set Variable    /${Project_PATH1}/${Experiment_Name}/Animal_1.html
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><paths>${testPath}</paths></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    #extracts from the response, the elements containing the testPath
+    @{result_xml}=    XMLLibrary.Get Element Xml From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link[@title="${testPath}"]
+    Length Should Be    ${result_xml}    2
+    Run Keyword And Continue On Failure    Should Not Contain    @{result_xml}[0]    title="/${Project_PATH1}/${Experiment_Name}/Animal_2.html"
+    Run Keyword And Continue On Failure    Should Not Contain    @{result_xml}[1]    title="/${Project_PATH1}/${Experiment_Name}/Animal_2.html"
+
+Filter by: From and To TIMESTAMP
+    [Documentation]    *Tests that data can be filtered by FROM TIMESTAMP and TO TIMESTAMP*
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp></publishingActivityRequest>
+    ...
+    ...    Note: each item states will be changes from
+    ...    - Published to (state as defined in test)
+    ...    - Times will be taken a various points, request will query btwn each point the taken points
+    ...
+    ...
+    ...    *Testdata*
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    ${Experiment_Name}=    Set Variable    FilterbyTIMESTAMP1
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    Sleep    5s
+    ${StartTime}=    Get Time    epoch    NOW - 2s
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Completed    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Completed    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    Completed    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    Completed    204
+    Update Publishing State    ${Item5_ID}    ${Item5_EVID}    Completed    204
+    Sleep    5s
+    ${MidTime}=    Get Time    epoch    NOW - 2s
+    Update Publishing State    ${Item6_ID}    ${Item6_EVID}    Deactivated    204
+    Update Publishing State    ${Item7_ID}    ${Item7_EVID}    Deactivated    204
+    Update Publishing State    ${Item8_ID}    ${Item8_EVID}    Deactivated    204
+    Update Publishing State    ${Item9_ID}    ${Item9_EVID}    Deactivated    204
+    Update Publishing State    ${Item10_ID}    ${Item10_EVID}    Deactivated    204
+    Update Publishing State    ${Item11_ID}    ${Item11_EVID}    Deactivated    204
+    Unlock Entity    ${experiment_ID}
+    ${EndTime}=    Get Time    epoch    NOW + 2s
+    #timefilter1
+    ${fromTime}=    Set Variable    ${StartTime}000
+    ${toTime}=    Set Variable    ${MidTime}000
+    ${testPath}=    Set Variable    /${Project_PATH1}/${Experiment_Name}
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><paths>${testPath}</paths></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    Comment    #extracts from the response, the elements containing the testPath
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    5
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/ANTELOPE.xlsx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[1]    /${Project_PATH1}/${Experiment_Name}/BEAR.docx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[2]    /${Project_PATH1}/${Experiment_Name}/CATS.chembss
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[3]    /${Project_PATH1}/${Experiment_Name}/DINGO.html
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[4]    /${Project_PATH1}/${Experiment_Name}/Web Link
+    #timefilter2    validated - by checking number of items & publishing state value
+    ${fromTime}=    Set Variable    ${MidTime}000
+    ${toTime}=    Set Variable    ${EndTime}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    Completed
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    Deactivated
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    6
+
+Filter by: From_TIMESTAMP: To_STATE
+    [Documentation]    *Tests that data can be filtered by FROM TIMESTAMP and TO STATE*
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>
+    ...
+    ...    Note: each item states will be changes from
+    ...    - Published to (state as defined in test)
+    ...    - Times will be taken a various points, request will query btwn each point the taken points
+    ...
+    ...
+    ...    *Testdata*
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    ${StartTime}=    Get Time    epoch
+    ${Experiment_Name}=    Set Variable    FilterbyFROM_TIMESTAMP
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    #Creates Unique Publishing Status values in catalog for use in this test only so that dataset is limited to this test run
+    ${term_id}=    Get Term Id From Path    ${PUBLISHING_STATUS_TERM_PATH}
+    Run Keyword    Create Tuple    ${term_id}    status    open-${StartTime}    open-${StartTime}    true
+    ...    false
+    Sleep    5s
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item5_ID}    ${Item5_EVID}    open-${StartTime}    204
+    Sleep    5s
+    ${MidTime}=    Get Time    epoch    NOW - 2s
+    Update Publishing State    ${Item6_ID}    ${Item6_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item7_ID}    ${Item7_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item8_ID}    ${Item8_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item9_ID}    ${Item9_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item10_ID}    ${Item10_EVID}    open-${StartTime}    204
+    Update Publishing State    ${Item11_ID}    ${Item11_EVID}    open-${StartTime}    204
+    Unlock Entity    ${experiment_ID}
+    ${EndTime}=    Get Time    epoch    NOW + 2s
+    #timefilter1    validated - by checking number of items
+    ${toState}=    Set Variable    open-${StartTime}
+    ${fromTime}=    Set Variable    ${StartTime}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    11
+    #timefilter2    validated - by checking number of items    200
+    ${toState}=    Set Variable    open-${StartTime}
+    ${fromTime}=    Set Variable    ${MidTime}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    6
+
+Filter by: To_TIMESTAMP: To_STATE
+    [Documentation]    *Tests that data can be filtered by TO TIMESTAMP and TO STATE*
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>
+    ...
+    ...
+    ...    *Testdata*
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    ${StartTime}=    Get Time    epoch
+    ${Experiment_Name}=    Set Variable    FilterbyTO_TIMESTAMP
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    #Creates Unique Publishing Status values in catalog for use in this test only so that dataset is limited to this test run
+    ${term_id}=    Get Term Id From Path    ${PUBLISHING_STATUS_TERM_PATH}
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    close-${StartTime}    close-${StartTime}    true
+    ...    false
+    Sleep    5s
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item5_ID}    ${Item5_EVID}    close-${StartTime}    204
+    Sleep    5s
+    ${MidTime}=    Get Time    epoch    NOW - 2s
+    Update Publishing State    ${Item6_ID}    ${Item6_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item7_ID}    ${Item7_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item8_ID}    ${Item8_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item9_ID}    ${Item9_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item10_ID}    ${Item10_EVID}    close-${StartTime}    204
+    Update Publishing State    ${Item11_ID}    ${Item11_EVID}    close-${StartTime}    204
+    Unlock Entity    ${experiment_ID}
+    ${EndTime}=    Get Time    epoch    NOW + 2s
+    #timefilter1    validated - by expecting a failure when trying to get elements as there are ZERO elements
+    ${toState}=    Set Variable    close-${StartTime}
+    ${toTime}=    Set Variable    ${StartTime}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Expect Error    CheckAssertionError: 'Failed to find attribute title for xpath .//{http://www.w3.org/2005/Atom}link in XML string. See log for full XML String. Stopping test case execution.'    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    #timefilter2    validated - by checking number of items
+    ${toState}=    Set Variable    close-${StartTime}
+    ${toTime}=    Set Variable    ${MidTime}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    5
+    #timefilter3    validated - by checking number of items
+    ${toState}=    Set Variable    close-${StartTime}
+    ${toTime}=    Set Variable    ${EndTime}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    11
+
+Filter by: FROM - TO STATE
+    [Documentation]    *Tests that data can be filtered by Publishing Status Transitions*
+    ...
+    ...    i.e filters for records with Publishing State transitiions e.g. from Published to Completed etc.
+    ...
+    ...    *Request*:
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><fromStates>${fromState}</fromStates><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>
+    ...
+    ...    *Testdata*
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    ${StartTime}=    Get Time    epoch
+    ${Experiment_Name}=    Set Variable    FilterbyPublishingStateTransitions
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    #Creates Unique Publishing Status values in catalog for use in this test only so that dataset is limited to this test run
+    ${term_id}=    Get Term Id From Path    ${PUBLISHING_STATUS_TERM_PATH}
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    happy-${StartTime}    happy-${StartTime}    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    sad-${StartTime}    sad-${StartTime}    true
+    ...    false
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    happy-${StartTime}    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    happy-${StartTime}    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    happy-${StartTime}    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    sad-${StartTime}    204
+    Update Publishing State    ${Item5_ID}    ${Item5_EVID}    sad-${StartTime}    204
+    Update Publishing State    ${Item6_ID}    ${Item6_EVID}    sad-${StartTime}    204
+    #update Publishing State for items1 & 2 again
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Deactivated    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Withdrawn    204
+    Unlock Entity    ${experiment_ID}
+    Comment    Filter1 - expected to return nothing    validated - by expecting a failure when trying to get elements as there are ZERO elements
+    ${fromState}=    Set Variable    Deactivated
+    ${toState}=    Set Variable    Unpublished
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><fromStates>${fromState}</fromStates><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    Run Keyword And Expect Error    CheckAssertionError: 'Failed to find attribute title for xpath .//{http://www.w3.org/2005/Atom}link in XML string. See log for full XML String. Stopping test case execution.'    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Comment    check1    validated - by checking number of items & title returned
+    ${fromState}=    Set Variable    Published
+    ${toState}=    Set Variable    happy-${StartTime}
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><fromStates>${fromState}</fromStates><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    3
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/ANTELOPE.xlsx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[1]    /${Project_PATH1}/${Experiment_Name}/BEAR.docx
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[2]    /${Project_PATH1}/${Experiment_Name}/CATS.chembss
+    Comment    check2    validated - by checking number of items & title returned
+    ${fromState}=    Set Variable    happy-${StartTime}
+    ${toState}=    Set Variable    Withdrawn
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><fromStates>${fromState}</fromStates><toStates>${toState}</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    1
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/BEAR.docx
+
+Filter by: FROM STATE only
+    [Documentation]    *Tests that data can be filtered by Publishing Status Transitions FROM only*
+    ...    - \ filters for records FROM a \ Publishing State
+    ...
+    ...    *Request*:
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><fromStates>${fromState}</fromStates><toStates></toStates></stateTransitionFilters></publishingActivityRequest>>
+    ...
+    ...    *Testdata*
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    ${StartTime}=    Get Time    epoch
+    ${Experiment_Name}=    Set Variable    Filterby FROM PublishingState
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    #Creates Unique Publishing Status values in catalog for use in this test only so that dataset is limited to this test run
+    ${term_id}=    Get Term Id From Path    ${PUBLISHING_STATUS_TERM_PATH}
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    fat-${StartTime}    fat-${StartTime}    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    thin-${StartTime}    thin-${StartTime}    true
+    ...    false
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    fat-${StartTime}    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    fat-${StartTime}    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    thin-${StartTime}    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    thin-${StartTime}    204
+    #update Publishing State for items1 & 3 again
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Deactivated    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    Deactivated    204
+    Unlock Entity    ${experiment_ID}
+    #check1    validated - by checking number of items & title returned
+    ${fromState}=    Set Variable    thin-${StartTime}
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><fromStates>${fromState}</fromStates></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    1
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/CATS.chembss
+
+Filter by: CAUSES
+    [Documentation]    *Tests that data can be filtered by CAUSES*
+    ...    - also added timestamp filter to limit number of results
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${StartTime}=    Get Time    epoch    NOW - 1s
+    ${Experiment_Name1}=    Set Variable    APPLES
+    ${Experiment_Name2}=    Set Variable    BANANAS
+    Sleep    2s
+    Create initial testdata-small    ${Experiment_Name1}    ${Project_ID1}
+    Create initial testdata-no publish    ${Experiment_Name2}    ${Project_ID1}
+    #Login to EWB Client to create some UI causes
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Select E-WorkBook Main Window
+    Refresh Navigator Tree
+    Open Experiment    ${Project_PATH1}/${Experiment_Name2}
+    Select E-WorkBook Main Window
+    Publish current experiment
+    Close current record entity
+    Close E-WorkBook
+    ${EndTime}=    Get Time    epoch    NOW + 1s
+    ${fromTime}=    Set Variable    ${StartTime}000
+    ${toTime}=    Set Variable    ${EndTime}000
+    ${cause}=    Set Variable    UI_TRIGGERED
+    Comment    check1    #will do simple verification as there will be other tests running which will affect results
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    UI_TRIGGERED
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    PUBLISHING_WS_TRIGGERED
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${Project_PATH1}/${Experiment_Name2}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH1}/${Experiment_Name1}
+    Comment    check2    #will do simple verification as there will be other tests running which will affect results
+    ${cause}=    Set Variable    PUBLISHING_WS_TRIGGERED
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    PUBLISHING_WS_TRIGGERED
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    UI_TRIGGERED
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${Project_PATH1}/${Experiment_Name1}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH1}/${Experiment_Name2}
+
+Filter by: DELETE CAUSES
+    [Documentation]    *Tests that data can be filtered by CAUSES triggered by deletion of entities*
+    ...
+    ...    *Workflow*: \ published items are deleted as follows:
+    ...    - Published item deleted from experiment. \ (note item has to be published using thick client)
+    ...    - Experiment containing published items deleted via thick client
+    ...    - Experiment containing published items deleted via REST services
+    ...    - Project containing experiment containing published items deleted via thick client
+    ...
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${StartTime}=    Get Time    epoch    NOW - 5s
+    ${Experiment_Name1}=    Set Variable    DELETE ITEM
+    ${Experiment_Name2}=    Set Variable    DELETE VIA REST
+    ${Experiment_Name3}=    Set Variable    DELETE EXPERIMENT
+    ${Experiment_Name4}=    Set Variable    DELETE PROJECT
+    Sleep    2s
+    Create initial testdata-no publish    ${Experiment_Name1}    ${Project_ID1}    #document deletion will only trigger an event if the item was published via the thick client
+    Create initial testdata-small    ${Experiment_Name2}    ${Project_ID1}
+    #Deletes Experiment through Rest Services (statement here whilst Experiment_ID value has not been reset)    Cause = EXPERIMENT_DELETION
+    Rest_Entity_Service_Resource.Delete Entity    ${experiment_ID}    As Intended
+    Create initial testdata-small    ${Experiment_Name3}    ${Project_ID2}
+    Create initial testdata-small    ${Experiment_Name4}    ${Project_ID4}
+    #Login to EWB Client to perform deletions at various levels
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Select E-WorkBook Main Window
+    Refresh Navigator Tree
+    #Deletes @ Document level    Cause = DOCUMENT_DELETION
+    Open Experiment    ${Project_PATH1}/${Experiment_Name1}
+    Select E-WorkBook Main Window
+    Publish current experiment
+    Delete Document Item    Uploaded Document:    Animal_2.html
+    Save current record as version    ${ADMIN USER}    ${ADMIN PASSWD}
+    Close current record entity
+    Refresh Navigator Tree
+    #Deletes @ Experiment level    Cause = EXPERIMENT_DELETION
+    Delete Entity    ${Project_PATH2}/${Experiment_Name3}    ${ADMIN USER}    ${ADMIN PASSWD}
+    #Deletes @ Project Level    Cause = CONTAINER_DELETION
+    Delete Entity    ${Project_PATH4}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Close E-WorkBook
+    ${EndTime}=    Get Time    epoch    NOW + 5s
+    ${fromTime}=    Set Variable    ${StartTime}000
+    ${toTime}=    Set Variable    ${EndTime}000
+    Comment    check1=DOCUMENT_DELETION
+    ${cause}=    Set Variable    DOCUMENT_DELETION
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${cause}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    EXPERIMENT_DELETION
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    CONTAINER_DELETION
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${Project_PATH1}/${Experiment_Name1}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH1}/${Experiment_Name2}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH2}/${Experiment_Name3}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH4}/${Experiment_Name4}
+    Comment    check2=EXPERIMENT_DELETION
+    ${cause}=    Set Variable    EXPERIMENT_DELETION
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${cause}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    CONTAINER_DELETION
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${Project_PATH1}/${Experiment_Name2}
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${Project_PATH2}/${Experiment_Name3}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH4}/${Experiment_Name4}
+    Comment    check3=CONTAINER_DELETION
+    ${cause}=    Set Variable    CONTAINER_DELETION
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${cause}
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${Project_PATH4}/${Experiment_Name4}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH1}/${Experiment_Name1}
+    Comment    check4=To cover QC20568 to filter by PATH and cause DOCUMENT_DELETION
+    ${cause}=    Set Variable    DOCUMENT_DELETION
+    ${path}=    Set Variable    /${Project_PATH1}/${Experiment_Name1}/Animal_2.html
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><paths>${path}</paths><stateTransitionFilters><causes>${cause}</causes></stateTransitionFilters></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${cause}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    CONTAINER_DELETION
+    Run Keyword And Continue On Failure    Should Contain    ${feed}    ${path}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH2}/${Experiment_Name3}
+    Run Keyword And Continue On Failure    Should Not Contain    ${feed}    ${Project_PATH4}/${Experiment_Name4}
+
+Filter by: Everything
+    [Documentation]    *Tests that data can be filtered by all available filters combined*
+    ...
+    ...    *Request*:
+    ...
+    ...
+    ...
+    ...
+    ...    *Testdata*
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    ${StartTime}=    Get Time    epoch    NOW - 2s
+    ${Experiment_Name}=    Set Variable    EVERYTHING
+    Testdata Setup: FilterbyEverthing
+    ${EndTime}=    Get Time    epoch    NOW + 2s
+    ${Path}=    Set Variable    /${Project_PATH1}/${Experiment_Name}/KOALA_PDFfile.pdf
+    ${fromTime}    Set Variable    ${MidTime}000
+    ${toTime}=    Set Variable    ${EndTime}000
+    ${dataType}=    Set Variable    FILE
+    ${fromState}=    Set Variable    Pending
+    ${toState}=    Set Variable    Withdrawn
+    ${cause}=    Set Variable    PUBLISHING_WS_TRIGGERED
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"> <fromTimestamp>${fromTime}</fromTimestamp> <toTimestamp>${toTime}</toTimestamp><paths>${Path}</paths><dataTypes>${dataType}</dataTypes> <stateTransitionFilters><fromStates>${fromState}</fromStates> <toStates>${toState}</toStates> <causes>${cause}</causes> </stateTransitionFilters> </publishingActivityRequest>    200
+    Comment    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp> <toTimestamp>${toTime}</toTimestamp> <dataTypes>${dataType}</dataTypes></publishingActivityRequest>
+    ${feed}=    Get Response Body
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}link    title
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    1
+    Sort List    ${result_xml}
+    Run Keyword And Continue On Failure    Should Contain    @{result_xml}[0]    /${Project_PATH1}/${Experiment_Name}/KOALA_PDFfile.pdf
+
+Filter: No Data Found
+    [Documentation]    *Check that where no records are found - request does not fall over*
+    ${testPath}=    Set Variable    /NoSuchGroup/NoSuchProject/NoSuchExpt/Animal_1.html
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><paths>${testPath}</paths></publishingActivityRequest>    200
+
+InvalidRequestBody
+    [Documentation]    *Test Coverage*
+    ...    - Check that where the request body is invalid ie. it doesnt comply to SAPIPublishingActivityRequest DTO
+    ...    - HttpStatus 400 is returned
+    GET Publishing Feed    <?xml version="1.0" ?><publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com">>>/Root/Publishing_Feed_1406902544/GENERAL Project/EVERYTHING/KOALA_PDFfile.pdf</paths><fromTimestamp>1406902559000</fromTimestamp><toTimestamp>1406902569000</toTimestamp><dataTypes>FILE</dataTypes><stateTransitionFilters><fromStates>Pending</fromStates><toStates>Withdrawn</toStates><causes>PUBLISHING_WS_TRIGGERED </stateTransitionFilters></publishingActivityRequest>    400
+
+InvalidRequestBody-lists with null elements
+    [Documentation]    *Test Coverage*
+    ...    - Check that where the request body is invalid due to lists with null elements
+    ...    - HttpStatus 400 is returned
+    ...
+    ...    *Request Example*
+    ...
+    ...
+    ...    <?xml version="1.0" ?>
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com">
+    ...    <paths>/Root/Administrators/performance/publish</paths>
+    ...    <fromTimestamp>1396998000000</fromTimestamp>
+    ...    <toTimestamp>1415491200000</toTimestamp>
+    ...    <dataTypes/>
+    ...    <stateTransitionFilters>
+    ...    <fromStates/>
+    ...    <toStates/>
+    ...    <causes/>
+    ...    </stateTransitionFilters>
+    ...    </publishingActivityRequest>
+    GET Publishing Feed    <?xml version="1.0" ?><publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><paths>/Root/Administrators/performance/publish</paths><fromTimestamp>1396998000000</fromTimestamp><toTimestamp>1415491200000</toTimestamp><dataTypes></dataTypes><stateTransitionFilters><fromStates></fromStates><toStates></toStates><causes></causes></stateTransitionFilters></publishingActivityRequest>    400
+
+Invalid TIMESTAMP: incorrect format
+    [Documentation]    *Tests that INVALID TIMESTAMP formats are handled*
+    ...
+    ...    formats are invalid e.g \ abcd12345613
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp></publishingActivityRequest>
+    ${fromTime}=    Set Variable    rubbishstart
+    ${toTime}=    Set Variable    rubbishend
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp></publishingActivityRequest>    400
+
+Invalid TIMESTAMP: from greater than to
+    [Documentation]    *Tests that INVALID FROM TIMESTAMP and TO TIMESTAMP filters are handled*
+    ...
+    ...    From time is Greater than to time.
+    ...
+    ...    *Request*:
+    ...
+    ...    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp></publishingActivityRequest>
+    ${time}=    Get Time    epoch
+    ${fromTime}=    Set Variable    ${time}000
+    ${toTime}=    Set Variable    ${time}000
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><fromTimestamp>${fromTime}</fromTimestamp><toTimestamp>${toTime}</toTimestamp></publishingActivityRequest>    400
+    ${feed}=    Get Response Body
+    Check String Contains    Check response body has a meaningful message    ${feed}    Parameter fromTimestamp must be less than toTimestamp
+
+No Request Body
+    [Documentation]    *Test Coverage*
+    ...    - Check that where the request body is EMPTY
+    ...    - HttpStatus 400 is returned
+    GET Publishing Feed    ${EMPTY}    400
+
+Verify Elements, Attributes and Values Part1
+    [Documentation]    *Test Coverage:*
+    ...    - Verifies that the elements and attributes as defined for the feed are present
+    ...    - And where possible via automation, the values are verified to be as expected.
+    ${StartTime}=    Get Time    epoch
+    ${Experiment_Name}=    Set Variable    Verify Elements Attributes and Values Part1
+    Create initial testdata-small    ${Experiment_Name}    ${Project_ID1}
+    ${testPath}=    Set Variable    /${Project_PATH1}/${Experiment_Name}/Animal_1.html
+    Comment    get feed for item1 in experiment
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><paths>${testPath}</paths></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    Comment    validate element = entry
+    ${element}=    set variable    entry
+    Comment    validate attribute: entry\ item_entity_id
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    item_entity_id    \    False
+    Check String Contains    Confirm that the attribute: entry\ item_entity_id should equal the entityID of the published item    ${result_xml[0]}    ${Item1_ID}
+    Comment    validate attribute: entry\ item_version_id
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    item_version_id    \    False
+    Check String Contains    Confirm that the attribute: entry\ item_version_id should equal the entityVersionID of the published item    ${result_xml[0]}    ${Item1_EVID}
+    Comment    validate attribute: entry\ experiment_entity_id
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    experiment_entity_id    \    False
+    Check String Contains    Confirm that the attribute: entry\ experiment_entity_id should equal the enityID of the experiment that contains the published item    ${result_xml[0]}    ${experiment_ID}
+    Comment    validate attribute: entry\ experiment_version_id
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    experiment_version_id    \    False
+    Check String Contains    Confirm that the attribute: entry\ experiment_version_id should equal the enityVersionID of the experiment that contains the published item    ${result_xml[0]}    ${experiment_EVID}
+    Comment    validate attribute: entry\ cause
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    cause    \    False
+    Check String Contains    Confirm that the \ attribute: entry\ cause is PUBLISHING_WS_TRIGGERED    ${result_xml[0]}    PUBLISHING_WS_TRIGGERED
+    Comment    validate attribute: entry\ path
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    path    \    False
+    Check String Contains    Confirm that the \ attribute: entry\ path is correct    ${result_xml[0]}    ${testPath}
+    Comment    validate attribute: entry\ data_type
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    data_type    \    False
+    Check String Contains    Confirm that the \ attribute: entry\data_type value is as expected    ${result_xml[0]}    HTML_TEXT
+    Comment    validate attribute: entry\ from_state
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    from_state    \    False
+    Check String Contains    Confirm that the attribute value: entry\ from_state value is correct = Unpublished    ${result_xml[0]}    Unpublished
+    Comment    validate attribute: entry\ to_state
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}${element}    to_state    \    False
+    Check String Contains    Confirm that the \ attribute value: \ entry\ to_state value is correct=Published    ${result_xml[0]}    Published
+    Comment    validate element = entry > title
+    @{result_xml}=    XMLLibrary.Get Element Value From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}title    \    False
+    Check String Contains    Confirm that the \ element value: \ entry > title = cause of the publsihing change    ${result_xml[0]}    PUBLISHING_WS_TRIGGERED
+    Comment    validate element = entry >updated    just verify by count as exacted time will be hard to pin down
+    @{result_xml}=    XMLLibrary.Get Element Value From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}updated    \    False
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    1
+    Comment    validate element = entry >published    just verify presence by count as exacted published time will be hard to pin down
+    @{result_xml}=    XMLLibrary.Get Element Value From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}published    \    False
+    Run Keyword And Continue On Failure    Length Should Be    ${result_xml}    1
+    Comment    checks element entry > id is present. \ The value is just a feed value which is generated on the fly.
+    @{result_xml}=    Run Keyword And Continue On Failure    XMLLibrary.Get Element Value From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}id    False
+    Length Should Be    ${result_xml}    1
+
+Verify Elements, Attributes and Values Part2
+    [Documentation]    *Test Coverage:*
+    ...    - Verifies that the elements and attributes as defined for the feed are present
+    ...    - And where possible via automation, the values are verified to be as expected.
+    ${StartTime}=    Get Time    epoch
+    ${Experiment_Name}=    Set Variable    Verify Elements Attributes and Values Part2
+    Create initial testdata-small    ${Experiment_Name}    ${Project_ID1}
+    #Update using a different User other than Administrator
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Completed    204    Lynda    Lynda1
+    #Gets feed for item1 in experiment where publishing stated had been set to Completed in earlier step
+    ${testPath}=    Set Variable    /${Project_PATH1}/${Experiment_Name}/Animal_1.html
+    GET Publishing Feed    <publishingActivityRequest xmlns="http://feed.services.ewb.idbs.com"><paths>${testPath}</paths><stateTransitionFilters><fromStates>Published</fromStates><toStates>Completed</toStates></stateTransitionFilters></publishingActivityRequest>    200
+    ${feed}=    Get Response Body
+    Comment    validate element attribute = entry > link : href
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}link    href    \    False
+    Check String Contains    check that element attribute value "entry>link>href = \ entityVersionID    ${result_xml[0]}    ${Item1_EVID}
+    Comment    validate element attribute = entry > link : title
+    @{result_xml}=    XMLLibrary.Get Element Attribute From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}link    title    \    False
+    Check String Contains    check that element attribute value "entry>link>title = \ Entity Item Path    ${result_xml[0]}    ${testPath}
+    Comment    validate element = entry >author >name
+    @{result_xml}=    XMLLibrary.Get Element Value From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}author/{http://www.w3.org/2005/Atom}name    \    False
+    Check String Contains    check that element value "entry>author>namei" = \ user who changed publishing state    ${result_xml[0]}    Lynda
+    Comment    validate element = entry >author >uri    sqlquery gets the user_id from the database
+    ${query_result}=    Run SqlQuery    SELECT A.USER_ID FROM USERS A WHERE A.NAME='Lynda'    ${SEC_USERNAME}    ${SEC_PASSWORD}
+    @{result_xml}=    XMLLibrary.Get Element Value From Xpath    ${feed}    .//{http://www.w3.org/2005/Atom}entry/{http://www.w3.org/2005/Atom}author/{http://www.w3.org/2005/Atom}uri    \    False
+    Check String Contains    check that element value "entry >author > uri" = \ USER_ID in the database    ${result_xml[0]}    ${query_result[0][0]}
+
+*** Keywords ***
+Suite Setup
+    [Documentation]    *Sets up \ Test Suite Group and 3 Projects ready for use in \ tests in suite*
+    ...    - also adds additional values to Publishing Status catalog
+    ...
+    ...
+    ...    The following have been set @ suite level
+    ...
+    ...    | *Project EntityIDs* | *Project Path Variables* |
+    ...    | \ ${Project_ID1} | ${Project_PATH1} |
+    ...    | \ ${Project_ID2} | ${Project_PATH2} |
+    ...    | \ ${Project_ID3} | ${Project_PATH3} |
+    ${unique_ID}=    Get Time    epoch
+    Set Global Variable    ${unique_ID}
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    #Create Group
+    Set Suite Variable    ${Group_Name}    Publishing_Feed_${unique_ID}
+    ${Group_ID}=    Rest_Entity_Service_ Resource.Create Group    1    ${Group_Name}
+    Set Suite Variable    ${Group_ID}
+    ${Group_EVID}=    Get Entity Version ID    ${Group_ID}
+    Set Suite Variable    ${Group_EVID}
+    #Create Projects
+    #Project1
+    Set Suite Variable    ${Project_Name1}    GENERAL Project
+    ${Project_PATH1}=    set variable    Root/${Group_Name}/${Project_Name1}
+    Set Suite Variable    ${Project_PATH1}
+    ${Project_ID1}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name1}
+    Set Suite Variable    ${Project_ID1}
+    #Project2
+    Set Suite Variable    ${Project_Name2}    HAS_ACCESS
+    ${Project_PATH2}=    set variable    Root/${Group_Name}/${Project_Name2}
+    Set Suite Variable    ${Project_PATH2}
+    ${Project_ID2}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name2}
+    Set Suite Variable    ${Project_ID2}
+    #Project3
+    Set Suite Variable    ${Project_Name3}    NO_ACCESS
+    ${Project_PATH3}=    set variable    Root/${Group_Name}/${Project_Name3}
+    Set Suite Variable    ${Project_PATH3}
+    ${Project_ID3}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name3}
+    Set Suite Variable    ${Project_ID3}
+    #Project4
+    Set Suite Variable    ${Project_Name4}    DELETE_PROJECT
+    ${Project_PATH4}=    set variable    Root/${Group_Name}/${Project_Name4}
+    Set Suite Variable    ${Project_PATH4}
+    ${Project_ID4}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name4}
+    Set Suite Variable    ${Project_ID4}
+    Add Publishing States to Catalog
+
+Suite Teardown
+    [Documentation]    *Deletes at Group level Group created for Testsuite*
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    rest_entity_service_resource.Delete Entity    ${Group_ID}
+
+Update Publishing State
+    [Arguments]    ${entity_id}    ${entity_version_id}    ${newPublishingState}    ${ExpectedStatusCode}    ${Username}=Administrator    ${Password}=Administrator
+    [Documentation]    Sets the publishing state attribute of a record item via:
+    ...    - PUT request
+    ...    - *Endpoint / services/ 1.0 /entities / {entityID} / attributes*
+    ...
+    ...    request paramaters = entityVersionID, publishingState
+    ...
+    ...    *Arguments*
+    ...
+    ...    - ${entity_id} = guid of the record item to update
+    ...    - ${entity_version_id} = entity version id
+    ...    - ${newPublishingState} = new publishing state value
+    ...    - ${ExpectedStatusCode} = expected response
+    ...    - ${Username} = logged in user to performance action
+    ...    - ${Password} = user password
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${Username}    ${Password}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    PUT    ${ENTITY SERVICE ENDPOINT}/${entity_id}/attributes?entityVersionId=${entity_version_id}&publishingState=${newPublishingState}
+    Response Status Code Should Equal    ${ExpectedStatusCode}
+
+Create initial testdata-small
+    [Arguments]    ${Experiment_name}    ${Project_id}
+    [Documentation]    *For general setup of test entities in this suite*
+    ...    - Creates an experiment - with name as defined arguments passed in.
+    ...    - Inserts 2 documents.
+    ...    - Saves experiment as version and publishes so that published state = Published.
+    ${experiment_ID}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Experiment_name}
+    Set Test Variable    ${experiment_ID}
+    Lock Entity    ${experiment_ID}
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set Test Variable    ${Item2_EVID}
+    Commit Versioned Entity    ${experiment_ID}
+    Publish Record    ${experiment_ID}
+    Unlock Entity    ${experiment_ID}
+    ${experiment_EVID}=    Get Entity Version ID    ${experiment_ID}
+    Set Test Variable    ${experiment_EVID}
+
+Create initial testdata-large
+    [Arguments]    ${Experiment_name}    ${Project_id}
+    [Documentation]    *For general setup of test entities in this suite*
+    ...    - Creates an experiment - with name as defined arguments passed in.
+    ...    - Inserts *>10* documents of various types
+    ...    - Saves experiment as version and publishes so that published state = Published.
+    ...
+    ...    | *ItemNo* | *Item Name* | *DATATYPE* |
+    ...    | Item1 \ | ANTELOPE.xlsx | FILE |
+    ...    | Item2 | BEAR.docx | FILE |
+    ...    | Item3 | CATS.chembss | CHEMISTRY |
+    ...    | Item4 | DINGO.html | HTML_TEXT \ |
+    ...    | Item5 | Web Link | WEB_LINK |
+    ...    | Item6 | FIREFLY_form.dsf | FORM |
+    ...    | Item7 | GIRAFFE_filelink | FILE_LINK |
+    ...    | Item8 | HORSE_sketch.svg | SKETCH |
+    ...    | Item9 | IGUANA.bss | SPREADSHEET |
+    ...    | Item10 | JACKAL_text.txt | HTML_TEXT |
+    ...    | Item11 | KOALA_PDFfile.pdf | FILE |
+    #create experiment
+    ${experiment_ID}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Experiment_name}
+    Set Test Variable    ${experiment_ID}
+    Lock Entity    ${experiment_ID}
+    #insert excel
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/ANTELOPE.xlsx    application/x-idbs-file    FILE
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    #insert word file
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/BEAR.docx    application/x-idbs-file    FILE
+    Set Test Variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set Test Variable    ${Item2_EVID}
+    #insert chembss
+    ${Item3_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/CATS.chembss    application/x-idbs-spreadsheet-chemistry    CHEMISTRY_SPREADSHEET
+    Set Test Variable    ${Item3_ID}
+    ${Item3_EVID}=    Get Entity Version ID    ${Item3_ID}
+    Set Test Variable    ${Item3_EVID}
+    #insert html
+    ${Item4_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/DINGO.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item4_ID}
+    ${Item4_EVID}=    Get Entity Version ID    ${Item4_ID}
+    Set Test Variable    ${Item4_EVID}
+    #insert weblink
+    ${Item5_ID}=    Rest_Entity_Service_Resource.Add Web Link Entity    ${experiment_ID}    www.idbs.com
+    Set Test Variable    ${Item5_ID}
+    ${Item5_EVID}=    Get Entity Version ID    ${Item5_ID}
+    Set Test Variable    ${Item5_EVID}
+    #insert FORM
+    ${Item6_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/FIREFLY_form.dsf    application/x-idbs-form    FORM
+    Set Test Variable    ${Item6_ID}
+    ${Item6_EVID}=    Get Entity Version ID    ${Item6_ID}
+    Set Test Variable    ${Item6_EVID}
+    #insert filelink
+    ${Item7_ID}=    Add Link    ${experiment_ID}    GIRAFFE_filelink    FILE_LINK    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/GIRAFFE_filelink.txt
+    Set Test Variable    ${Item7_ID}
+    ${Item7_EVID}=    Get Entity Version ID    ${Item7_ID}
+    Set Test Variable    ${Item7_EVID}
+    #insert sketch    have to lock as the Add Link keyword unlocks the expt
+    EntityAPILibrary.Lock Entity    ${experiment_ID}
+    ${Item8_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/HORSE_sketch.svg    image/svg    SKETCH
+    Set Test Variable    ${Item8_ID}
+    ${Item8_EVID}=    Get Entity Version ID    ${Item8_ID}
+    Set Test Variable    ${Item8_EVID}
+    #insert idbs spreadsheet
+    ${Item9_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/IGUANA.bss    application/x-idbs-spreadsheet    SPREADSHEET
+    Set Test Variable    ${Item9_ID}
+    ${Item9_EVID}=    Get Entity Version ID    ${Item9_ID}
+    Set Test Variable    ${Item9_EVID}
+    #insert plain text item
+    ${Item10_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/JACKAL_text.txt    text/html    HTML_TEXT
+    Set Test Variable    ${Item10_ID}
+    ${Item10_EVID}=    Get Entity Version ID    ${Item10_ID}
+    Set Test Variable    ${Item10_EVID}
+    #insert plain text item
+    ${Item11_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/KOALA_PDFfile.pdf    application/x-idbs-file    FILE
+    Set Test Variable    ${Item11_ID}
+    ${Item11_EVID}=    Get Entity Version ID    ${Item11_ID}
+    Set Test Variable    ${Item11_EVID}
+    Wait Until Keyword Succeeds    60s    5s    Commit Versioned Entity    ${experiment_ID}
+    Comment    Commit Versioned Entity    ${experiment_ID}
+    Publish Record    ${experiment_ID}
+    Unlock Entity    ${experiment_ID}
+
+Create initial testdata-no publish
+    [Arguments]    ${Experiment_name}    ${Project_id}
+    [Documentation]    *For general setup of test entities in this suite*
+    ...    - Creates an experiment - with name as defined arguments passed in.
+    ...    - Inserts 2 documents.
+    ...    - Saves experiment as version. \ (Data Unpublished)
+    ${experiment_ID}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Experiment_name}
+    Set Test Variable    ${experiment_ID}
+    EntityAPILibrary.Lock Entity    ${experiment_ID}
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Activity Feed Service/Publishing Feed/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set Test Variable    ${Item2_EVID}
+    Commit Versioned Entity    ${experiment_ID}
+    EntityAPILibrary.Unlock Entity    ${experiment_ID}
+
+Add Publishing States to Catalog
+    [Documentation]    Creates Publishing Values needed for test.
+    ...
+    ...    If tuple value already exists, it will ignore error and continue.
+    ${term_id}=    Get Term Id From Path    ${PUBLISHING_STATUS_TERM_PATH}
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    Completed    Completed    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    Deactivated    Deactivated    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    Withdrawn    Withdrawn    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    Pending    Pending    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    status    Archived    Archived    true
+    ...    false
+
+GET Publishing Feed
+    [Arguments]    ${RequestBody}    ${expected_http_status}=200    ${User}=Administrator    ${UserPW}=Administrator
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${User}    ${UserPW}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Set Request Body    ${RequestBody}
+    Next Request May Not Succeed
+    POST    ${PUBLISHING_FEED_ENDPOINT_START}
+    Response Status Code Should Equal    ${expected_http_status}
+
+Testdata Setup: FilterbyEverthing
+    Create initial testdata-large    ${Experiment_Name}    ${Project_ID1}
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Pending    204
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Pending    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    Pending    204
+    Update Publishing State    ${Item4_ID}    ${Item4_EVID}    Pending    204
+    Update Publishing State    ${Item5_ID}    ${Item5_EVID}    Pending    204
+    Update Publishing State    ${Item6_ID}    ${Item6_EVID}    Pending    204
+    Update Publishing State    ${Item7_ID}    ${Item7_EVID}    Pending    204
+    Update Publishing State    ${Item8_ID}    ${Item8_EVID}    Pending    204
+    Update Publishing State    ${Item9_ID}    ${Item9_EVID}    Pending    204
+    Update Publishing State    ${Item10_ID}    ${Item10_EVID}    Pending    204
+    Update Publishing State    ${Item11_ID}    ${Item11_EVID}    Pending    204
+    #Update State part 2
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Withdrawn    204
+    ${MidTime}=    Get Time    epoch    NOW - +2s
+    Set Test Variable    ${MidTime}
+    Sleep    5s
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Archived    204
+    Update Publishing State    ${Item3_ID}    ${Item3_EVID}    Withdrawn    204
+    Update Publishing State    ${Item11_ID}    ${Item11_EVID}    Withdrawn    204
+    Unlock Entity    ${experiment_ID}
+
+Run SqlQuery
+    [Arguments]    ${SQLtoRun}    ${DB_USER}    ${DB_USERPW}
+    [Documentation]    Logs into database as the specfied user and runs SQL and returns output: for single values only
+    ...
+    ...    | *Arguments* | *Description* | *Example* |
+    ...    | ${SQLtoRun} | sqlquery to run \ | \ select UserID from table1 where name='Jane' |
+    ...    | ${DB_USER} | \ database schema | \ IDBS_EWB_CORE |
+    ...    | ${DB_USERPW} | \ database schema password | \ PASSWORD_CORE |
+    Connect To Database    ${DB_USER}    ${DB_USERPW}    //${DB_SERVER}/${ORACLE_SID}
+    ${SQLResults}=    # OracleLibrary.Query    ${SQLtoRun}
+    Disconnect From Database
+    [Return]    ${SQLResults}
+
+Delete Entity
+    [Arguments]    ${entity_to_delete}    ${username}    ${password}    ${reason}=Content Not Applicable
+    [Documentation]    *Deletes Entity via the Thick Client*
+    ...
+    ...    Deletes by selecting the entity in the EWB navigator & passes in Username and password and reason for deletion in the Authentication dialog. \ Can be used for
+    ...    - entities = group, project, experiment, custom type entities but *NOT* document type items.
+    ...
+    ...
+    ...    *Arguments*
+    ...    - ${entity_to_delete} e.g */Root/Group/Project/ExperimentName
+    ...    - ${username}
+    ...    - ${password}
+    ...    - ${reason} \ e.g. As Intended: \ \ default set to *Content Not Applicable*
+    ${pipe_separated_entity_to_delete}=    Replace String    ${entity_to_delete}    /    |
+    ${old_timeout}=    Set Jemmy Timeout    JTreeOperator.WaitNextNodeTimeout    1
+    Select From Navigator Tree Right-click Menu    ${pipe_separated_entity_to_delete}    .*Delete\\.\\.\\..* \ \ \ \ \
+    Select Dialog    Authentication    30
+    Push Button    ReasonForChangeField_button
+    Wait Until Keyword Succeeds    60 seconds    2 seconds    Click On List Item    class=JList    ${reason}
+    Insert Into Text Field    class=JStringField    ${username}
+    Insert Into Text Field    class=JStringPasswordField    ${password}
+    Push Button    authenticationDialogOKButton
+    Select E-WorkBook Main Window

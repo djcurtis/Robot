@@ -1,0 +1,80 @@
+*** Settings ***
+Documentation     This test suite ensures it is possible to use the /hierarchy endpoint to GET the hierarchy of an Abstract term's inheritances and that the returned data is in the correct format and structure.
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../Libraries/common_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+001 - Confirm Inheritance Hierarchy From Single Abstract Term
+    [Documentation]    Ensures that the hierarchy returned by a hierarchy GET request contains the correct data when inheriting form a single abstract term
+    ${abstract term id}=    Create Abstract Term    HierarchyTerm1    HierarchyTerm1    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    HierarchyTerm1    /HierarchyTerm1    true
+    ${concrete term id}=    Create Concrete Term By Inheritance    TargetTerm1    TargetTerm1    true    {"inheritedTerm":[{"inheritedTermPath":"/HierarchyTerm1","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${concrete term id}    term    ${concrete term id}    TargetTerm1    /TargetTerm1    true
+    ${new term properties}=    Get Term Hierarchy    ${concrete term id}
+    ${hierarchy}=    Get Json value    ${new term properties}    /inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy}    "/HierarchyTerm1"
+    Delete Element    ${concrete term id}
+    Delete Element    ${abstract term id}
+
+002 - Confirm Inheritance Hierarchy From Nested Abstract Terms
+    [Documentation]    Ensures that the hierarchy returned by a hierarchy GET request contains the correct data in the correct structure when inheriting from a term that itself inherits from multiple terms each of which are in turn inheriting from other terms, forming a nested hierarchy with multiple tiers of inheritance.
+    ${abstract term id1}=    Create Abstract Term    inheritanceTerm1    inheritanceTerm1    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id2}=    Create Abstract Term With Inheritance    inheritanceTerm1.1    inheritanceTerm1.1    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}    {"inheritedTerm":[{"inheritedTermPath":"/inheritanceTerm1","inheritedTermId":"${abstract term id1}"}]}
+    ${abstract term id3}=    Create Abstract Term With Inheritance    inheritanceTerm1.1.1    inheritanceTerm1.1.1    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}    {"inheritedTerm":[{"inheritedTermPath":"/inheritanceTerm1.1","inheritedTermId":"${abstract term id2}"}]}
+    ${abstract term id4}=    Create Abstract Term    inheritanceTerm2    inheritanceTerm2    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id5}=    Create Abstract Term With Inheritance    inheritanceTerm2.1    inheritanceTerm2.1    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}    {"inheritedTerm":[{"inheritedTermPath":"/inheritanceTerm2","inheritedTermId":"${abstract term id4}"}]}
+    ${concrete term id}=    Create Concrete Term By Inheritance    NestedTerm1    NestedTerm1    true    {"inheritedTerm": [{"inheritedTermPath": "/inheritanceTerm1.1.1","inheritedTermId":"${abstract term id3}"},{"inheritedTermPath": "/inheritanceTerm2.1","inheritedTermId": "${abstract term id5}"}]}}}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Hierarchy    ${concrete term id}
+    ${hierarchy1}=    Get Json value    ${new term properties}    /inheritedTerm/0/hierarchy/inheritedTerm/0/hierarchy/inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy1}    "/inheritanceTerm1"
+    ${hierarchy2}=    Get Json value    ${new term properties}    /inheritedTerm/0/hierarchy/inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy2}    "/inheritanceTerm1.1"
+    ${hierarchy3}=    Get Json value    ${new term properties}    /inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy3}    "/inheritanceTerm1.1.1"
+    ${hierarchy4}=    Get Json value    ${new term properties}    /inheritedTerm/1/hierarchy/inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy4}    "/inheritanceTerm2"
+    ${hierarchy5}=    Get Json value    ${new term properties}    /inheritedTerm/1/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy5}    "/inheritanceTerm2.1"
+    Delete Element    ${concrete term id}
+    Delete Element    ${abstract term id5}
+    Delete Element    ${abstract term id4}
+    Delete Element    ${abstract term id3}
+    Delete Element    ${abstract term id2}
+    Delete Element    ${abstract term id1}
+
+003 - Confirm Inheritance From Abstract Term With Nested Dictionary Path
+    [Documentation]    Ensures that a hierarchy GET request returns the correct data in the correct data structure when the target is nested within a sequence of dictionaries each of which contain terms that inherit form other abstract terms, forming a complex nested hierarchy with many tiers.
+    ${dictionary 1}=    Create Root Element    DICTIONARY    ABSTRACTdictionary1    ABSTRACTdictionary1    true
+    ${dictionary 2}=    Create Non-Root Element    ${dictionary 1}    DICTIONARY    ABSTRACTdictionary1.1    ABSTRACTdictionary1.1    true
+    ${dictionary 3}=    Create Root Element    DICTIONARY    ABSTRACTdictionary2    ABSTRACTdictionary2    true
+    ${abstract term id1}=    Create Non-Root Abstract Term    ${dictionary 1}    TERM    ABSTRACTterm1    ABSTRACTterm1    true
+    ...    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id2}=    Create Non-Root Abstract Term With Inheritance    ${dictionary 2}    TERM    ABSTRACTterm1.1    ABSTRACTterm1.1    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"ABSTRACTdictionary1/ABSTRACTdictionary1.1/ABSTRACTterm1","inheritedTermId":"${abstract term id1}"}]}    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id3}=    Create Non-Root Abstract Term With Inheritance    ${dictionary 2}    TERM    ABSTRACTterm1.1.1    ABSTRACTterm1.1.1    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"ABSTRACTdictionary1/ABSTRACTdictionary1.1/ABSTRACTterm1.1","inheritedTermId":"${abstract term id2}"}]}    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id4}=    Create Non-Root Abstract Term    ${dictionary 3}    TERM    ABSTRACTterm2    ABSTRACTterm2    true
+    ...    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id5}=    Create Non-Root Abstract Term With Inheritance    ${dictionary 3}    TERM    ABSTRACTterm2.1    ABSTRACTterm2.1    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"ABSTRACTdictionary2/ABSTRACTterm2","inheritedTermId":"${abstract term id4}"}]}    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${concrete term id}=    Create Concrete Term By Inheritance    aCONCRETEterm1    aCONCRETEterm1    true    {"inheritedTerm": [{"inheritedTermPath": "ABSTRACTdictionary1/ABSTRACTdictionary1.1/ABSTRACTterm1.1.1","inheritedTermId":"${abstract term id3}"},{"inheritedTermPath": "ABSTRACTdictionary2/ABSTRACTterm2.1","inheritedTermId": "${abstract term id5}"}]}}}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Hierarchy    ${concrete term id}
+    ${hierarchy1}=    Get Json value    ${new term properties}    /inheritedTerm/0/hierarchy/inheritedTerm/0/hierarchy/inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy1}    "/ABSTRACTdictionary1/ABSTRACTterm1"
+    ${hierarchy2}=    Get Json value    ${new term properties}    /inheritedTerm/0/hierarchy/inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy2}    "/ABSTRACTdictionary1/ABSTRACTdictionary1.1/ABSTRACTterm1.1"
+    ${hierarchy3}=    Get Json value    ${new term properties}    /inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy3}    "/ABSTRACTdictionary1/ABSTRACTdictionary1.1/ABSTRACTterm1.1.1"
+    ${hierarchy4}=    Get Json value    ${new term properties}    /inheritedTerm/1/hierarchy/inheritedTerm/0/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy4}    "/ABSTRACTdictionary2/ABSTRACTterm2"
+    ${hierarchy5}=    Get Json value    ${new term properties}    /inheritedTerm/1/inheritedTermPath
+    Should Be Equal As Strings    ${hierarchy5}    "/ABSTRACTdictionary2/ABSTRACTterm2.1"
+    Delete Element    ${concrete term id}
+    Delete Element    ${abstract term id5}
+    Delete Element    ${abstract term id4}
+    Delete Element    ${abstract term id3}
+    Delete Element    ${abstract term id2}
+    Delete Element    ${abstract term id1}
+    Delete Element    ${dictionary 1}
+    Delete Element    ${dictionary 3}

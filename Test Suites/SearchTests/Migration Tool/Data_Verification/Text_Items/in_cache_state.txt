@@ -1,0 +1,77 @@
+*** Settings ***
+Documentation     Script for SH-1225 - data verification to be run after:
+...               - the data creation scripts have been run on a EWB 10.1.3 system
+...               - the EWB system has been upgraded to 10.2.0
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+C | [Ad]->[Ac]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC1AC
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC1A0    1    ExperimentC1
+
+C | [Ad Bd]->[Ac Bd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC2AC
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC2A0    1    ExperimentC2
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC2B0    1    ExperimentC2
+
+C | [Av]->[Ac]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC3AC
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC3A1    1    ExperimentC3
+
+C | [Av Bv]->[Ac Bv]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC4AC
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC4A1    1    ExperimentC4
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC4B1    1    ExperimentC4
+
+C | [Av]->[Ad]->[Ac]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC5AC
+    Execute Free Text Search And Verify No Result    uniqueC5A1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC5A2    1    ExperimentC5
+
+C | [Av]->[Ad Bd]->[Ac Bd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC6AC
+    Execute Free Text Search And Verify No Result    uniqueC6A1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC6A2    1    ExperimentC6
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC6B0    1    ExperimentC6
+
+C | [Av]->[Ad Bd]->[Ac Bc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC7AC
+    Execute Free Text Search And Verify No Result    uniqueC7BC
+    Execute Free Text Search And Verify No Result    uniqueC7A1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC7A2    1    ExperimentC7
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC7B0    1    ExperimentC7
+
+C | [Av Bv]->[Ad Bv]->[Ac Bc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC8AC
+    Execute Free Text Search And Verify No Result    uniqueC8BC
+    Execute Free Text Search And Verify No Result    uniqueC8A1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC8B1    1    ExperimentC8
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC8A2    1    ExperimentC8
+
+C | [Av Bv Cv]->[Ad Bd Cv]->[Ac Bd Cv]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueC9AC
+    Execute Free Text Search And Verify No Result    uniqueC9A1
+    Execute Free Text Search And Verify No Result    uniqueC9B1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC9A2    1    ExperimentC9
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC9B2    1    ExperimentC9
+    Execute Free Text Search And Verify Data By Name And Count    uniqueC9C1    1    ExperimentC9

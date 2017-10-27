@@ -1,0 +1,95 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-UEN    Update Entity
+Library           XMLLibrary
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+
+*** Test Cases ***
+Updated entity
+    [Documentation]    EWB-SAPI-SSP-ENT-UEN-S001
+    ...
+    ...    A successful call returns the HTTP status 204 and the entity is updated
+    [Tags]    EWB-SAPI-SSP-ENT-UEN-S001
+    ${project_version_id}=    Get Entity Version ID    ${project_id}
+    ${sapi_entity_definition}=    Build Project DTO    TestName    TestTitle
+    Update Entity    ${project_id}    ${project_version_id}    false    ${sapi_entity_definition}
+    # Checking expectations
+    ${update_project_dto}=    Get Entity New    ${project_id}    ${project_version_id}    200    includeAttributes=true
+    # For some resons the entity name is (on the returned DTO) set to the entity title. This is the expected behaviour
+    Check Xml Element Value Contains    check project entityName value    ${update_project_dto}    TestTitle    entityName    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Value Contains    check project entityTypeName value    ${update_project_dto}    PROJECT    entityTypeName    elementNamespace=http://entity.services.ewb.idbs.com
+
+Updated entity with missing entity version id
+    [Documentation]    EWB-SAPI-SSP-ENT-UEN-S002
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UEN-S002
+    ${update_project_dto}=    Build Project DTO    TestName    TestTitle
+    # missing entity version id
+    Update Entity    ${project_id}    ${EMPTY}    false    ${update_project_dto}    Update    Update
+    ...    400
+    # wrong entity version id
+    Update Entity    ${project_id}    WrongEntityVersionId    false    ${update_project_dto}    Update    Update
+    ...    404
+
+Updated entity with wrong DTO
+    [Documentation]    EWB-SAPI-SSP-RES-GEN-S003
+    ...
+    ...    If the SAPIEntityDefinition is missing or malformed, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UEN-S003
+    ${project_version_id}=    Get Entity Version ID    ${project_id}
+    ${update_project_dto}=    Set Variable    ${EMPTY}
+    # Wrong update DTO
+    Update Entity    ${project_id}    ${project_version_id}    false    ${update_project_dto}    Update    Update
+    ...    400
+
+Updated entity with wrong entity id
+    [Documentation]    EWB-SAPI-SSP-ENT-UEN-S004
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UEN-S004
+    ${project_version_id}=    Get Entity Version ID    ${project_id}
+    ${update_project_dto}=    Build Project DTO    TestName    TestTitle
+    # Worng entity id
+    Update Entity    WrongEntityId    ${project_version_id}    false    ${update_project_dto}    Update    Update
+    ...    404
+    # Missing entity id. This leads to an unknonw URL, hence RESTEasy returns 404
+    Update Entity    ${EMPTY}    ${project_version_id}    false    ${update_project_dto}    Update    Update
+    ...    404
+
+Updated entity without permissions
+    [Documentation]    EWB-SAPI-SSP-ENT-UEN-S005
+    ...
+    ...    A client requires the EDIT_< ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UEN-S005
+    ${project_version_id}=    Get Entity Version ID    ${project_id}
+    ${update_project_dto}=    Build Project DTO    TestName    TestTitle
+    Use User With Permissions    ${username}    ${password}    ${project_id}
+    # No permissions
+    Update Entity    ${project_id}    ${project_version_id}    false    ${update_project_dto}    Update    Update
+    ...    403
+
+Updated record or document entity
+    [Documentation]    EWB-SAPI-SSP-ENT-UEN-S006
+    ...
+    ...    If the entity is of record or document type, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UEN-S006
+    ${experiment_name}=    Set Variable    UEN-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${update_experiment_dto}=    Build Experiment DTO    TestName    TestTitle
+    # Update versioned entity (experiment) must be via cache service
+    Update Entity    ${experiment_id}    ${experiment_version_id}    false    ${update_experiment_dto}    Update    Update
+    ...    400
+
+*** Keywords ***

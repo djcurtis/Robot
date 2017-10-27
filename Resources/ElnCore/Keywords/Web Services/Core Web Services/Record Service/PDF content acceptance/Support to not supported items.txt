@@ -1,0 +1,127 @@
+*** Settings ***
+Documentation     This set of tests look at the webclient's ability to PDF an experiment containing SVG images.
+Suite Setup       Setup standard suite
+Suite Teardown
+Test Setup
+Resource          test utilities.txt
+Resource          add_image_items_to_experiments.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Library           IDBSHttpLibrary
+Library           OperatingSystem
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          add_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Spreadsheet
+    [Documentation]    Creates an experiment containing a SPREADSHEET, publishes it and check the created PDF with the curated one.
+    [Tags]    EWB-WEB-PI002-W030-01
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Disable Header and Footer    ${experiment_id}
+    Comment    Add spreadsheet to experiment
+    ${entity_id}=    Add SPREADSHEET_DOCUMENT (and Preview) To Experiment    ${experiment_id}    ${input_folder}\\spreadsheet.bss    ${input_folder}\\spreadsheet.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    ${entity_version_id}=    Get Entity Version ID    ${entity_id}
+    Export Record To PDF    ${experiment_id}    \    200
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Unlock Entity    ${experiment_id}
+
+Analytic data
+    [Documentation]    Creates an experiment containing a ANALITICDATA, publishes it and check the created PDF with the curated one. \ It should be noted that the 'data' colum contains invalid data but for the purposes of PDF generation that is fine. Just do not expect to see things turning up in the thick client experiment preview. The spectra (and sequence) type is an internal type which SAPI does not support for load currently.
+    [Tags]    EWB-WEB-PI002-W030-02
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Disable Header and Footer    ${experiment_id}
+    Comment    Add analytic data to experiment
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT (and Preview) With File Data    ${experiment_id}    ${input_folder}\\analytic data - CH.ch    ${input_folder}\\analytic data - CH.pdf    application/x-idbs-ewb-analytic-data    ANALYTICDATA
+    Add DOCUMENT (and Preview) With File Data    ${experiment_id}    ${input_folder}\\analytic data - DX.dx    ${input_folder}\\analytic data - DX.pdf    application/x-idbs-ewb-analytic-data    ANALYTICDATA
+    Add DOCUMENT (and Preview) With File Data    ${experiment_id}    ${input_folder}\\analytic data - JDX.jdx    ${input_folder}\\analytic data - JDX.pdf    application/x-idbs-ewb-analytic-data    ANALYTICDATA
+    Commit Versioned Entity    ${experiment_id}
+    Export Record To PDF    ${experiment_id}    \    200
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Unlock Entity    ${experiment_id}
+
+Biological Sequence
+    [Documentation]    Creates an experiment containing a BIOLOGICAL SEQUENCE, publishes it and check the created PDF with the curated one. It should be noted that the 'data' colum contains invalid data but for the purposes of PDF generation that is fine. Just do not expect to see things turning up in the thick client experiment preview. The spectra (and sequence) type is an internal type which SAPI does not support for load currently.
+    [Tags]    EWB-WEB-PI002-W030-03
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Disable Header and Footer    ${experiment_id}
+    Comment    Add biological sequence to experiment
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT (and Preview) With File Data    ${experiment_id}    ${input_folder}\\biological sequence.gb    ${input_folder}\\biological sequence.pdf    application/x-idbs-ewb-sequence-data    BIOLOGICAL_SEQUENCE
+    Commit Versioned Entity    ${experiment_id}
+    Export Record To PDF    ${experiment_id}    \    200
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Unlock Entity    ${experiment_id}
+
+EMF image
+    [Documentation]    Creates an experiment containing a EMF, publishes it and check the created PDF with the curated one.
+    [Tags]    EWB-WEB-PI002-W030-04
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Disable Header and Footer    ${experiment_id}
+    Comment    Add EMF image to experiment
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT (and Preview) To Experiment    ${experiment_id}    ${input_folder}\\emf image.emf    ${input_folder}\\emf image.emf.png    image/x-emf    FILE
+    Export Record To PDF    ${experiment_id}    \    200
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Unlock Entity    ${experiment_id}
+
+WMF image
+    [Documentation]    Creates an experiment containing a EMF, publishes it and check the created PDF with the curated one.
+    [Tags]    EWB-WEB-PI002-W030-05
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Disable Header and Footer    ${experiment_id}
+    Comment    Add WMF image to experiment
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT (and Preview) To Experiment    ${experiment_id}    ${input_folder}\\wmf image.wmf    ${input_folder}\\wmf image.wmf.png    image/x-wmf    FILE
+    Export Record To PDF    ${experiment_id}    \    200
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Unlock Entity    ${experiment_id}
+
+Spreadsheet Chemistry
+    [Documentation]    Creates an experiment containing a SPREADSHEET CHEMISTRY, publishes it and check the created PDF with the curated one.
+    [Tags]    EWB-WEB-PI002-W030-06
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Disable Header and Footer    ${experiment_id}
+    Comment    Add Spreadsheet Chemistry to experiment
+    Lock Entity    ${experiment_id}
+    ${entity_id}=    Add CHEMISTRY_DOCUMENT (and Preview) With File Data    ${experiment_id}    ${input_folder}\\spreadsheet chemistry.chembss    ${input_folder}\\spreadsheet chemistry.zip    application/x-idbs-spreadsheet-chemistry    CHEMISTRY
+    Commit Versioned Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${entity_id}
+    Export Record To PDF    ${experiment_id}    \    200
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Comment    checks PDFs
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Unlock Entity    ${experiment_id}
+
+*** Keywords ***
+Disable Header and Footer
+    [Arguments]    ${experiment_id}    # The id of the experiment
+    [Documentation]    Disable the rendering of header and footer in the chreation of a PDF
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${experiment_id} The id of the experiment
+    ...
+    ...    *Return value*
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Example*
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - no properties no icon.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}

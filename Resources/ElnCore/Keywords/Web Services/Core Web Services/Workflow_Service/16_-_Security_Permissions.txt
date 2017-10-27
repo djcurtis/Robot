@@ -1,0 +1,133 @@
+*** Settings ***
+Documentation     Covering the security permissions surrounding workflows, specifically the following entity permissions:
+...
+...               *VIEW_ANY_TASK*
+...               *CREATE_TASK*
+...               *PDF_SIGN*
+...               *SIGNOFF_TASK*
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+
+*** Test Cases ***
+No VIEW_ANY_TASK - task assigned to user
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser3"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+No VIEW_ANY_TASK - task not assigned to user
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    ${workflow tasks JSON}=    Get Task From Task ID And Expect Error    ${new task id}    403
+    Comment    Validate Task    ${workflow tasks JSON}    task_type=SIGN_OFF
+
+No CREATE_TASK - sign off
+    # Set Username and password to a user without the CREATE_TASK permission
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}    403
+
+No CREATE_TASK - review
+    # Set Username and password to a user without the CREATE_TASK permission
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}    403
+
+No CREATE_TASK - alert
+    # Set Username and password to a user without the CREATE_TASK permission
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}    403
+
+POST Sign off Task - To user with no SIGNOFF_TASK permission
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser3"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}    500
+
+POST PDF Sign off Task - To user with no PDF_SIGN permission
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser3"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1_pdf}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}    500
+
+No CREATE_TEST_REQUEST
+    # Set Username and password to a user without the CREATE_TASK permission
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}    403
+
+No VIEW_REPORT permission - Create Tasks
+    # Set Username and password to a user without the CREATE_TASK permission
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser4
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser41
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_report_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}    403
+
+No VIEW_REPORT permission - View Active Tasks
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_report_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser4
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser41
+    Get Active Workflows And Expect Error    ${wf_report_1}    403

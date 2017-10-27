@@ -1,0 +1,387 @@
+*** Settings ***
+Documentation     This resource file contains all the tuple data needed to run the tests for the Query Web Service. The Query Web Service tests are all located in the folder: \ ".......\\EWB Automated Tests\\Test Suites\\Hubtech\\Asset Hub\\Query Web Service".
+...
+...               This data resource file contains:
+...               - tuple data
+...               - key values
+...               - term paths
+...               - term guids
+...               - tuple guids
+Library           OperatingSystem
+Library           TestDataGenerationLibrary
+
+*** Variables ***
+@{tuple guids - No Inherited Properties}    2d622907ec904bb3b6aaeace2961360b    15d88ce9b70e46239b0faacb7a016e95    d81310e3b65d468cafecd15ae7e38c8a    c8a01b4eefda43ae9e8f53ff321b8009    824cd1808f9d482c9e41310b52639113    4f4f34a33a2e453ea768f74e13dfdae8    8eec6047fdd04776a53c5b1a2e6ddfaa
+@{tuple guids - Inherited Properties Term}    e3aab0a900044fb0b527430103b31498    a6c288fe96714289bc5e97949aa42b07    14479ac09e5b4f4ebb225d180e1afafc    438dcc7787474cd5b3b95c676567eda8    a91aa7cb66ba4994b072edee61442596    6a6b9c935336473a93e3f85d7d2328ed    49b29ad69ca14a15aa848c89e9130367
+@{tuple guids - Overridding Term}    4a6a05c61cb04bc4a3d91b56957548d9    3f312938eda247788b2f5b7fcda0fd4a    d750923523b846eda7c55e3e44e203dc    67cbba3dd2364d49a82a7a61abab6e43    35b072d1e8bc43ffb97360a4ccff31c0    cfb50e7d76a545918a95e38fa99c1e5d    03f84883823f43c493048110df232809
+@{tuple guids - Overridding Property Name Change}    66aa59767faf414b9b55bc64407fe1b7    d8f11a3ee11d4bfca0f3b9f99d238d59    466e21c5ea5b44e5aa61f95399b74f34    c07faa8d1561417a88397bd09480f04c    1ad2ea20e89046aabd51c4ed6b890f4c    998cfe3c4cac4962b94bb5484fa01ce5    38f3727f04d44730bcba6ff6f622f46d
+@{tuple guids - Link Data One}    c4a1174ed5914e1fa1ce796bd1fb20c5    abb6c51d402d4746bb7105aec3a0cdb5
+@{tuple guids - Link Data Two}    15d709d9c776455683489b4bcb56df3f    b4983be895c3458480d5c57dc6866ed6    9f6d6337e06e4771b8d44414bf5fa352
+@{tuple guids - Binary Image Chemistry Term}    a3a0d16750194a88a09e3092d93b6ab2    b227547e1c4944d6b4a6dc2f22b3a5e9
+@{tuple guids - Overridding Binary Image Chemistry Term}    1a19ae0476b143b5aca5e98abe14d552    5ab71be6c10a4d1699613b16ac800ddb
+@{key values - No Inherited Properties}    NIP a    NIP b    NIP c    NIP d    NIP e    NIP f    NIP g
+@{key values - Inherited Properties}    IP a    IP b    IP c    IP d    IP e    IP f    IP g
+@{key values - Overridding Term}    OP a    OP b    OP c    OP d    OP e    OP f    OP g
+@{key values - Overridding Property Name Change}    ONCP a    ONCP b    ONCP c    ONCP d    ONCP e    ONCP f    ONCP g
+@{key values - Link Data One}    LD1a    LD1b
+@{key values - Link Data Two}    LD2a    LD2b    LD2c
+@{key values - Binary Image Chemistry Term}    IPBICa    IPBICb
+@{key values - Overriding Binary Image Chemistry Term}    OPBICa    OPBICb
+${term guid - No Inherited Properties}    9905a790186e11e2bcfc02004c4f4f50
+${term guid - Inherited Properties}    e8b93fe0186e11e2bcfc02004c4f4f50
+${term guid - Overridding Term}    48a78520187311e2bcfc02004c4f4f50
+${term guid - Overridding Property Name Change}    ef587180187411e2bcfc02004c4f4f50
+${term guid - Link Data One}    ed9bee10186c11e2bcfc02004c4f4f50
+${term guid - Link Data Two}    00862770186d11e2bcfc02004c4f4f50
+${term guid - Overridding Binary Image Chemistry Term}    a0499d50187711e2bcfc02004c4f4f50
+${term guid - Binary Image Chemistry Term}    8f22db50187611e2bcfc02004c4f4f50
+${term path - No Inherited Properties}    "/Query Service Solution Terms/No Inherited Properties"
+${term path - Inherited Properties}    "/Query Service Solution Terms/Inherited Properties"
+${term path - Overridding Term}    "/Query Service Solution Terms/Overridding Properties"
+${term path - Overridding Property Name Change}    "/Query Service Solution Terms/Overridding Properties - Property Name Change"
+${term path - Link Data One}    "/Query Service Solution Terms/Link Data One"
+${term path - Link Data Two}    "/Query Service Solution Terms/Link Data Two"
+${term path - Abstract Solution}    "/Query Service Solution Terms/Abstract Solution Term"
+${term path - Abstract Solution Link Term}    "/Query Service Solution Terms/Abstract Solution Term For Link"
+${term path - Abstract Solution BinaryImageChem Term}    "/Query Service Solution Terms/BinaryImageChem Properties Abstract"
+${term path - Inherited Properties BinaryImageChem Term}    "/Query Service Solution Terms/Inheriting BinaryImageChem Properties"
+${term path - Overridding Properties BinaryImageChem Term}    "/Query Service Solution Terms/Overridding BinaryImageChem Properties"
+${term path - Structure Inherited}    /Query Service Solution Terms/Structure Inherited
+${term path - Structure Non Inherited}    /Query Service Solution Terms/Structure Non Inherited
+${term path - Abstract Chemistry Term}    /Query Service Solution Terms/Abstract Chemistry Term
+${term path - Structure Override}    /Query Service Solution Terms/Structure Override
+${term path - HierarchyAccessTest}    /Query Service Solution Terms/Hierarchy_Access_Test
+${term path - T30_Term1}    /Query Service Solution Terms/T30_Term1    # Inherits from Quantified Asset - to test return values from multiple concrete terms
+${term path - T30_Term2}    /Query Service Solution Terms/T30_Term2    # Inherits from Abstract Chemistry Term - to test return values from multiple concrete terms
+${term path - Asset}    /IDBS-Applications/Core/Asset Hub/Asset    # IDBS default Asset term from which all Asset Hub terms inherit from
+${term path - Quantified Asset}    /IDBS-Applications/Core/Asset Hub/Quantified Asset    # IDBS default Quantified Asset term
+${QueryWS Catalog Path}    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Query Service Terms.xml    # Path to import catalog for Query Web Services Test
+${ROOT_DIR}       ${CURDIR}/../../../
+
+*** Keywords ***
+Get Tuple Data - LinkDataOne Term
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Link Data One".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    @{propertyTermIDList}=    Create List    C2873ECCB1D94d16A6567057F953DB9C    8679F4B5419F4deb9E40137B88397BD7    8679F4B5419F4deb9E40137B88397BD7    177F5095979044989BD6F14D0ECF6E05
+    @{propertyIDList}=    Create List    A8DE9503200745dc817DEDC5FAD12FFE    3AABD34EA88C4bfcBE52E466ED267F12    1E623F14AD214435BB18758DF108CAA3    F3DBFE5B443747a8B6B96008039FF250
+    @{isLinkedPropertyList}=    Create List    false    false    false    false
+    @{propertyNameList}=    Create List    name    capacity    isAvailable    dateRegistered
+    @{tuple1}=    Create List    LinkDataOne Tuple1    55556    T    949363200000
+    @{tuple2}=    Create List    LinkDataOne Tuple2    33334    F    1336604400000
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - LinkDataTwo Term
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Link Data Two".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    @{propertyTermIDList}=    Create List    C2873ECCB1D94d16A6567057F953DB9C    8679F4B5419F4deb9E40137B88397BD7    8679F4B5419F4deb9E40137B88397BD7    177F5095979044989BD6F14D0ECF6E05
+    @{propertyIDList}=    Create List    A8DE9503200745dc817DEDC5FAD12FFE    3AABD34EA88C4bfcBE52E466ED267F12    1E623F14AD214435BB18758DF108CAA3    F3DBFE5B443747a8B6B96008039FF250
+    @{isLinkedPropertyList}=    Create List    false    false    false    false
+    @{propertyNameList}=    Create List    name    capacity    isAvailable    dateRegistered
+    @{tuple1}=    Create List    LinkDataTwo Tuple1    66667    F    1340357649000
+    @{tuple2}=    Create List    LinkDataTwo Tuple2    86668    T    1340392376000
+    @{tuple3}    Create List    LinkDataTwo Tuple3    98889    T    949363200000
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}    ${tuple3}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - Non Inherited Properties Term
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/No Inherited Properties".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    ${longString1}=    Get File    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/long string data1.txt
+    ${longString2}=    Get File    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/long string data2.txt
+    @{propertyTermIDList}=    Create List    ${term guid - No Inherited Properties}    ${term guid - No Inherited Properties}    ${term guid - No Inherited Properties}    ${term guid - No Inherited Properties}    ${term guid - No Inherited Properties}
+    ...    ${term guid - No Inherited Properties}    ${term guid - No Inherited Properties}
+    @{propertyIDList}=    Create List    18049980186e11e2bcfc02004c4f4f50    51523f30186e11e2bcfc02004c4f4f50    5c9712d0186e11e2bcfc02004c4f4f50    838e33a0186e11e2bcfc02004c4f4f50    95107890186e11e2bcfc02004c4f4f50
+    ...    77458490186e11e2bcfc02004c4f4f50    9ac2c371228b11e2ad5302004c4f4f50
+    @{isLinkedPropertyList}=    Create List    false    false    false    false    false
+    ...    true    false
+    @{propertyNameList}=    Create List    Boolean Property    Float Property    Integer Property    String Property    Timestamp Property
+    ...    Link Property    Long String Property
+    @{tuple1}=    Create List    T    ${EMPTY}    8    Mixed Case String    1340357649000
+    ...    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]    ${longString1}
+    @{tuple2}=    Create List    F    -219.2,kV    ${EMPTY}    Mixed Case String    949363200000
+    ...    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]    ${EMPTY}
+    @{tuple3}=    Create List    F    -0.001,kV    321    ${EMPTY}    1340392376000
+    ...    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]    ${EMPTY}
+    @{tuple4}=    Create List    T    0.1,km    -1    string with 'quotes'    ${EMPTY}
+    ...    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]    ${longString2}
+    @{tuple5}=    Create List    ${EMPTY}    3.001,kV    -840    string with %    1336604400000
+    ...    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[1]    ${EMPTY}
+    @{tuple6}=    Create List    F    0,m\\s    0    ${EMPTY}    1336604400000
+    ...    ${EMPTY}    ${EMPTY}
+    @{tuple7}=    Create List    ${EMPTY}    0.1,m\\s    -1    ${EMPTY}    ${EMPTY}
+    ...    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]    ${EMPTY}
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}    ${tuple3}    ${tuple4}    ${tuple5}
+    ...    ${tuple6}    ${tuple7}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - Inherited Properties Term
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Inherited Properties".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    @{propertyTermIDList}=    Create List    177F5095979044989BD6F14D0ECF6E05    177F5095979044989BD6F14D0ECF6E05    177F5095979044989BD6F14D0ECF6E05    1f0e1f50186c11e2bcfc02004c4f4f50    1f0e1f50186c11e2bcfc02004c4f4f50
+    ...    1f0e1f50186c11e2bcfc02004c4f4f50    1f0e1f50186c11e2bcfc02004c4f4f50    1f0e1f50186c11e2bcfc02004c4f4f50    177F5095979044989BD6F14D0ECF6E05    1f0e1f50186c11e2bcfc02004c4f4f50
+    @{propertyIDList}=    Create List    715CCEB96E5F440fAB9A4621A93917F9    E9F917CBDC444c8cB3293E79C6467CE3    8E9B9529BA2E4a5085FF221A999B3CD9    0f61abd0186c11e2bcfc02004c4f4f50    15899950186c11e2bcfc02004c4f4f50
+    ...    b86f37c0186b11e2bcfc02004c4f4f50    07b78b20186c11e2bcfc02004c4f4f50    ff4eae50186b11e2bcfc02004c4f4f50    39BC609956744e6f9B042DE80D29DD22    de7ce2f0186b11e2bcfc02004c4f4f50
+    @{isLinkedPropertyList}=    Create List    false    false    false    false    false
+    ...    false    false    false    false    true
+    @{propertyNameList}=    Create List    notes    description    barcode    String Property 4    String Property 5
+    ...    Boolean Property    Number Property 2    Number Property 1    dateCreated    Linked Property
+    @{tuple1}=    Create List    Mixed Case String    Mixed Case String    Mixed Case String    Mixed Case String    Mixed Case String
+    ...    T    ${EMPTY}    8    1340357649000    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tuple2}=    Create List    Mixed Case String    Mixed Case String    Mixed Case String    Mixed Case String    Mixed Case String
+    ...    F    -219.2    ${EMPTY}    949363200000    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tuple3}=    Create List    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}
+    ...    F    -0.001    321    1340392376000    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]
+    @{tuple4}=    Create List    string with 'quotes'    string with 'quotes'    string with 'quotes'    string with 'quotes'    string with 'quotes'
+    ...    T    0.1    -1    ${EMPTY}    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]
+    @{tuple5}=    Create List    string with %    string with %    string with %    string with %    string with %
+    ...    ${EMPTY}    3.001    -840    1336604400000    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[1]
+    @{tuple6}=    Create List    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}
+    ...    F    0    0    1336604400000    ${EMPTY}
+    @{tuple7}=    Create List    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}
+    ...    ${EMPTY}    0.1    -1    ${EMPTY}    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}    ${tuple3}    ${tuple4}    ${tuple5}
+    ...    ${tuple6}    ${tuple7}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - Overriding Term
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Overridding Properties".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    @{propertyTermIDList}=    Create List    ${term guid - Overridding Term}    ${term guid - Overridding Term}    ${term guid - Overridding Term}    ${term guid - Overridding Term}    ${term guid - Overridding Term}
+    ...    ${term guid - Overridding Term}    ${term guid - Overridding Term}    ${term guid - Overridding Term}    ${term guid - Overridding Term}
+    @{propertyIDList}=    Create List    2bea0980187311e2bcfc02004c4f4f50    f74e0500187211e2bcfc02004c4f4f50    c2767e20187211e2bcfc02004c4f4f50    8e2935e0187211e2bcfc02004c4f4f50    36ece790187211e2bcfc02004c4f4f50
+    ...    58205af0187211e2bcfc02004c4f4f50    df685030187211e2bcfc02004c4f4f50    75766d10187211e2bcfc02004c4f4f50    9f1ea420187211e2bcfc02004c4f4f50
+    @{isLinkedPropertyList}=    Create List    false    false    false    false    false
+    ...    false    false    false    true
+    @{propertyNameList}=    Create List    String Property 5    String Property 4    notes    description    barcode
+    ...    Boolean Property    Number Property 1    dateCreated    Linked Property
+    @{tuple1}=    Create List    ${EMPTY}    Mixed Case String    1340357649000    T    ${EMPTY}
+    ...    T    8    1340357649000    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tuple2}=    Create List    ${EMPTY}    Mixed Case String    949363200000    F    -219.2
+    ...    F    ${EMPTY}    949363200000    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tuple3}=    Create List    ${EMPTY}    ${EMPTY}    1340392376000    F    -0.001
+    ...    F    321    1340392376000    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]
+    @{tuple4}=    Create List    ${EMPTY}    string with 'quotes'    ${EMPTY}    T    0.1
+    ...    T    -1    ${EMPTY}    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]
+    @{tuple5}=    Create List    ${EMPTY}    string with %    1336604400000    ${EMPTY}    3.001
+    ...    ${EMPTY}    -840    1336604400000    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[1]
+    @{tuple6}=    Create List    ${EMPTY}    ${EMPTY}    1336604400000    F    0
+    ...    F    0    1336604400000    ${EMPTY}
+    @{tuple7}=    Create List    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}    0.1
+    ...    ${EMPTY}    -1    ${EMPTY}    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}    ${tuple3}    ${tuple4}    ${tuple5}
+    ...    ${tuple6}    ${tuple7}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - Overridding Term - Property Name Change
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Overridding Properties - Property Name Change".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    @{propertyTermIDList}=    Create List    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}
+    ...    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}    ${term guid - Overridding Property Name Change}
+    @{propertyIDList}=    Create List    ec1d43b0187411e2bcfc02004c4f4f50    aadded00187411e2bcfc02004c4f4f50    7b9a7810187411e2bcfc02004c4f4f50    28a940f0187411e2bcfc02004c4f4f50    d1afc800187311e2bcfc02004c4f4f50
+    ...    e81cbf80187311e2bcfc02004c4f4f50    97e582d0187411e2bcfc02004c4f4f50    118be530187411e2bcfc02004c4f4f50    56e1d590187411e2bcfc02004c4f4f50
+    @{isLinkedPropertyList}=    Create List    false    false    false    false    false
+    ...    false    false    false    true
+    @{propertyNameList}=    Create List    String Property 5 Override    String Property 4 Override    notes Override    description Override    barcode Override
+    ...    Boolean Property Override    Number Property 1 Override    dateCreated Override    Linked Property Override
+    @{tuple1}=    Create List    ${EMPTY}    Mixed Case String    1340357649000    T    ${EMPTY}
+    ...    T    8    1340357649000    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tuple2}=    Create List    ${EMPTY}    Mixed Case String    949363200000    F    -219.2
+    ...    F    ${EMPTY}    949363200000    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tuple3}=    Create List    ${EMPTY}    ${EMPTY}    1340392376000    F    -0.001
+    ...    F    321    1340392376000    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]
+    @{tuple4}=    Create List    ${EMPTY}    string with 'quotes'    ${EMPTY}    T    0.1
+    ...    T    -1    ${EMPTY}    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[0]
+    @{tuple5}=    Create List    ${EMPTY}    string with %    1336604400000    ${EMPTY}    3.001
+    ...    ${EMPTY}    -840    1336604400000    ${term guid - Link Data Two},@{tuple guids - Link Data Two}[1]
+    @{tuple6}=    Create List    ${EMPTY}    ${EMPTY}    1336604400000    F    0
+    ...    F    0    1336604400000    ${EMPTY}
+    @{tuple7}=    Create List    ${EMPTY}    ${EMPTY}    ${EMPTY}    ${EMPTY}    0.1
+    ...    ${EMPTY}    -1    ${EMPTY}    ${term guid - Link Data One},@{tuple guids - Link Data One}[0]
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}    ${tuple3}    ${tuple4}    ${tuple5}
+    ...    ${tuple6}    ${tuple7}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - Inheriting Binary Image Chemistry Properties
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Inheriting BinaryImageChem Properties".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    ${JPG image file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/Winter.jpg
+    ${GIF image file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/java.lang.BigInteger Error.GIF
+    ${XLS file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/IS QA AutoRun.xls
+    ${DOCX fle}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/IS Copper HLRA .docx
+    @{propertyTermIDList}=    Create List    48ffd6f0187611e2bcfc02004c4f4f50    48ffd6f0187611e2bcfc02004c4f4f50    48ffd6f0187611e2bcfc02004c4f4f50    48ffd6f0187611e2bcfc02004c4f4f50    48ffd6f0187611e2bcfc02004c4f4f50
+    @{propertyIDList}=    Create List    e93e2320187511e2bcfc02004c4f4f50    f74969c0187511e2bcfc02004c4f4f50    03d9a920187611e2bcfc02004c4f4f50    44e21150187611e2bcfc02004c4f4f50    19f32970187611e2bcfc02004c4f4f50
+    @{isLinkedPropertyList}=    Create List    false    false    false    false    false
+    @{propertyNameList}=    Create List    Binary Property 1    Binary Property 2    Binary Property 3    Image Property    Chemistry Property
+    @{tuple1}=    Create List    ${XLS file}    ${XLS file}    ${XLS file}    ${JPG image file}    ${EMPTY}
+    @{tuple2}=    Create List    ${DOCX fle}    ${DOCX fle}    ${DOCX fle}    ${GIF image file}    ${EMPTY}
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}
+
+Get Tuple Data - Overridding Binary Image Chemistry Properties
+    [Documentation]    This keyword contains the data for the term "/Query Service Solution Terms/Overridding BinaryImageChem Properties".
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    -${propertyTermIDList} = A list containing the 'inherited from terms ids' of each property.
+    ...
+    ...    -${propertyNameList} = A list containing the property names of each property.
+    ...
+    ...    -${propertyIDList} = A list containing the property ids of each property.
+    ...
+    ...    -${isLinkedPropertyList} = A list stating whether a property is a linked property or not. A value of 'true' means the corresponding property is a linked property. A value of 'false' means that the corresponding property is not a linked property.
+    ...
+    ...    -${tupleDataList} = A list containing the tuple data. Each element in the list is a list conataining the property values for each tuple.
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    ${JPG image file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/Winter.jpg
+    ${GIF image file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/java.lang.BigInteger Error.GIF
+    ${XLS file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/IS QA AutoRun.xls
+    ${DOCX fle}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/IS Copper HLRA .docx
+    @{propertyTermIDList}=    Create List    ${term guid - Overridding Binary Image Chemistry Term}    ${term guid - Overridding Binary Image Chemistry Term}    ${term guid - Overridding Binary Image Chemistry Term}    ${term guid - Overridding Binary Image Chemistry Term}    ${term guid - Overridding Binary Image Chemistry Term}
+    @{propertyIDList}=    Create List    3d09e650187711e2bcfc02004c4f4f50    4e01c590187711e2bcfc02004c4f4f50    7d074720187711e2bcfc02004c4f4f50    90dd8e30187711e2bcfc02004c4f4f50    9e207bc0187711e2bcfc02004c4f4f50
+    @{isLinkedPropertyList}=    Create List    false    false    false    false    false
+    @{propertyNameList}=    Create List    BinaryToBinary    BinaryToChemistry    BinaryToImage    ChemistryToChemistry    ImageToImage
+    @{tuple1}=    Create List    ${XLS file}    ${EMPTY}    ${JPG image file}    ${EMPTY}    ${JPG image file}
+    @{tuple2}=    Create List    ${DOCX fle}    ${EMPTY}    ${GIF image file}    ${EMPTY}    ${GIF image file}
+    @{tupleDataList}=    Create List    ${tuple1}    ${tuple2}
+    [Return]    ${propertyTermIDList}    ${propertyNameList}    ${propertyIDList}    ${isLinkedPropertyList}    ${tupleDataList}

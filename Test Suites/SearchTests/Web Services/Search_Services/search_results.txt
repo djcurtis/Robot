@@ -1,0 +1,59 @@
+*** Settings ***
+Documentation     This test suite checks the Text Search functionality is working correctly using REST API calls.
+Suite Setup       setup
+Suite Teardown    teardown
+Default Tags
+Library           IDBSHttpLibrary
+Library           JSONLibrary
+Resource          ../../../../Libraries/common_resource.txt
+Library           OperatingSystem
+Library           EntityAPILibrary
+
+*** Test Cases ***
+Check Return All Record Types
+    [Documentation]    This test checks a Text Search returns all record types (Experiments, Reports, Templates).
+    ...
+    ...    SH-508
+    [Tags]    SRCH-FTXT    BUILD_ACCEPTANCE
+    # Constructing HTTP POST Request
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    accept    application/json, text/javascript, */*; q=0.01
+    Set Request Header    content-type    application/json
+    # POST to REST API
+    Set Request Body    {"filter":[{"@deep":{"/System/Tuple#text":{"likenocase":"SrchRslt"}}}],"select":[{"@id":"@id","/Flexible%20Hierarchy/Core/Entity#uri":"/Flexible%20Hierarchy/Core/Entity#uri","/Flexible%20Hierarchy/Core/Entity#lastUpdater /Flexible%20Hierarchy/Security/User#name":"/Flexible%20Hierarchy/Core/Entity#lastUpdater /Flexible%20Hierarchy/Security/User#name"}]}    # Text Search for "SrchRslt"
+    POST    /ewb/services/1.0/data/jsonld
+    # Check Result
+    ${response_body}=    Get Response Body
+    ${status}=    Get Response Status
+    Should Start With    ${status}    200
+    ${reponse_body}=    Get Response Body
+    ${result_count}=    Get Json List Length    ${response_body}    /
+    Should Be Equal As Integers    ${result_count}    ${3}
+
+*** Keywords ***
+setup
+    [Documentation]    Data Structure:
+    ...
+    ...    Group: Mr. Roboto
+    ...    Project: Search Results API
+    ...
+    ...    3 records, 1 each of type Experiment, Report, and Template.
+    ${GroupID}=    EntityAPILibrary.Ensure Group Is Present    1    Mr. Roboto
+    Set Suite Variable    ${GroupID}
+    ${ProjectID}=    EntityAPILibrary.Create Project    ${GroupID}    Search Results API
+    Set Suite Variable    ${ProjectID}
+    # Create Experiment
+    ${ExperimentID_01}=    EntityAPILibrary.Create Experiment    ${ProjectID}    SrchRslt Experiment
+    EntityAPILibrary.Version Save    ${ExperimentID_01}    Data Added
+    # Create Report
+    ${ReportID_01}=    EntityAPILibrary.Create Report    ${ProjectID}    SrchRslt Report
+    EntityAPILibrary.Version Save    ${ReportID_01}    Data Added
+    # Create Template
+    ${TemplateID_01}=    EntityAPILibrary.Create Template    ${ProjectID}    SrchRslt Template
+    EntityAPILibrary.Version Save    ${TemplateID_01}    Data Added
+
+teardown
+    [Documentation]    Teardown for whole Suite.
+    EntityAPILibrary.Unlock Entity And Children    ${GroupID}
+    EntityAPILibrary.Delete Entity    ${GroupID}    As intended    As intended

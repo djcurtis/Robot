@@ -1,0 +1,103 @@
+*** Settings ***
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          locators/marvin_js.txt
+Resource          locators/search_ui.txt
+Resource          locators/chemistry_search_prepreview.txt
+
+*** Keywords ***
+Select Molecule Items To Be Previewed By Chemaxon ID
+    [Arguments]    @{chemaxonItems}    # List of molecules ID to be previewed
+    [Documentation]    Select Molecule Items To Be Previewed By Chemaxon ID
+    ...    - navigate molecule tab
+    ...    - tick each molecules on prepreview screen
+    ...    - ticking performed by javascript
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${moleculesPreviewLink}
+    : FOR    ${chemItem}    IN    @{chemaxonItems}
+    \    execute javascript    document.getElementById("molecule_${chemItem}").getElementsByClassName("fa")[0].click()
+
+Verify Prepreview Molecules Search List Contains Elements
+    [Arguments]    @{moleculeItems}    # List Of chemaxon IDs
+    [Documentation]    Verify Prepreview Molecules Search List Contains Elements
+    ...    - navigate molecule tab
+    ...    - List of @{moleculeItems}should be on the page
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${moleculesPreviewLink}
+    : FOR    ${chemItem}    IN    @{moleculeItems}
+    \    Wait Until Page contains Element    //div[contains(@class,'molecules')]/div[@data-chemistry-id=${chemItem}]    2s
+
+Verify Prepreview Reactions Search List Contains Elements
+    [Arguments]    @{reactionItems}    # List Of Chemaxon IDs
+    [Documentation]    Verify Prepreview Reactions Search List Contains Elements
+    ...    - navigate reaction tab
+    ...    - List of @{reactionItems} should be on the page
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${reactionsPreviewLink}
+    : FOR    ${reactItem}    IN    @{reactionItems}
+    \    Wait Until Page contains Element    //div[contains(@class,'reactions')]/div[@data-chemistry-id=${reactItem}]    2s
+
+Select Reaction Items To Be Previewed By Chemaxon ID
+    [Arguments]    @{chemaxonItems}    # List of reaction IDs to be previewed
+    [Documentation]    Select Reaction Items To Be Previewed By Chemaxon ID
+    ...    - navigate reaction tab
+    ...    - tick each reaction on pre-preview screen
+    ...    - ticking performed by javascript
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${reactionsPreviewLink}
+    : FOR    ${chemItem}    IN    @{chemaxonItems}
+    \    execute javascript    document.getElementById("reaction_${chemItem}").getElementsByClassName("fa")[0].click()
+
+Click Done Button
+    [Documentation]    Click Done Button on Prepreview chemistry search screen
+    Robust Click    ${doneChemistryButton}
+    Wait Until Page Does Not Contain Element    ${searchDisplayedSpinner}
+
+Verify Prepreview Molecules Search List Does Not Contain Elements
+    [Arguments]    @{moleculeItems}    # List Of Chemaxon IDs
+    [Documentation]    Verify Prepreview Molecules Search List Does Not Contain Elements
+    ...    - navigate molecule tab
+    ...    - List of @{moleculeItems}should NOT be on the page
+    unselect frame
+    select frame    ${searchFrame}
+    : FOR    ${chemItem}    IN    @{moleculeItems}
+    \    Wait Until Page Does Not Contain Element    //div[contains(@class,'molecules')]/div[@data-chemistry-id=${chemItem}]    2s
+
+Click Prepreview Cancel Button
+    [Documentation]    Click cancel button on prepreview chemistry search screen
+    Robust Click    ${prepreviewCancelButton}
+    Wait Until Page Contains Element    ${marvinJSFrame}    30s
+
+Verify Prepreview Molecules Number Equals Or Greater
+    [Arguments]    ${moleculeChemaxonId}    ${expectedMoleculesNumber}
+    [Documentation]    Verify Prepreview Molecules Number Equals Or Greater
+    ...    - navigate molecule tab
+    ...    - verify that number of found molecules with id ${moleculeChemaxonId} \ greate then ${expectedMoleculesNumber}
+    ...    - actual number comes from molecule label
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${moleculesPreviewLink}
+    ${count}    Get Text    //div[contains(@class,'molecules')]/div[@data-chemistry-id=${moleculeChemaxonId}]/div[@class='records']
+    ${count}    Split String From Right    ${count}
+    ${count}    set variable    ${count[0]}
+    Should Be True    '${count}'>= '${expectedMoleculesNumber}'
+
+Verify Prepreview Reactions Number Equals Or Greater
+    [Arguments]    ${reactionChemaxonId}    ${expectedReactionsNumber}
+    [Documentation]    Verify Prepreview Reactions Number Equals Or Greater
+    ...    - navigate reation tab
+    ...    - verify that number of found reactions with id ${reactionChemaxonId} \ greate then ${expectedReactionsNumber}
+    ...    - actual number comes from reaction label
+    ${reactionCountXpath}    set variable    //div[contains(@class,'reactions')]/div[@data-chemistry-id=${reactionChemaxonId}]/div[@class='records']
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${reactionsPreviewLink}
+    Wait Until Element Is Visible    ${reactionCountXpath}
+    ${count}    Get Text    ${reactionCountXpath}
+    ${count}    Split String    ${count}
+    ${count}    set variable    ${count[0]}
+    Should Be True    '${count}'>= ' ${expectedReactionsNumber}'

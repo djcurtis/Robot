@@ -1,0 +1,115 @@
+*** Settings ***
+Documentation     This test set looks at the webclient being used to generate a PDF of different Rastered image types
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup image test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           OperatingSystem
+Resource          ../../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          add_image_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Rastered Images - One Each GIF, TIF, JPEG, PNG, BMP
+    [Documentation]    This test contains Rastered Images, having one of each type for:
+    ...
+    ...    - JPG (using a tall image that requires scaling)
+    ...    - PNG (image doesn't need scaling)
+    ...    - BMP (no scaling needed)
+    ...    - GIF (wide and tall, requires scaling)
+    ...    - TIF (doesn't need scaling)
+    [Tags]    EWB-WEB-PI002-W019-01
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\30DrSeuss_quotes.jpg    JPG doc
+    Add PNG Item To Experiment    ${experiment_id}    ${input_folder}\\stopspam.png    PNG doc
+    Log    Input folder: ${input_folder}
+    Add BMP Item To Experiment    ${experiment_id}    ${input_folder}\\beginAgain.bmp    test BMP doc
+    Add GIF Item To Experiment    ${experiment_id}    ${input_folder}\\Byzantine_Constantinople_eng.gif    test GIF doc
+    Add TIF Item To Experiment    ${experiment_id}    ${input_folder}\\monday.tif    test TIF doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Combination Very Large Images with Many Properties and Signatures
+    [Documentation]    This test includes images that are tall and wide, one of each of:
+    ...
+    ...    - BMP
+    ...    - GIF
+    ...    - TIF
+    [Tags]    EWB-WEB-PI002-W019-02
+    [Setup]    Setup complex image test case
+    Do Multi Image Test
+
+Combination Very Wide Images with Signatures no Properties
+    [Documentation]    This test includes 3 very tall GIF images, 2 tall and wide GIF images, the tall and wide images also have been signed.
+    ...
+    ...    No properties are applied to this PDF output and the font, headers and footers are as default.
+    [Tags]    EWB-WEB-PI002-W019-03
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Delete System Setting    Signature/digitalSignatureImage
+    ${config_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_configuration_dir}
+    ${print_publish_config_xml}=    Get File    ${config_dir}\\print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_publish_config_xml}
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    : FOR    ${index}    IN RANGE    3
+    \    Add GIF Item To Experiment    ${experiment_id}    ${input_folder}\\tall2E.gif    test GIF doc
+    : FOR    ${index}    IN RANGE    2
+    \    ${doc_id}=    Add GIF Item To Experiment    ${experiment_id}    ${input_folder}\\Byzantine_Constantinople_eng.gif    test GIF doc
+    \    Lock Entity    ${experiment_id}
+    \    Sign Entity    ${experiment_id}    ${doc_id}
+    \    Unlock entity    ${experiment_id}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Large and Wide and Tall GIFS with Signatures
+    [Documentation]    This test includes 3 tall GIF images and 2 signed, tall and wide images.
+    ...
+    ...    This test uses some properties being added to each entity
+    [Tags]    EWB-WEB-PI002-W019-04
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Delete System Setting    Signature/digitalSignatureImage
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Configure Default Experiment    ${experiment_id}
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    : FOR    ${index}    IN RANGE    3
+    \    Add GIF Item To Experiment    ${experiment_id}    ${input_folder}\\tall2E.gif    test GIF doc
+    : FOR    ${index}    IN RANGE    2
+    \    ${doc_id}=    Add GIF Item To Experiment    ${experiment_id}    ${input_folder}\\Byzantine_Constantinople_eng.gif    test GIF doc
+    \    Lock Entity    ${experiment_id}
+    \    Sign Entity    ${experiment_id}    ${doc_id}
+    \    Unlock entity    ${experiment_id}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Large Wide and Tall PNGs with Properties and Header and Footers
+    [Documentation]    This test inserts 2 PNG images, one being tall and one being tall and wide (both require some scaling), also the experiment fonts and the headers and footers are customised in this experiment.
+    [Tags]    IGNORE    EWB-WEB-PI002-W019-05
+    [Setup]    Setup complex image test case
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties with icon.xml
+    ${font_config_xml}=    Get File    ${input_folder}\\Small Fonts with colours and style.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Replace Entity Config    ${experiment_id}    EXPERIMENT_FONTS    ${font_config_xml}
+    Add PNG Item To Experiment    ${experiment_id}    ${input_folder}\\tall banner.png    PNG doc
+    Add PNG Item To Experiment    ${experiment_id}    ${input_folder}\\Byzantine_Constantinople_eng.png    PNG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup image test case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${configuration_xml}=    Get File    ${test_data_folder}\\input\\print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${configuration_xml}
+    Set Suite Variable    ${experiment_id}
+
+Setup complex image test case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${configuration_xml}=    Get File    ${test_data_folder}\\input\\print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${configuration_xml}
+    Set Suite Variable    ${experiment_id}
+
+Do Multi Image Test
+    Add BMP Item To Experiment    ${experiment_id}    ${input_folder}\\beginAgain.bmp    test BMP doc
+    Add GIF Item To Experiment    ${experiment_id}    ${input_folder}\\Byzantine_Constantinople_eng.gif    test GIF doc
+    Add TIF Item To Experiment    ${experiment_id}    ${input_folder}\\monday.tif    test TIF doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

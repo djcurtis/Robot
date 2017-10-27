@@ -1,0 +1,11 @@
+*** Settings ***
+Documentation     Locators for Chemistry Search result pre-preview screen
+
+*** Variables ***
+${doneChemistryButton}    chemistryResults
+${searchDisplayedSpinner}    //div[@id='spinner' and contains(@style, 'block')]
+${reactionsPreviewLink}    //div[@class='tab-bar']//a[contains(text(),'Reactions')]
+${prepreviewCancelButton}    //button[contains(text(),'Cancel')]
+${chemistrySearchUniqueMatchesLabel}    //span[text()='Chemistry search (Unique matches)']
+${moleculesPreviewLink}    //div[@class='tab-bar']//a[contains(text(),'Molecules')]
+${informationLabel}    //p[text()='The following unique structures were matched in the search. You may select one or more to further refine the list of matched records.']

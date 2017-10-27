@@ -1,0 +1,99 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: DELETE /services/1.0/entities/{entityId}/tags/{tagId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-DTA    Delete Tag
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Delete tag
+    [Documentation]    EWB-SAPI-SSP-ENT-DTA-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and the tag is deleted
+    [Tags]    EWB-SAPI-SSP-ENT-DTA-S001
+    ${experiment_name}=    Set Variable    DTA-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    Delete Tag    ${experiment_id}    ${entity_version_id}    ${tag_id}
+    ${sapi_entity_tag_sequence}=    Get Tags    ${experiment_id}    ${entity_version_id}
+    # Checking expectations
+    XMLLibrary.Check Xml Element Count    Count element 'tagId'    ${sapi_entity_tag_sequence}    0    tagId    elementNamespace=http://entity.services.ewb.idbs.com
+
+Delete tag with missing version id
+    [Documentation]    EWB-SAPI-SSP-ENT-DTA-S002
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-DTA-S002
+    ${experiment_name}=    Set Variable    DTA-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    # Missing version id
+    Delete Tag    ${experiment_id}    ${EMPTY}    ${tag_id}    400
+    # Wrong version id
+    Delete Tag    ${experiment_id}    WrongEntityVersionId    ${tag_id}    404
+
+Delete tag with missing tag id
+    [Documentation]    EWB-SAPI-SSP-RES-DTA-S003
+    ...
+    ...    If the call parameter ‘entityTagId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-DTA-S003
+    ${experiment_name}=    Set Variable    DTA-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    # Missing tag
+    Delete Tag    ${experiment_id}    ${entity_version_id}    ${EMPTY}    405    # method not allowed
+
+Delete tag with wrong entity id
+    [Documentation]    EWB-SAPI-SSP-RES-DTA-S004
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-DTA-S004
+    ${experiment_name}=    Set Variable    DTA-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    # Missing entity id
+    Delete Tag    ${EMPTY}    ${entity_version_id}    ${tag_id}    404
+    # Wrong entity id
+    Delete Tag    WrongEntityId    ${entity_version_id}    ${tag_id}    404
+
+Delete tag with not existing tag
+    [Documentation]    EWB-SAPI-SSP-RES-DTA-S005
+    ...
+    ...    If the tag does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-DTA-S005
+    ${experiment_name}=    Set Variable    DTA-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    # Missing entity id
+    Delete Tag    ${experiment_id}    ${entity_version_id}    ${EMPTY}    405    # method not allowed
+    # Wrong entity id
+    Delete Tag    ${experiment_id}    ${entity_version_id}    WrongTagId    404
+
+Delete tag with no permissions
+    [Documentation]    EWB-SAPI-SSP-RES-DTA-S006
+    ...
+    ...    A client requires the EDIT_ANY_TAG or EDIT_TAGS permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-DTA-S006
+    ${experiment_name}=    Set Variable    DTA-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    # No EDIT_ANY_TAG and EDIT_TAGS permissions
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # No permissions
+    Delete Tag    ${experiment_id}    ${entity_version_id}    ${tag_id}    403
+
+*** Keywords ***

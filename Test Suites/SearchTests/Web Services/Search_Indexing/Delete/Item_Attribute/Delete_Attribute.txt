@@ -1,0 +1,65 @@
+*** Settings ***
+Documentation     Created for story SH-1301
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../../Libraries/common_resource.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Delete Caption - Version
+    [Documentation]    Record - Delete Keyword - Version
+    ...    - verify that version saved record is not searchable by deleted attribute
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    ${EMPTY}    Unpublished
+    Version Save    ${experimentId}    Data Added
+    Sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Delete Caption - Draft
+    [Documentation]    Record - Delete Keyword - Draft
+    ...    - verify that draft saved record is not searchable by deleted attribute
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    ${EMPTY}    Unpublished
+    Draft Save    ${experimentId}
+    Sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Delete Caption - Not Save
+    [Documentation]    Record - Delete Keyword - Not Save
+    ...    - verify that record is searchable by deleted attribute, if record not saved
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    ${EMPTY}    Unpublished
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    Project
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${currentDate}=    Get Current Date
+    ${experimentName}=    Set Variable    Experiment ${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentId}
+    EntityAPILibrary.Lock Entity    ${experimentId}
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Set Suite Variable    ${documentId}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

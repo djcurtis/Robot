@@ -1,0 +1,177 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+08-01 - No Tuples
+    ${new element id}=    Create Root Element    TERM    RootTermTuples1    RootTermTuples1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+
+08-02 - POST One Tuple
+    ${new element id}=    Create Root Element    TERM    RootTermTuples2    RootTermTuples2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    ${tuple id}=    Create Tuple    ${new element id}    example    value1    value1    true
+    ...    true
+    ${tuple information}=    Get Tuple    ${new element id}    ${tuple id}
+    ${Tuple Enabled Status}=    Get Json Value    ${tuple information}    /enabled
+    Should Be Equal    ${Tuple Enabled Status}    true
+    ${Tuple Default Status}=    Get Json Value    ${tuple information}    /defaultTuple
+    Should Be Equal    ${Tuple Default Status}    true
+
+08-03 - POST Two Tuples
+    ${new element id}=    Create Root Element    TERM    RootTermTuples3    RootTermTuples3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+    Create Tuple    ${new element id}    example    value2    value2    true    false
+
+08-04 - POST Ten Tuples
+    ${new element id}=    Create Root Element    TERM    RootTermTuples4    RootTermTuples4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+    Create Tuple    ${new element id}    example    value2    value2    true    false
+    Create Tuple    ${new element id}    example    value3    value3    true    false
+    Create Tuple    ${new element id}    example    value4    value4    true    false
+    Create Tuple    ${new element id}    example    value5    value5    true    false
+    Create Tuple    ${new element id}    example    value6    value6    true    false
+    Create Tuple    ${new element id}    example    value7    value7    true    false
+    Create Tuple    ${new element id}    example    value8    value8    true    false
+    Create Tuple    ${new element id}    example    value9    value9    true    false
+    Create Tuple    ${new element id}    example    value10    value10    true    false
+
+08-05 - POST Tuple Invalid Term
+    Create Tuple And Expect Error    1000123    404    example    value1    value1    true
+    ...    true
+
+08-06 - POST Duplicate Tuple
+    ${new element id}=    Create Root Element    TERM    RootTermTuples5    RootTermTuples5    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+    Create Tuple And Expect Error    ${new element id}    409    example    value1    value1    true
+    ...    true
+
+08-07 - POST Tuple - 1000 Characters in value
+    ${new element id}=    Create Root Element    TERM    RootTermTuples6    RootTermTuples6    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":"<= 1000","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfdsfsddfsdfddfsdfd0890809890880890809    value1    true    true
+
+08-08 - POST Tuple - 1001 Characters in value
+    ${new element id}=    Create Root Element    TERM    RootTermTuples7    RootTermTuples7    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":"<= 1000","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple And Expect Error    ${new element id}    400    example    19089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfds9089sdfdfsdfdsfsddfsdfddfsdfd0890809890880890809    value1    true
+    ...    true
+
+08-11 - POST Tuple - String Value
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesString1    RootTermTuplesString1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    true
+
+08-12 - POST Tuple - String Value With Spaces In Value
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesString2    RootTermTuplesString2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    value string    valuestring    true    true
+
+08-14 - POST Tuple - String Value With Numeric Values In Value
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesString4    RootTermTuplesString4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    1234567890    valuestring    true    true
+
+08-16 - POST Tuple - Numeric Value
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesNumber1    RootTermTuplesNumber1    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    1234567890    1234567890    true    true
+
+08-17 - POST Tuple - Numeric Value With Exponential
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesNumber2    RootTermTuplesNumber2    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    2e5    2e5    true    true
+
+08-18 - POST Tuple - Numeric Value With Non-Numeric Characters In Value
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesNumber3    RootTermTuplesNumber3    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple And Expect Error    ${new element id}    400    example    abc    1234567890    true
+    ...    true
+
+08-19 - POST Tuples - Unique Key Values
+    ${new element id}=    Create Root Element    TERM    RootTermUniqueTuples    RootTermUniqueTuples    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    ${tuple response}=    Create Tuple    ${new element id}    example    value1    value1    true
+    ...    true
+    Log    ${tuple response}
+    # Get Tuple ID
+    # Check DB for duplicates
+    # Repeat above to ensure tuples are unique
+
+08-20 - POST Tuples - No/Single/Multiple Default Tuples
+    ${new element id}=    Create Root Element    TERM    DefaultTuples1    DefaultTuples1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    value1    value1    true    false
+    Create Tuple    ${new element id}    example    value2    value2    true    true
+    Create Tuple And Expect Error    ${new element id}    409    example    value3    value3    true
+    ...    true
+
+08-21 - POST Tuple - Numeric Constraints Greater Than
+    ${new element id}=    Create Root Element    TERM    NumericConstraints1    NumericConstraints1    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":"> 10.0","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    11    11    true    true
+    Create Tuple    ${new element id}    example    10.1    10.1    true    false
+    Create Tuple And Expect Error    ${new element id}    400    example    10.0    10.0    true
+    ...    false
+    Create Tuple And Expect Error    ${new element id}    400    example    9.0    9.0    true
+    ...    false
+
+08-22 - POST Tuple - Numeric Constraints Less Than
+    ${new element id}=    Create Root Element    TERM    NumericConstraints2    NumericConstraints2    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":"< 10.0","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    9    9    true    true
+    Create Tuple    ${new element id}    example    9.9    9.9    true    false
+    Create Tuple And Expect Error    ${new element id}    400    example    10.0    10.0    true
+    ...    false
+    Create Tuple And Expect Error    ${new element id}    400    example    11.0    11.0    true
+    ...    false
+
+08-23 - POST Tuple - Numeric Constraints Within Range
+    ${new element id}=    Create Root Element    TERM    NumericConstraints3    NumericConstraints3    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":"[] 10.0 20.0","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    10.0    10.0    true    true
+    Create Tuple    ${new element id}    example    20.0    20.0    true    false
+    Create Tuple And Expect Error    ${new element id}    400    example    9.9    9.9    true
+    ...    false
+    Create Tuple And Expect Error    ${new element id}    400    example    20.1    20.1    true
+    ...    false
+
+08-24 - POST Tuple - Timestamp Constraints Greater Than
+    [Tags]    ignore
+    ${new element id}=    Create Root Element    TERM    TimestampConstraints1    TimestampConstraints1    true    {"property":[{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":"> 1332460800000","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    1332460800001    1332460800001    true    true
+    Create Tuple    ${new element id}    example    1332460810000    1332460810000    true    false
+    Create Tuple And Expect Error    ${new element id}    400    example    1332460799999    1332460799999    true
+    ...    false
+    Create Tuple And Expect Error    ${new element id}    400    example    1332460780000    1332460780000    true
+    ...    false
+
+08-25 - POST Tuple - Timestamp Constraints Less Than
+    [Tags]    ignore
+    ${new element id}=    Create Root Element    TERM    TimestampConstraints2    TimestampConstraints2    true    {"property":[{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":"< 1332460800000","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    1332460799999    1332460799999    true    true
+    Create Tuple    ${new element id}    example    1332460790000    1332460790000    true    false
+    Create Tuple And Expect Error    ${new element id}    400    example    1332460800001    1332460800001    true
+    ...    false
+    Create Tuple And Expect Error    ${new element id}    400    example    1332460800000    1332460800000    true
+    ...    false
+
+08-26 - POST Tuple - Timestamp Constraints Within Range
+    [Tags]    ignore
+    ${new element id}=    Create Root Element    TERM    TimestampConstraints3    TimestampConstraints3    true    {"property":[{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":"[] 1331683200000 1332028800000","unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    1331683200000    1331683200000    true    true
+    Create Tuple    ${new element id}    example    1332028800000    1332028800000    true    false
+    Create Tuple And Expect Error    ${new element id}    400    example    1331683199999    1331683199999    true
+    ...    false
+    Create Tuple And Expect Error    ${new element id}    400    example    1332028800001    1332028800001    true
+    ...    false

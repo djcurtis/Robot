@@ -1,0 +1,301 @@
+*** Settings ***
+Documentation     Test Cases Covering Root Level Terms
+...
+...               This test covers the following SSP items:
+...
+Force Tags        Catalog Service                        
+
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+02-01 POST root term
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    RootTerm    RootTerm    true    ${properties}
+
+02-02 POST root term spaces in name
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    Spaces Name2    SpaceName    true    ${properties}
+
+02-03 POST root term 255 characters name
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    a11112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111    255Name    true    ${properties}
+
+02-04 POST root term 256 characters name
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element And Expect Error    TERM    400    222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    256Name    true    ${properties}
+
+02-05 POST root term spaces in description
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    SpacesDescription2    Spaces Description    true    ${properties}
+
+02-06 POST root term 255 characters description
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    255Description2    111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111    true    ${properties}
+
+02-07 POST root term 256 characters description
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element And Expect Error    TERM    400    256Description    222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    true    ${properties}
+
+02-08 POST root term enabled
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    EnabledTerm    EnabledTerm    true    ${properties}
+
+02-09 POST root term disabled
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    DisabledTerm    DisabledTerm    false    ${properties}
+
+02-10 POST root term invalid state
+    [Tags]    ignore
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element And Expect Error    TERM    400    InvalidState    InvalidState    invalid    ${properties}
+
+02-11 POST root term valid data type
+    Create Root Element    TERM    ValidDataType    ValidDataType    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"termReference":{"path":"/IDBS-Applications/Core/Results Hub/General Condition"}}]}
+
+02-12 POST root term invalid data type
+    [Documentation]    Not applicable due to changes in data types in 9.2
+    [Tags]    ignore
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element And Expect Error    TERM    400    InvalidDataType    InvalidDataType    true    ${properties}
+    ...    Invalid
+
+02-13 POST root term - single property
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    Create Root Element    TERM    OnePropertiesTerm    OnePropertiesTerm    true    ${properties}
+
+02-14 POST root term - two properties
+    ${property_1}=    Create Property JSON    example    STRING    Example    true    true
+    ${property_2}=    Create Property JSON    example2    STRING    Example2    false    false
+    ${properties}=    Create Properties JSON    ${property_1}    ${property_2}
+    Create Root Element    TERM    TwoPropertiesTerm    TwoPropertiesTerm    true    ${properties}
+
+02-15 POST root term - three properties
+    ${property_1}=    Create Property JSON    example    STRING    Example    true    true
+    ${property_2}=    Create Property JSON    example2    STRING    Example2    false    false
+    ${property_3}=    Create Property JSON    example3    STRING    Example3    false    false
+    ${properties}=    Create Properties JSON    ${property_1}    ${property_2}    ${property_3}
+    Create Root Element    TERM    ThreePropertiesTerm    ThreePropertiesTerm    true    ${properties}
+
+02-16 POST root term - UPPERCASE Property Name
+    Create Root Element    TERM    UppercasePropertyName    UppercasePropertyName    true    {"property":[{"name":"UPPERCASE","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-17 POST root term - LOWERCASE Property Name
+    Create Root Element    TERM    LowercasePropertyName    LowercasePropertyName    true    {"property":[{"name":"lowercase","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-18 POST root term - Mixed Case Property Name
+    Create Root Element    TERM    MixedPropertyName    MixedPropertyName    true    {"property":[{"name":"MiXeDcAsE","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-19 POST root term - Spaces In Property Name
+    Create Root Element    TERM    SpacePropertyName    SpacePropertyName    true    {"property":[{"name":"space name","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-20 POST root term - 32 Characters In Property Name
+    Create Root Element    TERM    32CharNameProperty    32CharNameProperty    true    {"property":[{"name":"11111222221111122222111112222212","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-21 POST root term - 33 Characters In Property Name
+    Create Root Element And Expect Error    TERM    400    33CharNameProperty    33CharNameProperty    true    {"property":[{"name":"111112222211111222221111122222121","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-22 POST root term - Empty Property Name
+    Create Root Element And Expect Error    TERM    400    EmptyNameProperty    EmptyNameProperty    true    {"property":[{"name":"${EMPTY}","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-23 POST root term - UPPERCASE Property Description
+    Create Root Element    TERM    UppercasePropertyDescription    UppercasePropertyDescription    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"UPPERCASE","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-24 POST root term - LOWERCASE Property Description
+    Create Root Element    TERM    LowercasePropertyDescription    LowercasePropertyDescription    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"lowercase","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-25 POST root term - Mixed Case Property Description
+    Create Root Element    TERM    MixedPropertyDescription    MixedPropertyDescription    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"MiXeDcAsE","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-26 POST root term - Spaces In Property Description
+    Create Root Element    TERM    SpacePropertyDescription    SpacePropertyDescription    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"space description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-27 POST root term - 255 Characters In Property Description
+    Create Root Element    TERM    255CharDescriptionProperty    255CharDescriptionProperty    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-28 POST root term - 256 Characters In Property Description
+    Create Root Element And Expect Error    TERM    400    256CharDescriptionProperty    256CharDescriptionProperty    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"1111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-29 POST root term - Empty Property Description
+    Create Root Element    TERM    EmptyPropertyDescription    EmptyPropertyDescription    true    {"property":[{"name":"name","type":"STRING","format":null,"description":"${EMPTY}","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-30 POST root term NO key property
+    Create Root Element And Expect Error    TERM    400    NoKeyProperty    NoKeyProperty    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-31 POST root term TWO key properties
+    Create Root Element And Expect Error    TERM    400    TwoKeyProperties    TwoKeyProperties    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-32 POST root term NO display properties
+    Create Root Element And Expect Error    TERM    400    NoDisplayProperty    NoDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-33 POST root term TWO display properties
+    Create Root Element And Expect Error    TERM    400    TwoDisplayProperties    TwoDisplayProperties    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-34 POST root term STRING key property data type
+    Create Root Element    TERM    StringKeyProperty    StringKeyProperty    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-35 POST root term NUMBER key property data type
+    Create Root Element    TERM    NumberKeyProperty    NumberKeyProperty    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-36 POST root term TIMESTAMP key property data type
+    Create Root Element    TERM    TimestampKeyProperty    TimestampKeyProperty    true    {"property":[{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-37 POST root term AUTO_ID key property data type
+    Create Root Element    TERM    AutoIDKeyProperty    AutoIDKeyProperty    true    {"property":[{"name":"example","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!NUMBER!6!false!1!NONE!AUTO_ID_FORMAT_1!1","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-38 POST root term BOOLEAN key property data type
+    Create Root Element And Expect Error    TERM    400    BooleanKeyProperty    BooleanKeyProperty    true    {"property":[{"name":"example","type":"BOOLEAN","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-39 POST root term BINARY key property data type
+    Create Root Element And Expect Error    TERM    400    BinaryKeyProperty    BinaryKeyProperty    true    {"property":[{"name":"example","type":"BINARY","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-40 POST root term CHEMISTRY key property data type
+    Create Root Element And Expect Error    TERM    400    ChemistryKeyProperty    ChemistryKeyProperty    true    {"property":[{"name":"example","type":"CHEMISTRY","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-41 POST root term IMAGE key property data type
+    Create Root Element And Expect Error    TERM    400    ImageKeyProperty    ImageKeyProperty    true    {"property":[{"name":"example","type":"IMAGE","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-42 POST root term INVALID key property data type
+    [Documentation]    Deferred defect = QC13865
+    Create Root Element And Expect Error    TERM    500 \     InvalidKeyProperty    InvalidKeyProperty    true    {"property":[{"name":"example","type":"INVALID","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-43 POST root term EMPTY key property data type
+    [Documentation]    Deferred defect = QC13865
+    Create Root Element And Expect Error    TERM    500 \     EmptyKeyProperty    EmptyKeyProperty    true    {"property":[{"name":"example","type":"${EMPTY}","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-44 POST root term STRING non-key property data type
+    Create Root Element    TERM    StringNonKeyProperty    StringNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-45 POST root term NUMBER non-key property data type
+    Create Root Element    TERM    NumberNonKeyProperty    NumberNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-46 POST root term TIMESTAMP non-key property data type
+    Create Root Element    TERM    TimestampNonKeyProperty    TimestampNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-47 POST root term AUTO_ID non-key property data type
+    Create Root Element    TERM    AutoIDNonKeyProperty    AutoIDNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!NUMBER!6!false!1!NONE!AUTO_ID_FORMAT_1!1","description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-48 POST root term BOOLEAN non-key property data type
+    Create Root Element    TERM    BooleanNonKeyProperty    BooleanNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BOOLEAN","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-49 POST root term BINARY non-key property data type
+    Create Root Element    TERM    BinaryNonKeyProperty    BinaryNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BINARY","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-50 POST root term CHEMISTRY non-key property data type
+    Create Root Element    TERM    ChemistryNonKeyProperty    ChemistryNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"CHEMISTRY","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-51 POST root term IMAGE non-key property data type
+    Create Root Element    TERM    ImageNonKeyProperty    ImageNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"IMAGE","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-52 POST root term INVALID non-key property data type
+    [Documentation]    Deferred defect = QC13865
+    Create Root Element And Expect Error    TERM    500 \     InvalidNonKeyProperty    InvalidNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"INVALID","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-53 POST root term EMPTY non-key property data type
+    [Documentation]    Deferred defect = QC13865
+    Create Root Element And Expect Error    TERM    500    EmptyNonKeyProperty    EmptyNonKeyProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"${EMPTY}","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-54 POST root term STRING non-key display property data type
+    Create Root Element    TERM    StringNonKeyDisplayProperty    StringNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-55 POST root term NUMBER non-key display property data type
+    Create Root Element    TERM    NumberNonKeyDisplayProperty    NumberNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-56 POST root term TIMESTAMP non-key display property data type
+    Create Root Element    TERM    TimestampNonKeyDisplayProperty    TimestampNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-57 POST root term AUTO_ID non-key display property data type
+    Create Root Element    TERM    AutoIDNonKeyDisplayProperty    AutoIDNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!NUMBER!6!false!1!NONE!AUTO_ID_FORMAT_1!1","description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-58 POST root term BOOLEAN non-key display property data type
+    Create Root Element    TERM    BooleanNonKeyDisplayProperty    BooleanNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BOOLEAN","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-59 POST root term BINARY non-key display property data type
+    Create Root Element    TERM    BinaryNonKeyDisplayProperty    BinaryNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BINARY","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-60 POST root term CHEMISTRY non-key display property data type
+    Create Root Element    TERM    ChemistryNonKeyDisplayProperty    ChemistryNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"CHEMISTRY","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-61 POST root term IMAGE non-key display property data type
+    Create Root Element    TERM    ImageNonKeyDisplayProperty    ImageNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"IMAGE","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-62 POST root term INVALID non-key display property data type
+    [Documentation]    Deferred defect = QC13865
+    Create Root Element And Expect Error    TERM    500    InvalidNonKeyDisplayProperty    InvalidNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"INVALID","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-63 POST root term EMPTY non-key display property data type
+    [Documentation]    Deferred defect = QC13865
+    Create Root Element And Expect Error    TERM    500    EmptyNonKeyDisplayProperty    EmptyNonKeyDisplayProperty    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"${EMPTY}","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-64 POST root term duplicate
+    Create Root Element    TERM    DuplicateTerm    DuplicateTerm    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Root Element And Expect Error    TERM    409    DuplicateTerm    DuplicateTerm    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-65 POST root term NO property
+    Create Root Element And Expect Error    TERM    400    NoKeyProperty    NoKeyProperty    true    {"property":[ ]}
+
+02-66 POST root term STRING key property with format
+    Create Root Element And Expect Error    TERM    400    StringKeyPropertyFormat    StringKeyPropertyFormat    true    {"property":[{"name":"example","type":"STRING","format":"ABC","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-67 POST root term NUMBER key property with format
+    Create Root Element    TERM    NumberKeyPropertyFormat    NumberKeyPropertyFormat    true    {"property":[{"name":"example","type":"NUMBER","format":"#0.0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-68 POST root term AUTO_ID key property with format
+    Create Root Element    TERM    AutoIDKeyPropertyFormat    AutoIDKeyPropertyFormat    true    {"property":[{"name":"example","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!NUMBER!6!false!1!NONE!AUTO_ID_FORMAT_1!1","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-69 POST root term TIMESTAMP key property with format
+    Create Root Element    TERM    TimestampKeyPropertyFormat    TimestampKeyPropertyFormat    true    {"property":[{"name":"example","type":"TIMESTAMP","format":"MM/dd/yy","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+02-70 POST root term BOOLEAN non-key property with format
+    Create Root Element And Expect Error    TERM    400    BooleanNonKeyPropertyFormat    BooleanNonKeyPropertyFormat    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BOOLEAN","format":"ABC","description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-71 POST root term BINARY non-key property with format
+    Create Root Element And Expect Error    TERM    400    BinaryNonKeyPropertyFormat    BinaryNonKeyPropertyFormat    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BINARY","format":"ABC","description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-72 POST root term CHEMISTRY non-key property with format
+    Create Root Element And Expect Error    TERM    400    ChemistryNonKeyPropertyFormat    ChemistryNonKeyPropertyFormat    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"CHEMISTRY","format":"ABC","description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-73 POST root term IMAGE non-key property with format
+    Create Root Element And Expect Error    TERM    400    ImageNonKeyPropertyFormat    ImageNonKeyPropertyFormat    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"IMAGE","format":"ABC","description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+
+02-74 POST root term STRING key property with unit
+    Create Root Element    TERM    StringKeyPropertyUnit    StringKeyPropertyUnit    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":true,"displayed":true,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-75 POST root term NUMBER key property with unit
+    Create Root Element    TERM    NumberKeyPropertyUnit    NumberKeyPropertyUnit    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":true,"displayed":true,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-76 POST root term AUTO_ID key property with unit
+    Create Root Element And Expect Error    TERM    400    AutoIDKeyPropertyUnit    AutoIDKeyPropertyUnit    true    {"property":[{"name":"example","type":"AUTO_ID","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":true,"displayed":true,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-77 POST root term TIMESTAMP key property with unit
+    Create Root Element And Expect Error    TERM    400    TimestampKeyPropertyUnit    TimestampKeyPropertyUnit    true    {"property":[{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":true,"displayed":true,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-78 POST root term BOOLEAN non-key property with unit
+    Create Root Element And Expect Error    TERM    400    BooleanNonKeyPropertyUnit    BooleanNonKeyPropertyUnit    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BOOLEAN","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":false,"displayed":false,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-79 POST root term BINARY non-key property with unit
+    Create Root Element And Expect Error    TERM    400    BinaryNonKeyPropertyUnit    BinaryNonKeyPropertyUnit    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"BINARY","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":false,"displayed":false,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-80 POST root term CHEMISTRY non-key property with unit
+    Create Root Element And Expect Error    TERM    400    ChemistryNonKeyPropertyUnit    ChemistryNonKeyPropertyUnit    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"CHEMISTRY","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":false,"displayed":false,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-81 POST root term IMAGE non-key property with unit
+    Create Root Element And Expect Error    TERM    400    ImageNonKeyPropertyUnit    ImageNonKeyPropertyUnit    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"IMAGE","format":null,"description":"Example","constraint":null,"unit":"As Intended","key":false,"displayed":false,"unitTermPath":"/Experiment Dictionaries/Entity Delete Reasons","linkTermPath":null}]}
+
+02-82 POST root term LINKED non-key property
+    ${new term id}=    Create Root Element    TERM    LinkedTerm1    LinkedTerm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Root Element    TERM    LinkedProperty1    LinkedProperty1    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"Linked:LinkedTerm1","type":"STRING","format":null,"description":null,"constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/LinkedTerm1"}]}
+
+02-83 POST root term LINKED non-key property constraint
+    ${new term id}=    Create Root Element    TERM    LinkedTerm3    LinkedTerm3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Root Element And Expect Error    TERM    400    LinkedProperty3    LinkedProperty3    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"Linked:LinkedTerm3","type":"STRING","format":"ABC","description":null,"constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"${new term id}"}]}
+
+02-84 POST root term LINKED non-key property format
+    ${new term id}=    Create Root Element    TERM    LinkedTerm2    LinkedTerm2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Root Element And Expect Error    TERM    400    LinkedProperty2    LinkedProperty2    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"Linked:LinkedTerm2","type":"STRING","format":null,"description":null,"constraint":"ABC","unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"${new term id}"}]}
+
+02-85 POST root term buffering spaces
+    ${new element id}=    Create Root Element    TERM    ${SPACE*10}PreceedingTerm    PreceedingTerm    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    term    ${new element id}    PreceedingTerm    /PreceedingTerm    true
+    ${new element id}=    Create Root Element    TERM    TrailingTerm${SPACE*10}    TrailingTerm    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    term    ${new element id}    TrailingTerm    /TrailingTerm    true

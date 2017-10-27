@@ -1,0 +1,26 @@
+*** Settings ***
+Documentation     Contains xpaths for search \ screen
+
+*** Variables ***
+${searchFrame}    search-page-container-frame
+${optionsDropdown}    xpath=//*[@class="optionsname"]
+${optionsMenu}    css=#ewb-popup-menu > .menu
+${optionsClear}    css=#clear > a
+${searchButton}    go
+${searchingSpinner}    spinner
+${advancedLink}    css=.structured-search-text-toggle
+${newAdvancedTermLink}    //*[@title="Add one or more search terms"]
+${freeTextInput}    //*[@id="searchBox"]/div/input[2]
+${enabledAdvSearchItems}    //div[@class='structure-and-breadcrumb']//div[contains(@class,'enabled')]
+${advSearchTermsInSearchPage}    //div[@class='termsView']//div[@query-term-id]
+${toastMessagePopup}    css=div.toast-message
+${searchByLink}    css=.searchbyname
+${chemistryBenzeneButton}    css=#chemistrySearchButton > .button
+${benzeneCrossButton}    css=#clear-chemistry-search-button
+${matchMode}      css=.match-mode
+${operatorPickList}    css=.query-term-popover .query-term-operator > select
+${valueTextFiled}    css=.query-term-popover .query-term-value > input
+${pleaseEnterSomethingToSearchMessage}    xpath=//h2[text()='Please enter something to search for.']
+${yellowBottomMessagePanel}    css=.changingSearch.slide-up
+${benzeneNoDot}    //*[@id="chemistrySearchButton" and @class="inactive"]
+${benzeneWithDot}    //*[@id="chemistrySearchButton" and @class="active"]

@@ -1,0 +1,63 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/settings/usersettings/{key}
+Force Tags        User Settings
+Library           XMLLibrary
+Resource          ../../../Libraries/Core Web Services/Settings Service/rest_settings_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Check can get user setting
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPISettingValueList
+    ...
+    ...    ** need to add type information to call
+    ${response}=    Put User Setting    testBoolSetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>testBoolSetting</key><dataType>BOOLEAN</dataType><type>USER</type><values><value>true</value></values></setting>
+    ${user_settings}=    Get User Setting    testBoolSetting    BOOLEAN
+    ${test-value}=    Get Json Value    ${user_settings}    /values/value
+    Should Be Equal    ${test-value}    ["true"]
+    ${data_type}=    Get Json Value    ${user_settings}    /dataType
+    Should Be Equal    ${data_type}    "BOOLEAN"
+
+Check get user setting fails for invalid data type
+    [Documentation]    If the value supplied for the parameter ‘type’ is not with the ones defined by SAPISettingsDataType, then the HTTP status code 404 is returned to the client.
+    ...
+    ...    Valid Interface Types are:
+    ...
+    ...    STRING, BOOLEAN, NUMBER
+    ...
+    ...
+    ...
+    ...    (valid types in database are: AUTO_ID, BINARY, BOOLEAN, CHEMISTRY, IMAGE, INTEGER, NUMBER, STRING, TIMESTAMP)
+    ${user_settings}=    Get User Setting    showTipsAtStartup    INTEGER    404
+
+Check get user setting defaults to string type for missing data type
+    [Documentation]    If the value supplied for the parameter ‘type’ is not with the ones defined by SAPISettingsDataType, then the HTTP status code 404 is returned to the client.
+    ...
+    ...    Valid Interface Types are:
+    ...
+    ...    STRING, BOOLEAN, NUMBER
+    ...
+    ...
+    ...
+    ...    (valid types in database are: AUTO_ID, BINARY, BOOLEAN, CHEMISTRY, IMAGE, INTEGER, NUMBER, STRING, TIMESTAMP)
+    ${response}=    Put User Setting    testBoolSetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>testBoolSetting</key><dataType>BOOLEAN</dataType><type>USER</type><values><value>true</value></values></setting>
+    ${user_settings}=    Get User Setting    testBoolSetting    ${EMPTY}    200
+    ${test-value}=    Get Json Value    ${user_settings}    /values/value
+    Should Be Equal    ${test-value}    ["true"]
+    ${data_type}=    Get Json Value    ${user_settings}    /dataType
+    Should Be Equal    ${data_type}    "STRING"
+
+Check can get user setting with encoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${response}=    Put User Setting    url%252fuser%252fsetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>url/user/setting</key><dataType>NUMBER</dataType><type>USER</type><values><value>2</value></values></setting>
+    ${user_settings}=    Get User Setting    url%252fuser%252fsetting    NUMBER
+    ${test_value}=    Get Json Value    ${user_settings}    /values/value
+    Should Be Equal    ${test_value}    ["2"]
+    ${test_type}=    Get Json Value    ${user_settings}    /dataType
+    Should Be Equal    ${test_type}    "NUMBER"
+
+Check can get user setting fails with incorrect encoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${response}=    Put User Setting    url%252fuser%252fsetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>url/user/setting</key><dataType>NUMBER</dataType><type>USER</type><values><value>2</value></values></setting>
+    ${user_settings}=    Get User Setting    url/user/setting    NUMBER    404

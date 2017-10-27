@@ -1,0 +1,458 @@
+*** Settings ***
+Documentation     A resource file containing the application specific keywords that are required for the comments automated test functionality
+Resource          comments_system_resource.txt
+Library           IDBSSelenium2Library
+Library           String
+Resource          general_resource.txt
+
+*** Variables ***
+${record content icon ID}    ewb-record-action-bar-comments
+
+*** Keywords ***
+Check Comment Number Header
+    [Arguments]    ${number}    ${document no}
+    [Documentation]    *Checks the number of comments as displayed in the document header*
+    Wait Until Page Contains Element    document-header-${document no}-commentsButton    30s
+    ${count}    Get Text    xpath=//div[@id="document-header-${document no}-commentsButton"]/div/div
+    Should Be Equal As Integers    ${count}    ${number}
+
+Check Record Comment Number Is
+    [Arguments]    ${number}
+    [Documentation]    This keyword checks that the number of comments on the record level is equal to ${number}
+    ...
+    ...    *Arguments*
+    ...
+    ...    - _number_ - an integer value for the number of comments that are expected to be on the record.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Wait Until Page Contains Element    xpath=//table[contains(@class,'record-actions-header')]/tbody/tr/td/div[contains(@class,'ewb-document-header-comment-anchor')]/div/div    30s
+    Element Should Contain    xpath=//table[contains(@class,'record-actions-header')]/tbody/tr/td/div[contains(@class,'ewb-document-header-comment-anchor')]/div/div    ${number}
+
+Open Comments Panel
+    [Arguments]    ${document number}
+    [Documentation]    *Opens the comments panel for the specified document item and checks the presence of UI elements*
+    ...
+    ...    *Arguments*
+    ...    - _document_number_ - the number of the document in the record. Note: 0 = first document in record.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Robust Click    document-header-${document number}-commentsButton
+    Wait Until Page Contains Element    ewb-comments-post-accept-link
+    Wait Until Page Contains Element    ${New Comment}
+    Click Element    ${New Comment}
+    Element Should Be Visible    ${Post}
+    Element Should Be Visible    ${Clear}
+    Click Element    ${Clear}
+    Element Should Be Visible    ${Post}
+    Element Should Be Visible    ${Clear}
+
+Open Comments Panel No Check
+    [Arguments]    ${document number}
+    [Documentation]    *Opens the comments panel for the specified document item but does not check the presence of UI elements*
+    ...
+    ...    *Arguments*
+    ...    - _document_number_ - the number of the document in the record. Note: 0 = first document in record.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Robust Click    document-header-${document number}-commentsButton
+    Wait Until Page Contains Element    xpath=//div[contains(@class,'ewb-window-header-title') and contains(text(),'Comments')]
+
+Open Record Comments Panel
+    [Documentation]    *Opens the comments panel for the currently displayed record and checks the presence of UI elements*
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Robust Click    ${record content icon ID}
+    Wait Until Page Contains Element    ewb-comments-post-accept-link
+    Page Should Contain Element    ${New Comment}
+    Robust Click    ${New Comment}
+    Element Should Be Visible    ${Post}
+    Element Should Be Visible    ${Clear}
+    Robust Click    ${Clear}
+    Element Should Be Visible    ${Post}
+    Element Should Be Visible    ${Clear}
+
+Open Record Comments Panel No Check
+    [Documentation]    Opens the record level comments panel without checking for UI items
+    Robust Click    ${record content icon ID}
+    Wait Until Page Contains Element    xpath=//div[contains(@class,'ewb-window-header-title') and contains(text(),'Comments')]
+
+Close Comments Panel
+    [Documentation]    *Closes the comments panel for the specified document item and checks the presence of UI elements*
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Robust Click    ${Close Comments Window}
+
+Check Record Comment UI No Comments
+    [Documentation]    *Checks that the open record has no record level comments*
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Wait Until Page Contains Element    ${record content icon ID}    30s
+    Element Text Should Be    ${record content icon ID}    0
+    Open Record Comments Panel
+    Close Comments Panel
+
+Check Comment UI In Minimal Record Mode
+    [Arguments]    ${document number}
+    [Documentation]    *Checks that no document level comments UI elements are visible when the record is displayed in minimal record mode*
+    ...
+    ...    *Arguments*
+    ...    - ${document number} corresponds to the position of the document in the record. First document = 0.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Element Should Not Be Visible    document-header-${document number}-commentsButton
+
+Check Comment UI
+    [Arguments]    ${number of comments}    ${document number}
+    [Documentation]    *Checks the document header comments UI, including the number of comments shown*
+    ...    ${number of comments} corresponds to the number of expected comments for the document
+    ...    ${document number} corresponds to the position of the document in the record
+    ...
+    ...
+    ...    *Arguments*
+    ...    - _number of comments_ - the number of expected comments for the document
+    ...    - _document number_ - the position of the document in the record. First document = 0.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Check Comment Number Header    ${number of comments}    ${document number}
+    Open Comments Panel    ${document number}
+    Close Comments Panel
+
+Add New Comment
+    [Arguments]    ${comment}
+    [Documentation]    *Adds a new comment to the open comments dialog*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment to add
+    ...
+    ...    *Return Value*
+    ...    - _comment_added_ = the comment text added (including unique identifier)
+    ${current time} =    Get Time    epoch
+    ${comment_to_add}=    Set Variable    ${comment} (${current time})
+    Web Add Comment    ${comment_to_add}
+    Check Comment Exists    ${comment_to_add}
+    [Return]    ${comment_to_add}
+
+Add New Comment No Timestamp
+    [Arguments]    ${comment}
+    [Documentation]    *Adds a new comment to the open comments dialog WITHOUT adding a unique timestamp to the comment*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment to add
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Web Add Comment    ${comment}
+    ${comment_length}=    Get Length    ${comment}
+    ${truncated_comment}=    Run Keyword If    int(${comment_length}) > 2048    Evaluate    "${comment}"[:2048]
+    ${comment}=    Set Variable If    int(${comment_length}) > 2048    ${truncated_comment}    ${comment}
+    Check Comment Exists    ${comment}
+
+Add New Comment UK Time
+    [Arguments]    ${comment}
+    [Documentation]    *Adds a new comment to the open comments dialog with a dd/mm/yy suffix*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment to add
+    ...
+    ...    *Return Value*
+    ...    - _comment_added_ = the comment text added (including timestamp suffix)
+    ...    - _date_ = the timestamp suffix in dd/mm/yy format
+    ${yyyy}    ${mm}    ${dd}=    Get Time    year,month,day
+    ${yy}=    Evaluate    '${yyyy}'[2:4]
+    ${date}=    Set Variable    ${dd}/${mm}/${yy}
+    ${comment_to_add}=    Set Variable    ${comment} ${date}
+    Web Add Comment    ${comment_to_add}
+    Check Comment Exists    ${comment_to_add}
+    [Return]    ${comment_to_add}    ${date}
+
+Add New Reply
+    [Arguments]    ${comment}    ${reply}
+    [Documentation]    *Adds a reply to the specified comment*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment text under which to add a reply
+    ...    - _reply_ - the reply text to add
+    ...
+    ...    *Return Value*
+    ...    - _reply_added_ = the reply text added (including unique identifier)
+    ${current time} =    Get Time    epoch
+    ${reply_to_add}=    Set Variable    ${reply} (${current time})
+    Web Add Reply    ${comment}    ${reply_to_add}
+    Check Reply Exists    ${reply_to_add}
+    [Return]    ${reply_to_add}
+
+Add New Reply No Timestamp
+    [Arguments]    ${comment}    ${reply}
+    [Documentation]    *Adds a reply to the specified comment WITHOUT appending a unique timestamp*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment text under which to add a reply
+    ...    - _reply_ - the reply text to add
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Web Add Reply    ${comment}    ${reply}
+    ${reply_length}=    Get Length    ${reply}
+    ${truncated_reply}=    Run Keyword If    int(${reply_length}) > 2048    Evaluate    "${reply}"[:2048]
+    ${reply}=    Set Variable If    int(${reply_length}) > 2048    ${truncated_reply}    ${reply}
+    Check Reply Exists    ${reply}
+
+Add New Reply UK Time
+    [Arguments]    ${comment}    ${reply}
+    [Documentation]    *Adds a reply to the specified comment with a dd/mm/yy suffix*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment text under which to add a reply
+    ...    - _reply_ - the reply text to add
+    ...
+    ...    *Return Values*
+    ...    - _reply_added_ = the reply text added (including timestamp suffix)
+    ...    - _date_ = the timestamp suffix in dd/mm/yy format
+    ${yyyy}    ${mm}    ${dd}=    Get Time    year,month,day
+    ${yy}=    Evaluate    '${yyyy}'[2:4]
+    ${date}=    Set Variable    ${dd}/${mm}/${yy}
+    ${reply_to_add}=    Set Variable    ${reply} ${date}
+    Web Add Reply    ${comment}    ${reply_to_add}
+    Check Reply Exists    ${reply_to_add}
+    [Return]    ${reply_to_add}    ${date}
+
+Web Add Comment
+    [Arguments]    ${comment_to_add}
+    [Documentation]    *Adds a new comment to the open comments dialog*
+    ...
+    ...    *Arguments*
+    ...    - _comment_to_add_ - the comment to add
+    Scroll Element Into View    ${New Comment}
+    Robust Click    ${New Comment}
+    Input Text    ${New Comment}    ${comment_to_add}
+    Simulate    ${New Comment}    blur
+    Scroll Element Into View    ${Post}
+    Robust Click    ${Post}
+    Wait Until Keyword Succeeds    60s    1s    Wait For No Mask
+
+Web Add Reply
+    [Arguments]    ${comment}    ${reply_to_add}
+    [Documentation]    *Adds a reply to the specified comment*
+    ...
+    ...    *Arguments*
+    ...    - _comment_ - the comment text under which to add a reply
+    ...    - _reply_to_add_ - the reply text to add
+    Wait Until Page Contains Element    ewb-comments-post-accept-link
+    ${comment_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${comment}"]@id
+    ${comment_number}=    Evaluate    '${comment_id}'.strip('commentView')    #get the comment number
+    Scroll Element Into View    ${comment_id}.reply
+    Robust Click    ${comment_id}.reply
+    Input Text    commentEdit${comment_number}.reply    ${reply_to_add}
+    Simulate    commentEdit${comment_number}.reply    blur
+    Run Keyword If    '${BROWSER}'.upper()=='IE'    Focus    ${New Comment}    #require focus loss from reply on IE
+    Scroll Element Into View    xpath=//div[@id="postReply${comment_number}"]//a[@id="ewb-comments-post-accept-link"]
+    Robust Click    xpath=//div[@id="postReply${comment_number}"]//a[@id="ewb-comments-post-accept-link"]
+    Wait Until Keyword Succeeds    60s    1s    Wait For No Mask
+
+Delete Comment
+    [Arguments]    ${comment_text}
+    [Documentation]    *Deletes the specified comment*
+    ...
+    ...    *Arguments*
+    ...    - _comment_text_ - the text of the comment to delete
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Wait Until Page Contains Element    xpath=//div[text()="${comment_text}"]    30s
+    ${comment_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${comment_text}"]@id
+    ${comment_number}=    Evaluate    '${comment_id}'.strip('commentView')    #get the comment number
+    Robust Click    deleteAnchor${comment_number}
+    Wait Until Keyword Succeeds    5s    0.1s    Xpath Should Match X Times    //div[@id="${comment_id}"]    0
+
+Delete Reply
+    [Arguments]    ${reply_text}
+    [Documentation]    *DEPRECATED* - Use "Delete Comment" for all comment and reply deletions
+    ${reply_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${reply_text}"]@id
+    ${reply_number}=    Evaluate    '${reply_id}'.strip('commentView')    #get the reply number
+    Robust Click    deleteAnchor${reply_number}
+    Wait Until Keyword Succeeds    5s    0.1s    Xpath Should Match X Times    //div[@id="${reply_id}"]    0
+
+Edit Comment
+    [Arguments]    ${comment_text}    ${editted_comment}
+    [Documentation]    *Replaces the specified comment or reply with ${editted comment}*
+    ...
+    ...    *Arguments*
+    ...    - _comment_text_ - the text of the comment to edit
+    ...    - _editted_comment_ - the editted comment text to use
+    ...
+    ...    *Return Value*
+    ...    - _comment_added_ = the comment text used for editting (including unique identifier)
+    ${current time} =    Get Time    epoch
+    ${comment_to_add}=    Set Variable    ${editted_comment} (${current time})
+    ${comment_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${comment_text}"]@id
+    ${comment_number}=    Evaluate    '${comment_id}'.strip('commentView')    #get the comment number
+    Robust Click    editAnchor${comment_number}
+    Input Text    commentEdit${comment_number}    ${comment_to_add}
+    # Submit editted comment
+    Simulate    commentEdit${comment_number}    blur
+    Run Keyword If    '${BROWSER}'.upper()=='IE'    Focus    ${New Comment}    #require focus loss from comment on IE
+    Robust Click    editAnchor${comment_number}
+    Wait Until Element Text Is    ${comment_id}    ${comment_to_add}    10s
+    [Return]    ${comment_to_add}
+
+Edit Reply
+    [Arguments]    ${reply number}    ${editted reply}
+    [Documentation]    *DEPRECATED* - Use "Edit Comment" for all comment and reply editting
+    # Set required variables before doing anything else
+    Set Current Timestamp Variables
+    ${current time} =    Get Time
+    ${current reply field}    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${REPLY ${reply number}}"]@id
+    ${current reply edit field}    Replace String    ${current reply field}    commentView    commentEdit
+    # Edit text in reply field
+    Robust Click    ${REPLY ${reply number} EDIT}
+    Set Global Variable    ${REPLY ${reply number}}    ${editted reply}${current time}
+    Input Text    ${current reply edit field}    ${REPLY ${reply number}}
+    # Submit editted reply
+    Simulate    ${current reply edit field}    blur
+    Run Keyword If    '${BROWSER}'.upper()=='IE'    Focus    ${New Comment}    #require focus loss from reply on IE
+    Robust Click    ${REPLY ${reply number} EDIT}
+    Wait Five Seconds
+    # Check reply has been successfully editted
+    Page Should Contain    ${REPLY ${reply number}}
+
+Check No Comment Edit
+    [Arguments]    ${comment_text}
+    [Documentation]    *Checks that it is not possible to edit a comment/reply suing the currently logged on user*
+    ...
+    ...    *Arguments*
+    ...    - _comment_text_ - the text of the comment
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    ${comment_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${comment_text}"]@id
+    ${comment_number}=    Evaluate    '${comment_id}'.strip('commentView')    #get the comment number
+    Element Should Not Be Visible    editAnchor${comment_number}
+
+Check No Reply Edit
+    [Arguments]    ${comment number}
+    [Documentation]    *DEPRECATED*
+    Element Should Not Be Visible    commentView${comment number}.reply
+
+Check Comment or Reply Is Highlighted
+    [Arguments]    ${comment id}
+    [Documentation]    This checks that the comment or reply identified by ${comment id} is highlighted to indicate it is the most recently added comment or reply.
+    ...
+    ...    *Arguments*
+    ...    - _comment_id_ - the ID of the comment. Use *Get Comment ID* to get the ID of a comment or reply using the comment/reply text.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Wait Until Page Contains Element    xpath=//div[contains(@class,'ewb-comments-highlight')]/div/div[@id=('${comment id}')]
+
+Check Comment Or Reply Is Not Highlighted
+    [Arguments]    ${comment id}
+    [Documentation]    This checks that the comment or reply identified by ${comment id} is not highlighted.
+    ...
+    ...    *Arguments*
+    ...    - _comment_id_ - the ID of the comment. Use *Get Comment ID* to get the ID of a comment or reply using the comment/reply text.
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Page Should Not Contain Element    xpath=//div[contains(@class,'ewb-comments-highlight')]/div/div[@id=('${comment id}')]
+
+Check Comment Text Is
+    [Arguments]    ${identifier}    ${string}
+    [Documentation]    This keyword ensures that the comment (or reply) identified by ${identifier} is ${string}
+    ...
+    ...    *The comment id of the comments changes when the comments dialog is closed and reopened. It is calculated each time it is reopened and the comment at the top is called commentView1 even if in previous runs it had a different id. It is important to consider this when using this keyword.*
+    ...
+    ...    *E.g.: I add two comments, they are commentView1 (first added comment) and commentView2 (second added comment). I then delete commentView1 (first added comment). While the comments dialog remains open commentView2 (second added comment) is at the top of the list and the ${identifer} variable will need to be 2. If you close and reopen the comments dialog commentView2 (second added comment) will be renamed commentView1 (second added comment) as its position is now first in the dialog and will requires thje ${identifier} value to be 1.*
+    ...
+    ...    ${identifier} is the id of the comment and is recalculated every time the comments dialog is opened but remains constant while the dialog is open. Whichever comment is at the top of the dialog will be commentView1 and ${identifier} should have a value of 1. Whichever comment (not reply) is second will be commentView2 and should have ${identifier} value of 2. To check a reply append a decimal value. The first reply of comment 2 should have a ${identifier} value of 2.1, the second reply of the third comment should have a ${identifier} of 3.2 etc.
+    ...
+    ...    ${string} is the case sensitive tex that should be present in the comment/reply
+    Wait Until Page Contains Element    commentView${identifier}
+    Scroll Element Into View    commentView${identifier}
+    Element Should Be Visible    commentView${identifier}
+    Element Should Contain    commentView${identifier}    ${string}
+
+Check No Comment Post
+    [Documentation]    *Checks that the comments post button is not visible in the comments dialog*
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Element Should Not Be Visible    ewb-comments-post-accept-link
+
+Check Comment Exists
+    [Arguments]    ${comment_text}
+    [Documentation]    *Checks that a comment with the given text exists*
+    ...
+    ...    *Arguments*
+    ...    - _comment_text_ - the text of the comment to check for
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Wait Until Page Contains Element    xpath=//div[contains(@id, 'commentView') and not(contains(@id, '.')) and text()="${comment_text}"]    error=could not find comment "${comment_text}"
+
+Check Reply Exists
+    [Arguments]    ${reply_text}
+    [Documentation]    *Checks that a reply with the given text exists*
+    ...
+    ...    *Arguments*
+    ...    - _reply_text_ - the text of the reply to check for
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    Wait Until Page Contains Element    xpath=//div[contains(@id, 'commentView') and contains(@id, '.') and text ()="${reply_text}"]    error=could not find reply "${reply_text}"
+
+Get Comment ID
+    [Arguments]    ${comment_text}
+    [Documentation]    *Returns the ID of a comment/Reply.*
+    ...
+    ...    *Arguments*
+    ...    - _comment_text_ - the exact text of the comment or reply to get the ID of
+    ...
+    ...    *Return Value*
+    ...    - _comment_id_ - the comment/reply ID
+    ...
+    ...    *Example*
+    ...    | ${comment_id}= | Get Comment ID | example_comment |
+    Wait Until Page Contains Element    xpath=//div[contains(@id, 'commentView') and text()="${comment_text}"]
+    ${comment_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[contains(@id, 'commentView') and text()="${comment_text}"]@id
+    [Return]    ${comment_id}

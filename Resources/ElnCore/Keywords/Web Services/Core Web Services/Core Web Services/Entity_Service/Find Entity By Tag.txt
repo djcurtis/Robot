@@ -1,0 +1,79 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/bytag
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags           Add Tag
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/E-WorkBook_Database/cdc_resource.txt    # Keywords for running CDC
+
+*** Test Cases ***
+Find entity by tag
+    [Documentation]    
+    ...
+    ...    It retrieves all the entities relating to a specific tag.
+    ${experiment_name}=    Set Variable    FET-S001
+    ${experiment_id_1}=    Add Experiment And Tag    ${project_id}    ${experiment_name}-TAG1    TestTag1
+    ${experiment_id_2}=    Add Experiment And Tag    ${project_id}    ${experiment_name}-TAG2    TestTag1    TestTag2
+    ${experiment_id_3}=    Add Experiment And Tag    ${project_id}    ${experiment_name}-TAG3    TestTag1    TestTag2    TestTag3
+    ${experiment_id_4}=    Add Experiment And Tag    ${project_id}    ${experiment_name}-TAG4    TestTag1    TestTag2    TestTag3
+    ...    TestTag4
+    ${experiment_id_5}=    Add Experiment And Tag    ${project_id}    ${experiment_name}-TAG5    TestTag1    TestTag2    TestTag3
+    ...    TestTag4    TestTag5
+    Run CDC Job
+    Sleep    10s    Wait for CDC
+    # Checking expectations
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    TestTag1
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_entity_dto_sequence}    5    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    TestTag2
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_entity_dto_sequence}    4    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    TestTag3
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_entity_dto_sequence}    3    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    TestTag4
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_entity_dto_sequence}    2    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    TestTag5
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_entity_dto_sequence}    1    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    TestTag6
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_entity_dto_sequence}    0    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+
+Find entity by tag with missing tag value
+    [Documentation]    
+    ...
+    ...    If the call parameter ‘tagValue’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    # missing tag value
+    ${sapi_entity_dto_sequence}=    Find Entities by Tag    ${EMPTY}    1    10    false    false
+    ...    false    false    false    false    false    false
+    ...    false    400
+
+*** Keywords ***
+Add Experiment And Tag
+    [Arguments]    ${parent_id}    ${experiment_name}    @{tags}
+    [Documentation]    Adds an experiment to a parent entity and tags it
+    ...
+    ...    *Arguments*
+    ...
+    ...    _parent_id_ - the parent entit id
+    ...
+    ...    _experiment_name_ - the experimen name
+    ...
+    ...    _tags_ - the list of tags to add to the experiment
+    ...
+    ...    *Return value*
+    ...
+    ...    The experiment id
+    ...
+    ...    *Example*
+    ...
+    ...    None
+    ${experiment_id}=    Create Experiment    ${parent_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    : FOR    ${tag}    IN    @{tags}
+    \    Add Tag    ${experiment_id}    ${entity_version_id}    ${tag}
+    [Return]    ${experiment_id}    # The experiment id

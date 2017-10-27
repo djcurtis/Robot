@@ -1,0 +1,39 @@
+*** Settings ***
+Documentation     The folowing tests are for the endpoint:
+...
+...               GET /services/1.0/entitytree/{entityId}
+Suite Setup       Entity Tree Service Suite Setup
+Suite Teardown    Entity Tree Service Suite Teardown
+Force Tags        Entity Tree Service
+Library           XMLLibrary
+Library           Collections
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Entity Tree Service/rest_entity_tree_service_resource.txt
+Resource          entity_tree_service_suite_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Can get a list of child entities
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityCoreSequence
+    ${project1_name}=    Set Variable    EWB-SAPI-SSP-ETS-GCE-P1
+    ${project2_name}=    Set Variable    EWB-SAPI-SSP-ETS-GCE-P2
+    ${project1_id}=    EntityAPILibrary.Create Project    ${group_id}    ${project1_name}
+    ${project2_id}=    EntityAPILibrary.Create Project    ${group_id}    ${project2_name}
+    ${children}=    Get Child Entities    ${group_id}
+    Check Xml Contains Element    Check that there are entity elements returned    ${children}    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Count    Check that there are 2 entity elements returned    ${children}    3    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    ${list}=    Get Element Value From Xpath    ${children}    {http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityName
+    List Should Contain Value    ${list}    ${project1_name}
+    List Should Contain Value    ${list}    ${project2_name}
+
+Check Get Child Entities Fails with Bad Id
+    [Documentation]    If the entity type does not exist, then the HTTP status code 404 is returned to the client
+    ${children}=    Get Child Entities    bad_id    TEMPLATE    ${EMPTY}    404
+    Response Body Should Contain    Resource not found for given ID: No entity exists with this ID
+
+Check That An Exclude Filter Must Have An Include Filter Defined
+    [Documentation]    If call parameter ‘excludeChild’ is defined without call parameter ‘includeType’being defined as well, then the HTTP status code 400 is returned to the client
+    ${roots}=    Get Child Entities    ${group_id}    ${EMPTY}    REPORT    400
+    Response Body Should Contain    Problem with request: The following parameters were missing or empty: [includeType]

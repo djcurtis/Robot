@@ -1,0 +1,38 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows/{workflowid}/close* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+Non Requesting User
+    [Documentation]    Call as user without permissions to use the endpoint, should get 403 response
+    [Tags]       EWB-WEB-ICM-PI004-W006-01
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    Set Suite Variable    ${SERVICES USERNAME}    WorkflowWSUser7
+    Set Suite Variable    ${SERVICES PASSWORD}    WorkflowWSUser71
+    Cancel Workflow And Expect Error    ${sign off workflow id}    403
+
+Invalid Workflow Id
+    [Documentation]    Call for a invalid workflow id (doesn’t match a workflow), should get 404 response
+    [Tags]       EWB-WEB-ICM-PI004-W006-02
+    Cancel Workflow And Expect Error    IDONTEXIST    404
+
+Workflow With No Cancellable Tasks
+    [Documentation]    Call for a workflow that can’t be cancelled, should get 400 response
+    [Tags]       EWB-WEB-ICM-PI004-W006-03
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    ${task id}=    Get Task ID From Workflow ID    ${workflow id}    1
+    Set Suite Variable    ${SERVICES USERNAME}    WorkflowWSUser1
+    Set Suite Variable    ${SERVICES PASSWORD}    WorkflowWSUser11
+    Accept Multiple Tasks    ${task id}
+    Complete Multiple Tasks    ${task id}
+    Set Suite Variable    ${SERVICES USERNAME}    ${VALID USER}
+    Set Suite Variable    ${SERVICES PASSWORD}    ${VALID PASSWD}
+    Cancel Workflow And Expect Error    ${workflow id}    400

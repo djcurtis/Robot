@@ -1,0 +1,200 @@
+*** Settings ***
+Documentation     user UI actions on My Searches dialog
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          locators/search_ui.txt
+Resource          locators/my_searches_dialog.txt
+
+*** Keywords ***
+Open My Searches Dialog
+    [Documentation]    Open 'My Searches' dialog from Search Screen.
+    unselect frame
+    Wait Until Page Contains Element    ${searchFrame}    20s
+    select frame    ${searchFrame}
+    Wait Until Element Is Visible    ${optionsDropdown}    20s
+    Click Element    ${optionsDropdown}
+    Wait Until Element Is Visible    ${optionsMenu}    30s
+    Robust click    mysearches
+    Wait Until Element Is Visible    ${mySearchesDialogTitle}    30s
+
+Close My Searches Dialog
+    [Documentation]    Close 'My Searches' dialog
+    Robust click    ${cancelMySearchesButton}
+
+Edit Name By Index
+    [Arguments]    ${index}    ${newName}
+    [Documentation]    Edit name to ${newname} on 'my Searches' dialog for specific \ search item by its index ${index} in the search list (start with 0).
+    ${index}    evaluate    ${index} + 1
+    ${pencilButton}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class='searchTitle']//a[@title='Edit']
+    ${titleInput}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class="searchTitle"]//input
+    ${confirmButton}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class='searchTitle']//a[@class='tickOk']
+    Wait Until Page Contains Element    ${pencilButton}    30s
+    Click Element    ${pencilButton}
+    Input Text    ${titleInput}    ${newName}
+    Click Element    ${confirmButton}
+
+Edit Description By Index
+    [Arguments]    ${index}    ${newDescription}
+    [Documentation]    Edit description to ${newDescription} on 'my Searches' dialog for specific \ search item by its index (${index})in the search list (start with 0).
+    ${index}    evaluate    ${index} + 1
+    ${pencilButton}    set variable    //div[@class='mySearch'][${index}]//div[@class='searchDescription']//a[@title='Edit']
+    ${descriptionInput}    set variable    //div[@class='mySearch'][${index}]//div[@class="searchDescription"]//input
+    ${confirmButton}    set variable    //div[@class='mySearch'][${index}]//div[@class='searchDescription']//a[@class='tickOk']
+    Wait Until Page Contains Element    ${pencilButton}    30s
+    Click Element    ${pencilButton}
+    Input Text    ${descriptionInput}    ${newDescription}
+    Click Element    ${confirmButton}
+
+Verify Name And Description By Index
+    [Arguments]    ${index}    ${name}    ${actualDescription}
+    [Documentation]    Verify Name and Description for item on 'My Searches' dialog with index == ${index} (start with 0).
+    ...    Name should be equal ${name} and description - ${description}.
+    unselect frame
+    select frame    ${searchFrame}
+    ${index}    evaluate    ${index} + 1
+    ${titleInput}    set variable    //div[@class='mySearch'][${index}]//div[@class="searchTitle"]//span
+    ${descriptionInput}    set variable    //div[@class='mySearch'][${index}]//div[@class="searchDescription"]//span[@class='desc']
+    Wait Until Page Contains Element    ${titleInput}
+    ${actualName}    Get Text    ${titleInput}
+    ${actualDescriptino}    Get Text    ${descriptionInput}
+    Should Be Equal As Strings    ${actualName}    ${name}    Wrong name
+    Should Be Equal As Strings    ${actualDescriptino}    ${actualDescription}    Wrong description
+
+Verify Number Of Searches In The List
+    [Arguments]    ${number}
+    [Documentation]    Verify that 'My Searches' dialog label displays correct searches'
+    ...    number ${number} by:
+    ...    - list of items
+    ...    - total number in the label
+    unselect frame
+    select frame    ${searchFrame}
+    Wait Until Page Contains Element    ${mySearchesContainer}    30s
+    Wait Until Page Contains Element    ${mySearchesList}    30s
+    ${actualSearchCount}    Get Matching Xpath Count    xpath=${mySearchesList}
+    Should Be Equal As Integers    ${actualSearchCount}    ${number}    Wrong Search Number in the List
+    Wait Until Page Contains Element    ${totalSavedSearchesLabel}    30s
+    ${actualSearchCount_link}    Get Text    ${totalSavedSearchesLabel}
+    ${item_word}    Set Variable If    ${number} == 1    item    items
+    ${expectedSearchCount_link}    catenate    ${number}    ${item_word}
+    Should Be Equal As Strings    ${actualSearchCount_link}    ${expectedSearchCount_link}    Wrong Search Number in the search label
+
+Verify Blank Saved Search Result
+    [Documentation]    Verify, that 'My Searches' dialog does not contain any saved searches.
+    Wait Until Page Contains Element    ${mySearchesContainer}    30s
+    Wait Until Page Does Not Contain Element    ${mySearchesList}    3s
+
+Delete Search Item By Name
+    [Arguments]    ${name}
+    [Documentation]    Delete search item from 'My Searches' list by search item's name - ${name}.
+    ${delete_link}=    set variable    xpath=//span[contains(text(),'${name}')]/../../..//a[@class='delete']
+    ${deleteButton}=    set variable    xpath=//span[text()='${name}']/../..//button[text()='Delete search']
+    Wait Until Page Contains Element    ${delete_link}    10s
+    Click Element    ${delete_link}
+    Wait Until Page Contains Element    ${deleteButton}    10s
+    Click Element    ${deleteButton}
+    sleep    5s
+
+Verify No Search Label On My Searches Dialog
+    [Documentation]    Verify, that there is no label displayed when there is no saved searches in 'My Searches' dialog
+    Wait Until Page Contains Element    ${noSavedSearchesLabel}
+
+Verify Search Item In The List
+    [Arguments]    ${search}
+    [Documentation]    Verify, that saved search with name ${search} is in the 'My Searches' list.
+    ${elementList}=    set variable    xpath=//div[@class='mySearch']//span[text()='${search}']
+    Wait Until Page Contains Element    ${elementList}
+
+Click Delete Search Trashcan Button
+    [Arguments]    ${searchName}
+    [Documentation]    Click trashcan button on 'My Searches' list for specific search name - ${searchName}.
+    ${delete_link}=    set variable    xpath=//span[contains(text(),'${searchName}')]/../../..//a[@class='delete']
+    Wait Until Page Contains Element    ${delete_link}    10s
+    Click Element    ${delete_link}
+
+Remove Name By Index
+    [Arguments]    ${index}
+    [Documentation]    Remove Name on 'my Searches' dialog for specific search item by its index ${index} in the search list (start with 0).
+    ${index}    evaluate    ${index} + 1
+    ${pencilButton}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class='searchTitle']//a[@title='Edit']
+    ${titleInput}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class="searchTitle"]//input
+    ${confirmButton}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class='searchTitle']//a[@class='tickOk']
+    Wait Until Page Contains Element    ${pencilButton}    30s
+    Click Element    ${pencilButton}
+    Clear Element Text    ${titleInput}
+    Click Element    ${confirmButton}
+
+Remove Description By Index
+    [Arguments]    ${index}
+    [Documentation]    Remove description on 'my Searches' dialog for specific search item by its index ${index} in the search list (start with 0)
+    ${index}    evaluate    ${index} + 1
+    ${pencilButton}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class='searchDescription']//a[@title='Edit']
+    ${descriptionInput}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class="searchDescription"]//input
+    ${confirmButton}    catenate    SEPARATOR=    //div[@class='mySearch'][    ${index}    ]//div[@class='searchDescription']//a[@class='tickOk']
+    Wait Until Page Contains Element    ${pencilButton}    30s
+    Click Element    ${pencilButton}
+    Clear Element Text    ${descriptionInput}
+    Click Element    ${confirmButton}
+
+Restore Saved Search
+    [Arguments]    ${itemName}    ${elementIndex}
+    [Documentation]    Restore saved serach via UI, 'My searches" dialog.
+    ...    Performo
+    ...    - openning "My Searches" dialog
+    ...    - Click Restore button for search by its index \ ${elementIndex} on "My Searches" screen.
+    ...    - ${itemName} is Search name to verify that search exists in the list
+    Open My Searches Dialog
+    ${restoreButton}    catenate    SEPARATOR=    xpath=//span[contains(text(),'    ${itemName}    ')]/../..//button[text()='Restore']
+    ${elemenLink}    catenate    SEPARATOR=    //span[text()='    ${itemName}    ']
+    ${JSToExecute}    catenate    SEPARATOR=    document.getElementsByClassName("linkContainer")[    ${elementIndex}    ].children[0].click()
+    Wait Until Element Is Visible    ${elemenLink}    30s
+    Mouse Over    ${elemenLink}
+    execute javascript    ${JSToExecute}
+    Wait Until Element Is Enabled    ${freeTextInput}
+
+Verify Search Is Default By Name
+    [Arguments]    ${name}
+    [Documentation]    Verify Search with Name ${name} is marked as default with star in 'My Searches' list.
+    ${default_link}    set variable    //span[text()='${name}']/../../..//*[@class='searchTitle']/i
+    Wait Until Page Contains Element    ${default_link}    10s
+    ${class}    IDBSSelenium2Library.Get Element Attribute    ${default_link}@class
+    Should Contain    ${class}    default-star
+    Should Contain    ${class}    fa
+    Should Contain    ${class}    selected
+    Should Contain    ${class}    icon-star
+
+Verfy Number Of Default Saved Searches
+    [Arguments]    ${number}
+    [Documentation]    Verify Number ${number} of default searches (marked with star) on "My Searches" list.
+    unselect frame
+    select frame    ${searchFrame}
+    sleep    3s
+    ${actual_number}    Get Matching Xpath Count    ${defaultStarItem}
+    Should Be Equal    ${number}    ${actual_number}
+
+Set Default Search
+    [Arguments]    ${search_name}
+    [Documentation]    Set Saved Search with name ${search_name} as default on "My Searches" dialog.
+    ${default_link}    catenate    SEPARATOR=    //span[text()='    ${search_name}    ']/../../..//a/i[@class='fa icon-star']
+    Wait Until Page Contains Element    ${default_link}    10s
+    Click Element    ${default_link}
+    sleep    1s
+
+Set Search Not Default
+    [Arguments]    ${search_name}
+    [Documentation]    Set Saved Search with name ${search_name} as NOT default on "My Searches" dialog.
+    ${default_link}    catenate    SEPARATOR=    //span[text()='    ${search_name}    ']/../../..//a/i[@class='fa icon-star']
+    Wait Until Page Contains Element    ${default_link}    10s
+    Click Element    ${default_link}
+    Wait Until Page Does Not Contain Element    ${defaultStarItem}    10s
+
+Verify Search Is Not Default By Name
+    [Arguments]    ${name}
+    [Documentation]    Verify Search with Name ${name} is NOT marked as default with star in 'My Searches' list.
+    ...
+    ...    ${default_link.strip()} strip() is put here as method to remove whitespaces before and after ${default_link} variable
+    ${default_link}    set variable    //span[text()='${name}']/../../..//*[@class='searchTitle']/i
+    Wait Until Page Contains Element    ${default_link}    20s
+    ${class}    IDBSSelenium2Library.Get Element Attribute    ${default_link}@class
+    ${default_link}    set variable    ${default_link.strip()}
+    ${class}    set variable    ${class.strip()}
+    Should Be Equal As Strings    ${class}    default-star

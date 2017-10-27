@@ -1,0 +1,962 @@
+*** Settings ***
+Documentation     Ensures it is possible to use the /elements endpoint to POST generic searches on the data structure of the catalog to return values that match user defined filters and that the data returned is in the correct format and structure.
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../Libraries/common_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+001 - Find Term By Name JSON
+    [Documentation]    Creates a term under root with a name then runs a find query to return it and checks the response data to ensure the term is present with the correct values then deletes the term to tidy up after itself.
+    ${term id}=    Create Root Element    TERM    FINDterm1    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDterm1    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "name":"Find Property"
+    Should Contain    ${RESPONSE BODY 1}    "id":"${term id}"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDterm1"
+    Should Contain    ${RESPONSE BODY 1}    "type":"STRING"
+    Delete Element    ${term id}
+
+002 - Find Dictionary By Name JSON
+    [Documentation]    Creates a dictionary under root with a name then runs a find query to return it and checks the response data to ensure the dictionary is present with the correct values then deletes the dictionary to tidy up after itself.
+    ${term id}=    Create Root Element    DICTIONARY    FINDdictionary1    Unique description    true
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDdictionary1    %    DICTIONARY    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "id":"${term id}"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary1"
+    Should Contain    ${RESPONSE BODY 1}    "description":"Unique description"
+    Delete Element    ${term id}
+
+003 - Find Term By Name With Predicate JSON
+    [Documentation]    Creates a term under a non-root location with a name then runs a find query with a predicate filter to return it and checks the response data to ensure the term is present with the correct values then deletes the term and parent to tidy up after itself.
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    TERM    FINDterm2    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDterm2    /FINDdictionary2%    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "id":"${term id2}"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary2/FINDterm2"
+    Should Contain    ${RESPONSE BODY 1}    "description":"Find Property Description"
+    Should Contain    ${RESPONSE BODY 1}    "type":"STRING"
+    Delete Element    ${term id1}
+
+004 - Find Dictionary By Name With Predicate JSON
+    [Documentation]    Creates a dictionary under a non-root location with a name then runs a find query with a predicate filter to return it and checks the response data to ensure the dictionary is present with the correct values then deletes the dictionary and parent to tidy up after itself.
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary3    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    FINDdictionary4    Child    true
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDdictionary4    /FINDdictionary3%    DICTIONARY    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "id":"${term id2}"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary3/FINDdictionary4"
+    Should Contain    ${RESPONSE BODY 1}    "description":"Child"
+    Delete Element    ${term id1}
+
+005 - Find Term Data Structure JSON
+    [Documentation]    Ensures that the data structure, fields and formats of response data are in the correct syntax.
+    ${term id}=    Create Root Element    TERM    FINDterm1    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDterm1    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    ${new term properties}=    Get Term Properties    ${term id}
+    ${property id}=    Get Json value    ${new term properties}    /term/properties/property/0/id
+    Should Contain    ${RESPONSE BODY 1}    {"catalog":[{"dictionary":null,"term":{"path":"/FINDterm1","description":"Unique description","hierarchy":{},"fullHierarchy":{"term":null},"properties":{"property":[{"name":"Find Property","description":"Find Property Description","format":null,"constraint":null,"unit":null,"overrides":null,"allOverrides":{"override":null},"termReference":{"path":"/FINDterm1","id":"${term id}"},"id":${property id},"type":"STRING","key":true,"displayed":true,"linkTermPath":null,"linkTermId":null,"unitTermPath":null,"unitTermId":null,"hidden":false,"owner":false,"abstractTermRef":false}]},"tuples":null,"id":"${term id}","enabled":true,"deletable":true,"editable":true,"system":false,"abstractTerm":false},"tuples":null}]}
+    Delete Element    ${term id}
+
+006 - Wildcard Find Multiple Terms In Same Dictionary JSON
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from the same dicitonary
+    ${RESPONSE BODY 1}=    JSON Format Find Request    %    /Experiment Dictionaries    TERM    CONCRETE    0
+    ...    20    ENABLED
+    log    ${RESPONSE BODY 1}
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Chemistry Pre-registration IDs"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Entity Delete Reasons"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Entity Move Reasons"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Save Reasons"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Statuses"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Signoff Reasons"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Titles"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Publishing Status"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Spreadsheet Audit Reasons"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Task"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Task Priorities"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Task Roles"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Tips Of The Day"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Workflow Id"
+
+007 - Wildcard Find Multiple Terms In Different Dictionaries JSON
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from different dicitonaries
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    TERM    FINDterm1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id4}=    Create Non-Root Element    ${term id3}    TERM    FINDterm2    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDterm%    /FINDdictionary%    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary1/FINDterm1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary2/FINDterm2"
+    Delete Element    ${term id1}
+    Delete Element    ${term id3}
+
+008 - Wildcard Find Multiple Dictionaries In Different Dictionaries JSON
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from different dicitonaries
+    ${term id1}=    Create Root Element    DICTIONARY    PARENTdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary1    Child    true
+    ${term id3}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary2    Child    true
+    ${term id4}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary3    Child    true
+    ${term id5}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary4    Child    true
+    ${term id6}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary5    Child    true
+    ${term id7}=    Create Root Element    DICTIONARY    PARENTdictionary2    Parent    true
+    ${term id8}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary6    Child    true
+    ${term id9}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary7    Child    true
+    ${term id10}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary8    Child    true
+    ${term id11}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary9    Child    true
+    ${term id12}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary10    Child    true
+    ${RESPONSE BODY 1}=    JSON Format Find Request    CHILDdictionary%    /PARENTdictionary%    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary2"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary3"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary4"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary5"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary2/CHILDdictionary6"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary2/CHILDdictionary7"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary2/CHILDdictionary8"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary2/CHILDdictionary9"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary2/CHILDdictionary10"
+    Delete Element    ${term id1}
+    Delete Element    ${term id7}
+
+009 - Wildcard Find Multiple Dictionaries In Same Dictionary JSON
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from the same dicitonary
+    ${term id1}=    Create Root Element    DICTIONARY    PARENTdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary1    Child    true
+    ${term id3}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary2    Child    true
+    ${term id4}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary3    Child    true
+    ${term id5}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary4    Child    true
+    ${term id6}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary5    Child    true
+    ${RESPONSE BODY 1}=    JSON Format Find Request    CHILDdictionary%    /PARENTdictionary%    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary2"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary3"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary4"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/PARENTdictionary1/CHILDdictionary5"
+    Delete Element    ${term id1}
+
+010 - Wildcard Find Multiple Terms With The Same Name In Different Dictionaries JSON
+    [Documentation]    Ensures that through use of wildcards % it is possible to return multiple terms with identical names from different dictionaries
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    TERM    FINDterm1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id4}=    Create Non-Root Element    ${term id3}    TERM    FINDterm1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDterm%    /FINDdictionary%    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary1/FINDterm1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary2/FINDterm1"
+    Delete Element    ${term id1}
+    Delete Element    ${term id3}
+
+011 - Wildcard Find Multiple Dictionaries With The Same Name In Different Dictionaries JSON
+    [Documentation]    Ensures that through use of wildcards % it is possible to return multiple dictionaries with identical names from different dictionaries
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    FINDdictionary1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id4}=    Create Non-Root Element    ${term id3}    DICTIONARY    FINDdictionary1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDdictionary%    /FINDdictionary%    DICTIONARY    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary1/FINDdictionary1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDdictionary2/FINDdictionary1"
+    Delete Element    ${term id1}
+    Delete Element    ${term id3}
+
+012 - Find Abstract Terms JSON
+    [Documentation]    Ensures that Find requests will return Abstract terms and that the data returned contains the correct values
+    ${abstract term id}=    Create Abstract Term    FINDterm12    FINDterm12    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDterm12    %    TERM    ABSTRACT    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "id":"${abstract term id}"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/FINDterm12"
+    Should Contain    ${RESPONSE BODY 1}    "abstractTerm":true
+    Delete Element    ${abstract term id}
+
+013 - Find Abstract Dictionaries Returns Nothing JSON
+    [Documentation]    Ensures that a search for Abstract dictionaries returns no results and does not error (dictionaries cannot be set to abstract)
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FINDdictionary1    %    DICTIONARY    ABSTRACT    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+    Delete Element    ${term id1}
+
+014 - Find Terms With Inheritance JSON
+    [Documentation]    Ensures that a Find request can return vales for TERMs with inherited properties and that the response data contains the correct values for the inherited term.
+    ${abstract term id}=    Create Abstract Term    1ABSTRACTterm14    1ABSTRACTterm14    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${concrete term id}=    Create Concrete Term By Inheritance    1INHERITEDterm14    1INHERITEDterm14    true    {"inheritedTerm":[{"inheritedTermPath":"/1ABSTRACTterm14","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    1INHERITEDterm14    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Log    ${RESPONSE BODY 1}
+    ${status}    ${inherited_prop_id_1}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/id
+    ${status}    ${inherited_prop_id_2}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/id
+    @{inherited_prop_id_list}=    Create List    ${inherited_prop_id_1}    ${inherited_prop_id_2}
+    Should Contain    ${inherited_prop_id_list}    "${abstract term id}"
+    ${status}    ${inherited_prop_path_1}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/path
+    ${status}    ${inherited_prop_path_2}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/path
+    @{inherited_prop_path_list}=    Create List    ${inherited_prop_path_1}    ${inherited_prop_path_2}
+    Should Contain    ${inherited_prop_path_list}    "/1ABSTRACTterm14"
+    Delete Element    ${abstract term id}
+    Delete Element    ${concrete term id}
+
+015 - Start From Non-Zero Row JSON
+    [Documentation]    Ensures that it is possible to limit the returned data to begin from a specific row in the data table and that the response contais only the expected data and not the values for rows not in the search range
+    ${term id1}=    Create Root Element    TERM    fromRow1    fromRow1    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Root Element    TERM    fromRow2    fromRow2    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    TERM    fromRow3    fromRow3    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id4}=    Create Root Element    TERM    fromRow4    fromRow4    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Root Element    TERM    fromRow5    fromRow5    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Root Element    TERM    fromRow6    fromRow6    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id7}=    Create Root Element    TERM    fromRow7    fromRow7    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id8}=    Create Root Element    TERM    fromRow8    fromRow8    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id9}=    Create Root Element    TERM    fromRow9    fromRow9    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id10}=    Create Root Element    TERM    fromRow10    fromRow10    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    fromRow%    %    TERM    CONCRETE    5
+    ...    10    ENABLED
+    ${count}=    Get Count    ${RESPONSE BODY 1}    "path":"/fromRow
+    Should Be Equal As Integers    ${count}    10
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/fromRow1"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/fromRow10"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/fromRow5"
+    Delete Element    ${term id1}
+    Delete Element    ${term id2}
+    Delete Element    ${term id3}
+    Delete Element    ${term id4}
+    Delete Element    ${term id5}
+    Delete Element    ${term id6}
+    Delete Element    ${term id7}
+    Delete Element    ${term id8}
+    Delete Element    ${term id9}
+    Delete Element    ${term id10}
+
+016 - Return Fewer Rows Than Results JSON
+    [Documentation]    Ensures that when the number of results is greater than the value set by numberOfRows in the filter a number of results is returned equal to the value of numberOfRows. The excess results are not returned in the response to the user.
+    ${term id1}=    Create Root Element    TERM    fromRow1    fromRow1    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Root Element    TERM    fromRow2    fromRow2    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    TERM    fromRow3    fromRow3    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id4}=    Create Root Element    TERM    fromRow4    fromRow4    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Root Element    TERM    fromRow5    fromRow5    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Root Element    TERM    fromRow6    fromRow6    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id7}=    Create Root Element    TERM    fromRow7    fromRow7    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id8}=    Create Root Element    TERM    fromRow8    fromRow8    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id9}=    Create Root Element    TERM    fromRow9    fromRow9    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id10}=    Create Root Element    TERM    fromRow10    fromRow10    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    fromRow%    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    ${count}=    Get Count    ${RESPONSE BODY 1}    "path":"/fromRow
+    Should Be Equal As Integers    ${count}    10
+    Delete Element    ${term id1}
+    Delete Element    ${term id2}
+    Delete Element    ${term id3}
+    Delete Element    ${term id4}
+    Delete Element    ${term id5}
+    Delete Element    ${term id6}
+    Delete Element    ${term id7}
+    Delete Element    ${term id8}
+    Delete Element    ${term id9}
+    Delete Element    ${term id10}
+
+017 - POST null Find Request JSON
+    [Documentation]    Ensures that when the JSON query is null an error is returned by the request. deferred QC:17111
+    ${term id}=    Create Root Element    TERM    FINDterm17    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Catalog Request Setup
+    Set Request Body    ${EMPTY}
+    Next Request Should Not Succeed
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    Response Status Code Should Equal    400
+    Delete Element    ${term id}
+
+018 - POST Syntax Failed Find Request JSON
+    [Documentation]    Ensures that an error is returned when the JSON request contains syntax errors. deferred QC:17110
+    [Tags]    IGNORE
+    ${term id}=    Create Root Element    TERM    1FINDterm1    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Catalog Request Setup
+    Set Request Body    {{{][]{}{}[][}{}][][][]'"name": "valid","predicates": {"value": ["{constrain path}"]},"flag": ["{term or dictionary}","{concrete or abstract}","{enabled or disabled}"],"limits": {"fromRow": "{fromRow}","numberOfRows": "{numberOfRows}"}}]]][[[][][]]]]]]]]]]]]]]]]]]]]]]
+    Next Request Should Not Succeed
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    Response Status Code Should Equal    400
+    Delete Element    ${term id}
+
+019 - fromRows Greater Than Number Of Rows In Table JSON
+    [Documentation]    Ensures that when the fromRow variable is greater than the number of results in the table that nothing is returned and no errors take place.
+    ${RESPONSE BODY 1}=    JSON Format Find Request    %    /Experiment Dictionaries    TERM    CONCRETE    50
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+
+020 - Find Nonexistent Term JSON
+    [Documentation]    Ensures that when a find request is POSTED looking for a TERM that does not exist nothing is returned and no errors occur.
+    ${RESPONSE BODY 1}=    JSON Format Find Request    azabaqwerty    /Experiment Dictionaries    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+
+021 - Find Nonexistent Dictionary JSON
+    [Documentation]    Ensures that when a find request is POSTED looking for a DICTIONARY that does not exist nothing is returned and no errors occur.
+    ${RESPONSE BODY 1}=    JSON Format Find Request    azabaqwerty    %    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+
+022 - Find Term With Units JSON
+    [Documentation]    Ensures that when returning a results that contains a linked unit term to a property that the correct unit term is resturned with the correct data.
+    ${unit dictionary}=    Create Root Element    DICTIONARY    UNITdictionary1    UNITdictionary1    true
+    ${unit term id}=    Create Non-Root Element    ${unit dictionary}    TERM    UNITterm1    Has Unit Tuples    true
+    ...    {"property":[{"name":"Units","type":"STRING","format":null,"description":"Units","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Tuple    ${unit term id}    Units    cm    cm    true    true
+    Create Tuple    ${unit term id}    Units    mm    mm    true    false
+    Create Tuple    ${unit term id}    Units    m    m    true    false
+    ${distance dictionary}=    Create Root Element    DICTIONARY    DISTANCEdictionary1    DISTANCEdictionary1    true
+    ${distance term id}=    Create Non-Root Element    ${distance dictionary}    TERM    DISTANCEterm1    DISTANCEterm1    true
+    ...    {"property":[{"name":"Distance","type":"STRING","format":null,"description":"Distance","constraint":null,"unit":"cm","key":true,"displayed":true,"unitTermPath":"/UNITdictionary1/UNITterm1","linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    DISTANCEterm1    %    TERM    CONCRETE    0
+    ...    20    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "unit":"cm"
+    Should Contain    ${RESPONSE BODY 1}    "unitTermPath":"/UNITdictionary1/UNITterm1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/DISTANCEdictionary1/DISTANCEterm1"
+    Delete Element    ${distance dictionary}
+    Delete Element    ${unit dictionary}
+
+023 - Find Term With Linked Property JSON
+    [Documentation]    Ensures that when returning a results that contains a linked term to a property that the correct linked term is resturned with the correct data.
+    ${new term id}=    Create Root Element    TERM    1LINKterm1    1LINKterm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${linked term id}=    Create Root Element    TERM    1LINKEDterm1    1LINKEDterm1    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"Linked:LinkedTerm1","type":"STRING","format":null,"description":null,"constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/1LINKterm1"}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    1LINKEDterm1    /    TERM    CONCRETE    0
+    ...    10    ENABLED
+    ${status}    ${inherited_prop_id_1}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/id
+    ${status}    ${inherited_prop_id_2}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/id
+    @{inherited_prop_id_list}=    Create List    ${inherited_prop_id_1}    ${inherited_prop_id_2}
+    Should Contain    ${inherited_prop_id_list}    "${linked term id}"
+    ${status}    ${inherited_prop_path_1}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/path
+    ${status}    ${inherited_prop_path_2}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY 1}    /catalog/0/term/properties/property/0/termReference/path
+    @{inherited_prop_path_list}=    Create List    ${inherited_prop_path_1}    ${inherited_prop_path_2}
+    Should Contain    ${inherited_prop_path_list}    "/1LINKEDterm1"
+    Should Contain    ${RESPONSE BODY 1}    "linkTermId":"${new term id}"
+    Should Contain    ${RESPONSE BODY 1}    "linkTermPath":"/1LINKterm1"
+    Delete Element    ${linked term id}
+    Delete Element    ${new term id}
+
+024 - Find Term With Multiple Properties JSON
+    [Documentation]    Ensures that when the response of a Find request includes a term with multiple properties that those properties are all displayed.
+    ${term id}=    Create Root Element    TERM    MULTIPLEpropertiesterm1    MULTIPLEpropertiesterm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}, {"name":"example2","type":"STRING","format":null,"description":"Example2","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}, {"name":"example3","type":"STRING","format":null,"description":"Example3","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    MULTIPLEpropertiesterm1    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "name":"example"
+    Should Contain    ${RESPONSE BODY 1}    "name":"example2"
+    Should Contain    ${RESPONSE BODY 1}    "name":"example3"
+    ${count}=    Get Count    ${RESPONSE BODY 1}    "type":"STRING"
+    Should Be Equal As Integers    ${count}    3
+    Should Contain    ${RESPONSE BODY 1}    "key":true
+    Should Contain    ${RESPONSE BODY 1}    "key":false
+    Delete Element    ${term id}
+
+025 - Find Multiple Terms With Multiple Properties JSON
+    [Documentation]    Ensures that, when a Find request response contains multiple TERMs with multiple properties that all of the properties are returned with the correct values.
+    ${term id}=    Create Root Element    TERM    MULTIPLEpropertiesterm1    MULTIPLEpropertiesterm1    true    {"property":[{"name":"example","type":"NUMBER","format":"NUMBER_SCIENTIFIC!0.00E0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}, {"name":"example2","type":"STRING","format":null,"description":"Example2","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}, {"name":"example3","type":"BOOLEAN","format":null,"description":"Example3","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    MULTIPLEpropertiesterm1    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "name":"example"
+    Should Contain    ${RESPONSE BODY 1}    "name":"example2"
+    Should Contain    ${RESPONSE BODY 1}    "name":"example3"
+    Should Contain    ${RESPONSE BODY 1}    "format":"NUMBER_SCIENTIFIC!0.00E0"
+    Should Contain    ${RESPONSE BODY 1}    "key":false
+    Should Contain    ${RESPONSE BODY 1}    "type":"NUMBER"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/MULTIPLEpropertiesterm1"
+    Delete Element    ${term id}
+
+026 - Find Term With Formatted Properties JSON
+    [Documentation]    Ensures that a Find request that returns a TERM with formatted properties returns the correct formatting information.
+    ${term id}=    Create Root Element    TERM    FORMATterm1    FORMATterm1    true    {"property":[{"name":"Number","type":"NUMBER","format":"NUMBER_SCIENTIFIC!0.00E0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}, {"name":"Timestamp","type":"TIMESTAMP","format":"DATE_US_SHORT!MM/dd/yy!NONE!NONE","description":"Example2","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}, {"name":"Auto_Id","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_44!1","description":"Example3","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    FORMATterm1    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "name":"Number"
+    Should Contain    ${RESPONSE BODY 1}    "name":"Timestamp"
+    Should Contain    ${RESPONSE BODY 1}    "name":"Auto_Id"
+    Should Contain    ${RESPONSE BODY 1}    "format":"NUMBER_SCIENTIFIC!0.00E0"
+    Should Contain    ${RESPONSE BODY 1}    "format":"DATE_US_SHORT!MM/dd/yy!NONE!NONE"
+    Should Contain    ${RESPONSE BODY 1}    "format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_
+    Delete Element    ${term id}
+
+027 - Find Term With Tuples JSON
+    [Documentation]    Ensures that when a Find request returns a TERM with tuples that the tuple data is *not* returned by the response.
+    ${RESPONSE BODY 1}=    JSON Format Find Request    Experiment Statuses    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Statuses"
+    Should Not Contain    ${RESPONSE BODY 1}    Started
+    Should Not Contain    ${RESPONSE BODY 1}    Completed
+
+028 - Find All Concrete Terms JSON
+    [Documentation]    Ensures that through use of wildcards % it is possible to retusn all of the Concrete terms in the catalog from under all dictionaries and that the data returned does not include any abstract terms
+    ${abstract term id1}=    Create Abstract Term    Abstract1    Abstract    true    {"property":[{"name":"abstractexampleA","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id2}=    Create Abstract Term    Abstract2    Abstract    true    {"property":[{"name":"abstractexampleA","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id3}=    Create Abstract Term    Abstract3    Abstract    true    {"property":[{"name":"abstractexampleA","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    %    /%    TERM    CONCRETE    0
+    ...    500    ENABLED
+    ${RESPONSE BODY 1}=    Convert To String    ${RESPONSE BODY 1}
+    Should Contain    ${RESPONSE BODY 1}    "name":"status"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Save Reasons"
+    Should Contain    ${RESPONSE BODY 1}    "abstractTerm":false
+    Should Contain    ${RESPONSE BODY 1}    "path":"/IDBS-Applications/Core/ActivityBase/ActivityBase Objects/Compound Detail"
+    Should Contain    ${RESPONSE BODY 1}    "abstractTerm":true
+    Should Not Contain    ${RESPONSE BODY 1}    "name":"abstractexampleA"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/Abstract1"
+    Delete Element    ${abstract term id1}
+    Delete Element    ${abstract term id2}
+    Delete Element    ${abstract term id3}
+
+029 - Find Disabled Terms JSON
+    [Documentation]    Ensures that when applying a filter to the Find request to only return DISABLED TERMS that only the DISABLED TERMS are returned and that no ENABLED terms that match other search criteria are returned
+    ${dictionary id1}=    Create Root Element    DICTIONARY    ENABLEDdictionary1    ENABLEDdictionary1    true
+    ${term id1}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm1    ENABLEDterm1    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm2    ENABLEDterm2    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm3    ENABLEDterm3    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${dictionary id2}=    Create Root Element    DICTIONARY    DISABLEDdictionary1    DISABLEDdictionary1    true
+    ${term id4}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm1    DISABLEDterm1    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm2    DISABLEDterm2    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm3    DISABLEDterm3    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    %term%    %dictionary1    TERM    CONCRETE    0
+    ...    10    DISABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/DISABLEDdictionary1/DISABLEDterm1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/DISABLEDdictionary1/DISABLEDterm2"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/DISABLEDdictionary1/DISABLEDterm3"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/ENABLEDdictionary1/ENABLEDterm1"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/ENABLEDdictionary1/ENABLEDterm2"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/ENABLEDdictionary1/ENABLEDterm3"
+    Delete Element    ${dictionary id1}
+    Delete Element    ${dictionary id2}
+
+030 - Find Enabled Terms JSON
+    [Documentation]    Ensures that when applying a filter to the Find request to only return ENABLED TERMS that only the ENABLED TERMS are returned and that no DISABLED terms that match other search criteria are returned
+    ${dictionary id1}=    Create Root Element    DICTIONARY    ENABLEDdictionary1    ENABLEDdictionary1    true
+    ${term id1}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm1    ENABLEDterm1    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm2    ENABLEDterm2    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm3    ENABLEDterm3    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${dictionary id2}=    Create Root Element    DICTIONARY    DISABLEDdictionary1    DISABLEDdictionary1    true
+    ${term id4}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm1    DISABLEDterm1    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm2    DISABLEDterm2    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm3    DISABLEDterm3    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    JSON Format Find Request    %term%    %dictionary1    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    "path":"/ENABLEDdictionary1/ENABLEDterm1"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/ENABLEDdictionary1/ENABLEDterm2"
+    Should Contain    ${RESPONSE BODY 1}    "path":"/ENABLEDdictionary1/ENABLEDterm3"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/DISABLEDdictionary1/DISABLEDterm1"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/DISABLEDdictionary1/DISABLEDterm2"
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/DISABLEDdictionary1/DISABLEDterm3"
+    Delete Element    ${dictionary id1}
+    Delete Element    ${dictionary id2}
+
+031 - Needs REWORK - Find SYSTEM Terms JSON
+    [Documentation]    Ensures that when applying a SYSTEM filter to the Find request only the Terms and Dictionaries created by the SYSTEM are returned and no USER Terms or Dictionaries are returned
+    ...
+    ...    *Needs to be edited to check that USER Terms are being filtered, currently the search will does not look at an item that has USER entities for the search to filter*
+    Catalog Request Setup
+    Set Request Body    {"name": "%","predicates": {"value": ["/Experiment Dictionaries"]},"flag": ["TERM","CONCRETE","ENABLED","SYSTEM"],"limits": {"fromRow": "0","numberOfRows": "20"}}
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    ${RESPONSE BODY 1}=    Get Response Body
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Statuses"    # These items are SYSTEM elements
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Publishing Status"    # These items are SYSTEM elements
+    Should Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Entity Move Reasons"    # These items are SYSTEM elements
+
+032 - Needs REWORK - Find USER Terms JSON
+    [Documentation]    Ensures that when applying a USER filter to the Find request only the Terms and Dictionaries created by a USER are returned and no SYSTEM Terms or Dictionaries are returned
+    ...
+    ...    *Needs to be edited to check that SYSTEM Terms are being filtered, currently the search will does not look at an item that has USER entities for the search to filter*
+    Catalog Request Setup
+    Set Request Body    {"name": "%","predicates": {"value": ["/Experiment Dictionaries"]},"flag": ["TERM","CONCRETE","ENABLED","USER"],"limits": {"fromRow": "0","numberOfRows": "20"}}
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    ${RESPONSE BODY 1}=    Get Response Body
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Experiment Statuses"    # These items are SYSTEM elements
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Publishing Status"    # These items are SYSTEM elements
+    Should Not Contain    ${RESPONSE BODY 1}    "path":"/Experiment Dictionaries/Entity Move Reasons"    # These items are SYSTEM elements
+
+033 - Find Term By Name XML
+    [Documentation]    Creates a term under root with a name then runs a find query to return it and checks the response data to ensure the term is present with the correct values then deletes the term to tidy up after itself.
+    ${term id}=    Create Root Element    TERM    1FINDterm33    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    1FINDterm33    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <name>Find Property</name>
+    Should Contain    ${RESPONSE BODY 1}    id="${term id}"
+    Should Contain    ${RESPONSE BODY 1}    <path>/1FINDterm33</path>
+    Should Contain    ${RESPONSE BODY 1}    type="STRING"
+    Delete Element    ${term id}
+
+034 - Find Dictionary By Name XML
+    [Documentation]    Creates a dictionary under root with a name then runs a find query to return it and checks the response data to ensure the dictionary is present with the correct values then deletes the dictionary to tidy up after itself.
+    ${term id}=    Create Root Element    DICTIONARY    FINDdictionary1    Unique description    true
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDdictionary1    %    DICTIONARY    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    id="${term id}"
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary1</path>
+    Should Contain    ${RESPONSE BODY 1}    <description>Unique description</description>
+    Delete Element    ${term id}
+
+035 - Find Term By Name With Predicate XML
+    [Documentation]    Creates a term under a non-root location with a name then runs a find query with a predicate filter to return it and checks the response data to ensure the term is present with the correct values then deletes the term and parent to tidy up after itself.
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    TERM    FINDterm2    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDterm2    /FINDdictionary2%    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    id="${term id2}"
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary2/FINDterm2</path>
+    Should Contain    ${RESPONSE BODY 1}    <description>Find Property Description</description>
+    Should Contain    ${RESPONSE BODY 1}    type="STRING"
+    Delete Element    ${term id1}
+
+036 - Find Dictionary By Name With Predicate XML
+    [Documentation]    Creates a dictionary under a non-root location with a name then runs a find query with a predicate filter to return it and checks the response data to ensure the dictionary is present with the correct values then deletes the dictionary and parent to tidy up after itself.
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary3    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    FINDdictionary4    Child    true
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDdictionary4    /FINDdictionary3%    DICTIONARY    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    id="${term id2}"
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary3/FINDdictionary4</path>
+    Should Contain    ${RESPONSE BODY 1}    <description>Child</description>
+    Delete Element    ${term id1}
+
+037 - Find Term Data Structure XML
+    [Documentation]    Ensures that the data structure, fields and formats of response data are in the correct syntax.
+    ${term id}=    Create Root Element    TERM    1FINDterm37    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    1FINDterm37    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    ${new term properties}=    Get Term Properties    ${term id}
+    ${property id}=    Get Json value    ${new term properties}    /term/properties/property/0/id
+    Should Contain    ${RESPONSE BODY 1}    <catalog><term id="${term id}" enabled="true" deletable="true" editable="true" system="false" abstractTerm="false"><path>/1FINDterm37</path><description>Unique description</description><hierarchy/><fullHierarchy/><properties><property id=${property id} type="STRING" key="true" displayed="true" hidden="false" owner="false" abstractTermRef="false"><name>Find Property</name><description>Find Property Description</description><allOverrides/><termReference id="${term id}"><path>/1FINDterm37</path></termReference></property></properties></term></catalog>
+    Delete Element    ${term id}
+
+038 - Wildcard Find Multiple Terms In Same Dictionary XML
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from the same dicitonary
+    ${RESPONSE BODY 1}=    XML Format Find Request    %    /Experiment Dictionaries    TERM    CONCRETE    0
+    ...    20    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Chemistry Pre-registration IDs</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Entity Delete Reasons</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Entity Move Reasons</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Save Reasons</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Statuses</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Signoff Reasons</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Titles</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Publishing Status</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Spreadsheet Audit Reasons</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Task</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Task Priorities</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Task Roles</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Tips Of The Day</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Workflow Id</path>
+
+039 - Wildcard Find Multiple Terms In Different Dictionaries XML
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from different dicitonaries
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    TERM    FINDterm1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id4}=    Create Non-Root Element    ${term id3}    TERM    FINDterm2    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDterm%    /FINDdictionary%    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary1/FINDterm1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary2/FINDterm2</path>
+    Delete Element    ${term id1}
+    Delete Element    ${term id3}
+
+040 - Wildcard Find Multiple Dictionaries In Different Dictionaries XML
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from different dicitonaries
+    ${term id1}=    Create Root Element    DICTIONARY    PARENTdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary1    Child    true
+    ${term id3}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary2    Child    true
+    ${term id4}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary3    Child    true
+    ${term id5}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary4    Child    true
+    ${term id6}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary5    Child    true
+    ${term id7}=    Create Root Element    DICTIONARY    PARENTdictionary2    Parent    true
+    ${term id8}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary6    Child    true
+    ${term id9}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary7    Child    true
+    ${term id10}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary8    Child    true
+    ${term id11}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary9    Child    true
+    ${term id12}=    Create Non-Root Element    ${term id7}    DICTIONARY    CHILDdictionary10    Child    true
+    ${RESPONSE BODY 1}=    XML Format Find Request    CHILDdictionary%    /PARENTdictionary%    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary2</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary3</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary4</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary5</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary2/CHILDdictionary6</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary2/CHILDdictionary7</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary2/CHILDdictionary8</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary2/CHILDdictionary9</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary2/CHILDdictionary10</path>
+    Delete Element    ${term id1}
+    Delete Element    ${term id7}
+
+041 - Wildcard Find Multiple Dictionaries In Same Dictionary XML
+    [Documentation]    Ensures that when using the wildcard % it is possible to return multiple results from the same dicitonary
+    ${term id1}=    Create Root Element    DICTIONARY    PARENTdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary1    Child    true
+    ${term id3}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary2    Child    true
+    ${term id4}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary3    Child    true
+    ${term id5}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary4    Child    true
+    ${term id6}=    Create Non-Root Element    ${term id1}    DICTIONARY    CHILDdictionary5    Child    true
+    ${RESPONSE BODY 1}=    XML Format Find Request    CHILDdictionary%    /PARENTdictionary%    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary2</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary3</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary4</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/PARENTdictionary1/CHILDdictionary5</path>
+    Delete Element    ${term id1}
+
+042 - Wildcard Find Multiple Terms With The Same Name In Different Dictionaries XML
+    [Documentation]    Ensures that through use of wildcards % it is possible to return multiple terms with identical names from different dictionaries
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    TERM    FINDterm1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id4}=    Create Non-Root Element    ${term id3}    TERM    FINDterm1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDterm%    /FINDdictionary%    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary1/FINDterm1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary2/FINDterm1</path>
+    Delete Element    ${term id1}
+    Delete Element    ${term id3}
+
+043 - Wildcard Find Multiple Dictionaries With The Same Name In Different Dictionaries XML
+    [Documentation]    Ensures that through use of wildcards % it is possible to return multiple dictionaries with identical names from different dictionaries
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${term id2}=    Create Non-Root Element    ${term id1}    DICTIONARY    FINDdictionary1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    DICTIONARY    FINDdictionary2    Parent    true
+    ${term id4}=    Create Non-Root Element    ${term id3}    DICTIONARY    FINDdictionary1    Child    true
+    ...    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDdictionary%    /FINDdictionary%    DICTIONARY    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary1/FINDdictionary1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/FINDdictionary2/FINDdictionary1</path>
+    Delete Element    ${term id1}
+    Delete Element    ${term id3}
+
+044 - Find Abstract Terms XML
+    [Documentation]    Ensures that Find requests will return Abstract terms and that the data returned contains the correct values
+    ${abstract term id}=    Create Abstract Term    1FINDterm44    1FINDterm44    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    1FINDterm44    %    TERM    ABSTRACT    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    id="${abstract term id}"
+    Should Contain    ${RESPONSE BODY 1}    <path>/1FINDterm44</path>
+    Should Contain    ${RESPONSE BODY 1}    abstractTerm="true"
+    Delete Element    ${abstract term id}
+
+045 - Find Abstract Dictionaries Returns Nothing XML
+    [Documentation]    Ensures that a search for Abstract dictionaries returns no results and does not error (dictionaries cannot be set to abstract)
+    ${term id1}=    Create Root Element    DICTIONARY    FINDdictionary1    Parent    true
+    ${RESPONSE BODY 1}=    XML Format Find Request    FINDdictionary1    %    DICTIONARY    ABSTRACT    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+    Delete Element    ${term id1}
+
+046 - Find Terms With Inheritance XML
+    [Documentation]    Ensures that a Find request can return vales for TERMs with inherited properties and that the response data contains the correct values for the inherited term.
+    ${abstract term id}=    Create Abstract Term    1ABSTRACTterm46    1ABSTRACTterm46    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${concrete term id}=    Create Concrete Term By Inheritance    1INHERITEDterm46    1INHERITEDterm46    true    {"inheritedTerm":[{"inheritedTermPath":"/1ABSTRACTterm46","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    1INHERITEDterm46    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <termReference id="${abstract term id}"><path>/1ABSTRACTterm46</path></termReference>
+    Should Contain    ${RESPONSE BODY 1}    <path>/1INHERITEDterm46</path>
+    Delete Element    ${abstract term id}
+    Delete Element    ${concrete term id}
+
+047 - Start From Non-Zero Row XML
+    [Documentation]    Ensures that it is possible to limit the returned data to begin from a specific row in the data table and that the response contais only the expected data and not the values for rows not in the search range
+    ${term id1}=    Create Root Element    TERM    fromRow1    fromRow1    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Root Element    TERM    fromRow2    fromRow2    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    TERM    fromRow3    fromRow3    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id4}=    Create Root Element    TERM    fromRow4    fromRow4    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Root Element    TERM    fromRow5    fromRow5    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Root Element    TERM    fromRow6    fromRow6    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id7}=    Create Root Element    TERM    fromRow7    fromRow7    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id8}=    Create Root Element    TERM    fromRow8    fromRow8    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id9}=    Create Root Element    TERM    fromRow9    fromRow9    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id10}=    Create Root Element    TERM    fromRow10    fromRow10    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    fromRow%    %    TERM    CONCRETE    5
+    ...    10    ENABLED
+    ${count}=    Get Count    ${RESPONSE BODY 1}    <path>/fromRow
+    Should Be Equal As Integers    ${count}    10
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/fromRow1</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/fromRow10</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/fromRow5</path>
+    Delete Element    ${term id1}
+    Delete Element    ${term id2}
+    Delete Element    ${term id3}
+    Delete Element    ${term id4}
+    Delete Element    ${term id5}
+    Delete Element    ${term id6}
+    Delete Element    ${term id7}
+    Delete Element    ${term id8}
+    Delete Element    ${term id9}
+    Delete Element    ${term id10}
+
+048 - Return Fewer Rows Than Results XML
+    [Documentation]    Ensures that when the number of results is greater than the value set by numberOfRows in the filter a number of results is returned equal to the value of numberOfRows. The excess results are not returned in the response to the user.
+    ${term id1}=    Create Root Element    TERM    fromRow1    fromRow1    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Root Element    TERM    fromRow2    fromRow2    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Root Element    TERM    fromRow3    fromRow3    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id4}=    Create Root Element    TERM    fromRow4    fromRow4    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Root Element    TERM    fromRow5    fromRow5    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Root Element    TERM    fromRow6    fromRow6    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id7}=    Create Root Element    TERM    fromRow7    fromRow7    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id8}=    Create Root Element    TERM    fromRow8    fromRow8    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id9}=    Create Root Element    TERM    fromRow9    fromRow9    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id10}=    Create Root Element    TERM    fromRow10    fromRow10    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    fromRow%    %    TERM    CONCRETE    0
+    ...    5    ENABLED
+    ${count}=    Get Count    ${RESPONSE BODY 1}    <path>/fromRow
+    Should Be Equal As Integers    ${count}    10
+    Delete Element    ${term id1}
+    Delete Element    ${term id2}
+    Delete Element    ${term id3}
+    Delete Element    ${term id4}
+    Delete Element    ${term id5}
+    Delete Element    ${term id6}
+    Delete Element    ${term id7}
+    Delete Element    ${term id8}
+    Delete Element    ${term id9}
+    Delete Element    ${term id10}
+
+049 - POST null Find Request XML
+    [Documentation]    Ensures that when the JSON query is null an error is returned by the request. defered QC:17111
+    ${term id}=    Create Root Element    TERM    049FINDterm1    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Catalog Request Setup
+    Set Request Body    ${EMPTY}
+    Next Request Should Not Succeed
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    Response Status Code Should Equal    400
+    Delete Element    ${term id}
+
+050 - POST Syntax Failed Find Request XML
+    [Documentation]    Ensures that an error is returned when the JSON request contains syntax errors. deferred QC:17110
+    [Tags]    IGNORE
+    ${term id}=    Create Root Element    TERM    2FINDterm1    Unique description    true    {"property":[{"name":"Find Property","type":"STRING","format":null,"description":"Find Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Catalog Request Setup
+    Set Request Body    {{{][]{}{}[][}{}][][][]'"name": "valid","predicates": {"value": ["{constrain path}"]},"flag": ["{term or dictionary}","{concrete or abstract}","{enabled or disabled}"],"limits": {"fromRow": "{fromRow}","numberOfRows": "{numberOfRows}"}}]]][[[][][]]]]]]]]]]]]]]]]]]]]]]
+    Next Request Should Not Succeed
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    Response Status Code Should Equal    400
+    Delete Element    ${term id}
+
+051 - fromRows Greater Than Number Of Rows In Table XML
+    [Documentation]    Ensures that when the fromRow variable is greater than the number of results in the table that nothing is returned and no errors take place.
+    ${RESPONSE BODY 1}=    XML Format Find Request    %    /Experiment Dictionaries    TERM    CONCRETE    50
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+
+052 - Find Nonexistent Term XML
+    [Documentation]    Ensures that when a find request is POSTED looking for a TERM that does not exist nothing is returned and no errors occur.
+    ${RESPONSE BODY 1}=    XML Format Find Request    azabaqwerty    /Experiment Dictionaries    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+
+053 - Find Nonexistent Dictionary XML
+    [Documentation]    Ensures that when a find request is POSTED looking for a DICTIONARY that does not exist nothing is returned and no errors occur.
+    ${RESPONSE BODY 1}=    XML Format Find Request    azabaqwerty    %    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    ${EMPTY}
+
+054 - Find Term With Units XML
+    [Documentation]    Ensures that when returning a results that contains a linked unit term to a property that the correct unit term is resturned with the correct data.
+    ${unit dictionary}=    Create Root Element    DICTIONARY    UNITdictionary1    UNITdictionary1    true
+    ${unit term id}=    Create Non-Root Element    ${unit dictionary}    TERM    UNITterm1    Has Unit Tuples    true
+    ...    {"property":[{"name":"Units","type":"STRING","format":null,"description":"Units","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Tuple    ${unit term id}    Units    cm    cm    true    true
+    Create Tuple    ${unit term id}    Units    mm    mm    true    false
+    Create Tuple    ${unit term id}    Units    m    m    true    false
+    ${distance dictionary}=    Create Root Element    DICTIONARY    DISTANCEdictionary1    DISTANCEdictionary1    true
+    ${distance term id}=    Create Non-Root Element    ${distance dictionary}    TERM    DISTANCEterm1    DISTANCEterm1    true
+    ...    {"property":[{"name":"Distance","type":"STRING","format":null,"description":"Distance","constraint":null,"unit":"cm","key":true,"displayed":true,"unitTermPath":"/UNITdictionary1/UNITterm1","linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    DISTANCEterm1    %    TERM    CONCRETE    0
+    ...    20    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <unit>cm</unit>
+    Should Contain    ${RESPONSE BODY 1}    unitTermPath="/UNITdictionary1/UNITterm1"
+    Should Contain    ${RESPONSE BODY 1}    <path>/DISTANCEdictionary1/DISTANCEterm1</path>
+    Delete Element    ${distance dictionary}
+    Delete Element    ${unit dictionary}
+
+055 - Find Term With Linked Property XML
+    [Documentation]    Ensures that when returning a results that contains a linked term to a property that the correct linked term is resturned with the correct data.
+    ${new term id}=    Create Root Element    TERM    2LINKterm1    2LINKterm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${linked term id}=    Create Root Element    TERM    2LINKEDterm1    2LINKEDterm1    true    {"property":[{"name":"Key","type":"STRING","format":null,"description":"KeyDescription","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"Linked:LinkedTerm1","type":"STRING","format":null,"description":null,"constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/2LINKterm1"}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    2LINKEDterm1    /    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <termReference id="${linked term id}"><path>/2LINKEDterm1</path></termReference>
+    Should Contain    ${RESPONSE BODY 1}    linkTermId="${new term id}"
+    Should Contain    ${RESPONSE BODY 1}    linkTermPath="/2LINKterm1"
+    Delete Element    ${linked term id}
+    Delete Element    ${new term id}
+
+056 - Find Term With Multiple Properties XML
+    [Documentation]    Ensures that when the response of a Find request includes a term with multiple properties that those properties are all displayed.
+    ${term id}=    Create Root Element    TERM    MULTIPLEpropertiesterm1    MULTIPLEpropertiesterm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}, {"name":"example2","type":"STRING","format":null,"description":"Example2","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}, {"name":"example3","type":"STRING","format":null,"description":"Example3","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    MULTIPLEpropertiesterm1    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <name>example</name>
+    Should Contain    ${RESPONSE BODY 1}    <name>example2</name>
+    Should Contain    ${RESPONSE BODY 1}    <name>example3</name>
+    ${count}=    Get Count    ${RESPONSE BODY 1}    type="STRING"
+    Should Be Equal As Integers    ${count}    3
+    Should Contain    ${RESPONSE BODY 1}    key="true"
+    Should Contain    ${RESPONSE BODY 1}    key="false"
+    Delete Element    ${term id}
+
+057 - Find Multiple Terms With Multiple Properties XML
+    [Documentation]    Ensures that, when a Find request response contains multiple TERMs with multiple properties that all of the properties are returned with the correct values.
+    ${term id}=    Create Root Element    TERM    MULTIPLEpropertiesterm1    MULTIPLEpropertiesterm1    true    {"property":[{"name":"example","type":"NUMBER","format":"NUMBER_SCIENTIFIC!0.00E0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}, {"name":"example2","type":"STRING","format":null,"description":"Example2","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}, {"name":"example3","type":"BOOLEAN","format":null,"description":"Example3","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    MULTIPLEpropertiesterm1    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <name>example</name>
+    Should Contain    ${RESPONSE BODY 1}    <name>example2</name>
+    Should Contain    ${RESPONSE BODY 1}    <name>example3</name>
+    Should Contain    ${RESPONSE BODY 1}    <format>NUMBER_SCIENTIFIC!0.00E0</format>
+    Should Contain    ${RESPONSE BODY 1}    key="false"
+    Should Contain    ${RESPONSE BODY 1}    type="NUMBER"
+    Should Contain    ${RESPONSE BODY 1}    <path>/MULTIPLEpropertiesterm1</path>
+    Delete Element    ${term id}
+
+058 - Find Term With Formatted Properties XML
+    [Documentation]    Ensures that a Find request that returns a TERM with formatted properties returns the correct formatting information.
+    ${term id}=    Create Root Element    TERM    FORMATterm1    FORMATterm1    true    {"property":[{"name":"Number","type":"NUMBER","format":"NUMBER_SCIENTIFIC!0.00E0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}, {"name":"Timestamp","type":"TIMESTAMP","format":"DATE_US_SHORT!MM/dd/yy!NONE!NONE","description":"Example2","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}, {"name":"Auto_Id","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_44!1","description":"Example3","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    FORMATterm1    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <name>Number</name>
+    Should Contain    ${RESPONSE BODY 1}    <name>Timestamp</name>
+    Should Contain    ${RESPONSE BODY 1}    <name>Auto_Id</name>
+    Should Contain    ${RESPONSE BODY 1}    <format>NUMBER_SCIENTIFIC!0.00E0</format>
+    Should Contain    ${RESPONSE BODY 1}    <format>DATE_US_SHORT!MM/dd/yy!NONE!NONE</format>
+    Should Contain    ${RESPONSE BODY 1}    <format>AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_
+    Delete Element    ${term id}
+
+059 - Find Term With Tuples XML
+    [Documentation]    Ensures that when a Find request returns a TERM with tuples that the tuple data is *not* returned by the response.
+    ${RESPONSE BODY 1}=    XML Format Find Request    Experiment Statuses    %    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Statuses</path>
+    Should Not Contain    ${RESPONSE BODY 1}    Started
+    Should Not Contain    ${RESPONSE BODY 1}    Completed
+
+060 - Find All Concrete Terms XML
+    [Documentation]    Ensures that through use of wildcards % it is possible to return all of the Concrete terms in the catalog from under all dictionaries and that the data returned does not include any abstract terms
+    ${unique_test_prefix}=    Set Variable    PI008T003060-
+    ${abstract term id1}=    Create Abstract Term    ${unique_test_prefix}Abstract1    Abstract    true    {"property":[{"name":"${unique_test_prefix}example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id2}=    Create Abstract Term    ${unique_test_prefix}Abstract2    Abstract    true    {"property":[{"name":"${unique_test_prefix}example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id3}=    Create Abstract Term    ${unique_test_prefix}Abstract3    Abstract    true    {"property":[{"name":"${unique_test_prefix}example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    %    %    TERM    CONCRETE    0
+    ...    500    ENABLED
+    ${RESPONSE BODY 1}=    Convert To String    ${RESPONSE BODY 1}
+    Should Contain    ${RESPONSE BODY 1}    <name>status</name>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Save Reasons</path>
+    Should Contain    ${RESPONSE BODY 1}    abstractTerm="false"
+    Should Contain    ${RESPONSE BODY 1}    <path>/IDBS-Applications/Core/ActivityBase/ActivityBase Objects/Compound Detail</path>
+    Should Contain    ${RESPONSE BODY 1}    abstractTerm="true"
+    Should Not Contain    ${RESPONSE BODY 1}    <name>${unique_test_prefix}example1</name>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/${unique_test_prefix}Abstract1</path>
+    Delete Element    ${abstract term id1}
+    Delete Element    ${abstract term id2}
+    Delete Element    ${abstract term id3}
+
+061 - Find Disabled Terms XML
+    [Documentation]    Ensures that when applying a filter to the Find request to only return DISABLED TERMS that only the DISABLED TERMS are returned and that no ENABLED terms that match other search criteria are returned
+    ${dictionary id1}=    Create Root Element    DICTIONARY    ENABLEDdictionary1    ENABLEDdictionary1    true
+    ${term id1}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm1    ENABLEDterm1    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm2    ENABLEDterm2    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm3    ENABLEDterm3    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${dictionary id2}=    Create Root Element    DICTIONARY    DISABLEDdictionary1    DISABLEDdictionary1    true
+    ${term id4}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm1    DISABLEDterm1    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm2    DISABLEDterm2    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm3    DISABLEDterm3    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    %term%    %dictionary1    TERM    CONCRETE    0
+    ...    10    DISABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/DISABLEDdictionary1/DISABLEDterm1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/DISABLEDdictionary1/DISABLEDterm2</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/DISABLEDdictionary1/DISABLEDterm3</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/ENABLEDdictionary1/ENABLEDterm1</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/ENABLEDdictionary1/ENABLEDterm2</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/ENABLEDdictionary1/ENABLEDterm3</path>
+    Delete Element    ${dictionary id1}
+    Delete Element    ${dictionary id2}
+
+062 - Find Enabled Terms XML
+    [Documentation]    Ensures that when applying a filter to the Find request to only return ENABLED TERMS that only the ENABLED TERMS are returned and that no DISABLED terms that match other search criteria are returned
+    ${dictionary id1}=    Create Root Element    DICTIONARY    ENABLEDdictionary1    ENABLEDdictionary1    true
+    ${term id1}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm1    ENABLEDterm1    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id2}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm2    ENABLEDterm2    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id3}=    Create Non-Root Element    ${dictionary id1}    TERM    ENABLEDterm3    ENABLEDterm3    true
+    ...    {"property":[{"name":"Enabled Property","type":"STRING","format":null,"description":"Enabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${dictionary id2}=    Create Root Element    DICTIONARY    DISABLEDdictionary1    DISABLEDdictionary1    true
+    ${term id4}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm1    DISABLEDterm1    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id5}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm2    DISABLEDterm2    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${term id6}=    Create Non-Root Element    ${dictionary id2}    TERM    DISABLEDterm3    DISABLEDterm3    false
+    ...    {"property":[{"name":"Disabled Property","type":"STRING","format":null,"description":"Disabled Property Description","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${RESPONSE BODY 1}=    XML Format Find Request    %term%    %dictionary1    TERM    CONCRETE    0
+    ...    10    ENABLED
+    Should Contain    ${RESPONSE BODY 1}    <path>/ENABLEDdictionary1/ENABLEDterm1</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/ENABLEDdictionary1/ENABLEDterm2</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/ENABLEDdictionary1/ENABLEDterm3</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/DISABLEDdictionary1/DISABLEDterm1</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/DISABLEDdictionary1/DISABLEDterm2</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/DISABLEDdictionary1/DISABLEDterm3</path>
+    Delete Element    ${dictionary id1}
+    Delete Element    ${dictionary id2}
+
+063 - Needs REWORK - \ Find SYSTEM Terms XML
+    [Documentation]    Ensures that when applying a SYSTEM filter to the Find request only the Terms and Dictionaries created by the SYSTEM are returned and no USER Terms or Dictionaries are returned
+    ...
+    ...    *Needs to be edited to check that USER Terms are being filtered, currently the search will does not look at an item that has USER entities for the search to filter*
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Set Request Body    <filter xmlns="http://catalog.services.ewb.idbs.com" xmlns:ns2="http://common.services.ewb.idbs.com"><name>%</name><predicates><ns2:value>/Experiment Dictionaries</ns2:value></predicates><flag>TERM</flag><flag>CONCRETE</flag><flag>ENABLED</flag><flag>SYSTEM</flag><limits><fromRow>0</fromRow><numberOfRows>20</numberOfRows></limits></filter>
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    ${RESPONSE BODY 1}=    Get Response Body
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Statuses</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Publishing Status</path>
+    Should Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Entity Move Reasons</path>
+
+064 - Find USER Terms XML
+    [Documentation]    Ensures that when applying a USER filter to the Find request only the Terms and Dictionaries created by a USER are returned and no SYSTEM Terms or Dictionaries are returned
+    ...
+    ...    *Needs to be edited to check that SYSTEM Terms are being filtered, currently the search will does not look at an item that has USER entities for the search to filter*
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Set Request Body    <filter xmlns="http://catalog.services.ewb.idbs.com" xmlns:ns2="http://common.services.ewb.idbs.com"><name>%</name><predicates><ns2:value>/Experiment Dictionaries</ns2:value></predicates><flag>TERM</flag><flag>CONCRETE</flag><flag>ENABLED</flag><flag>USER</flag><limits><fromRow>0</fromRow><numberOfRows>20</numberOfRows></limits></filter>
+    POST    ${CATALOG ROOT ELEMENTS ENDPOINT}
+    ${RESPONSE BODY 1}=    Get Response Body
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Experiment Statuses</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Publishing Status</path>
+    Should Not Contain    ${RESPONSE BODY 1}    <path>/Experiment Dictionaries/Entity Move Reasons</path>

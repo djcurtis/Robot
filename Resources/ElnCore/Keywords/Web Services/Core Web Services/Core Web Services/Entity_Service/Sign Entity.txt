@@ -1,0 +1,152 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/{entityId}/signatures
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Sign Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+
+*** Test Cases ***
+Sign entity
+    [Documentation]    \
+    ...    A successful call returns the HTTP status 204 and a the entity is signed
+    ${experiment_name}=    Set Variable    SEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    204
+    # Checking expectations
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    409
+
+Sign entity with missing reason
+    [Documentation]    \
+    ...    If the call parameter ‘reason’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    # Missing reason
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    ${EMPTY}    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    400
+
+Sign entity with not existing entity
+    [Documentation]    \
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    # Not existing entity
+    rest_entity_service_resource.Sign Document    WrongEntityId    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    404
+    # Missing entity id
+    rest_entity_service_resource.Sign Document    ${EMPTY}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    404
+
+Sign entity no VERSION entity
+    [Documentation]    \
+    ...    If the entity exists but its version type is different from ‘VERSION’, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Lock Entity    ${experiment_id}
+    ${web_link_entity}=    Add Web Link Entity    ${experiment_id}    www.idbs.com
+    # Not VERSION entity (web link is CACHE)
+    rest_entity_service_resource.Sign Document    ${web_link_entity}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    400
+
+Sign entity with no PDF entity
+    [Documentation]    \
+    ...    If the entity exists but its type is different from ‘PDF’, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    ${text_entity_id}=    Add Text Entity    ${experiment_id}
+    # no PDF entity
+    rest_entity_service_resource.Sign Document    ${text_entity_id}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    400
+
+Sign entity with invalid X-Web-Client-Author-Credentials
+    [Documentation]    \
+    ...    If credential supplied via request HTTP header filed ‘X-Web-Client-Author-Credentials’ are invalid , then the HTTP status code 401 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    # Invalid X-Web-Client-Author-Credentials
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    ${EMPTY}    TestAddictionalComment    Reviewer    ${EMPTY}    ${EMPTY}
+    ...    401
+
+Sign entity already signed entity
+    [Documentation]    \
+    ...    If the entity is already signed by the current client, then the HTTP status code 409 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S007
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    204
+    # Entity already signed
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    TestReason    TestAddictionalComment    Reviewer    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    ...    409
+
+Sign entity without PDF_SIGNOFF permission
+    [Documentation]    \
+    ...    A client requires the PDF_SIGNOFF permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    SEN-S008
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    # without PDF_SIGNOFF permission
+    Use User With Permissions    ${username}    ${password}    ${pdf_entity_id}
+    rest_entity_service_resource.Sign Document    ${pdf_entity_id}    TestReason    TestAddictionalComment    Reviewer    ${username}    ${password}
+    ...    403
+
+*** Keywords ***
+Add Text Entity
+    [Arguments]    ${parent_entity_id}    ${text_data}=Test text data
+    [Documentation]    Add a Text entity and save record as version.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _parent_entity_id_ - the parent entity id
+    ...
+    ...    _text_data_ - the text data. Default set to "Test text data"
+    ...
+    ...    *Return value*
+    ...
+    ...    The Text entity id
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${text_entity_id}=    Add DOCUMENT With String Data    ${experiment_id}    ${text_data}    text/html    HTML_TEXT    Uploaded Document
+    ...    .html
+    ${document_version_id}=    Get Entity Version ID    ${text_entity_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    [Return]    ${text_entity_id}    # The newly created entity id

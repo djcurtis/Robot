@@ -1,0 +1,143 @@
+*** Settings ***
+Documentation     Script for SH-1352 - data verification to be run after:
+...               - the data creation scripts have been run on a pre-EWB 10.2.1 system
+...               - the EWB system has been upgraded to 10.2.1
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+C1 | [AC_acbc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC1Ab0
+
+C2 | [AV_a1b1]->[AC_acbc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC2Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC2Ab0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC2Aa1    1    MigrationToolAttrItemExpC2
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC2Ab1    1    MigrationToolAttrItemExpC2
+    Execute Free Text Search And Verify No Result    itemAttributeC2Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC2Abc
+
+C3 | [AV_a1b1 BV_i1j1]->[AC_acbc BV_i1j1]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC3Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC3Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC3Bi0
+    Execute Free Text Search And Verify No Result    itemAttributeC3Bj0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC3Aa1    1    MigrationToolAttrItemExpC3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC3Ab1    1    MigrationToolAttrItemExpC3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC3Bi1    1    MigrationToolAttrItemExpC3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC3Bj1    1    MigrationToolAttrItemExpC3
+    Execute Free Text Search And Verify No Result    itemAttributeC3Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC3Abc
+
+C4 | [AD_adbd]->[AC_acbc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC4Aad    1    MigrationToolAttrItemExpC4
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC4Abd    1    MigrationToolAttrItemExpC4
+    Execute Free Text Search And Verify No Result    itemAttributeC4Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC4Abc
+
+C5 | [AD_adbd BD_idjd]->[AC_acbc BD_idjd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC5Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC5Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC5Bi0
+    Execute Free Text Search And Verify No Result    itemAttributeC5Bj0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC5Aad    1    MigrationToolAttrItemExpC5
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC5Abd    1    MigrationToolAttrItemExpC5
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC5Bid    1    MigrationToolAttrItemExpC5
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC5Bjd    1    MigrationToolAttrItemExpC5
+    Execute Free Text Search And Verify No Result    itemAttributeC5Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC5Abc
+
+C6 | [AV_a1b1]->[AD_adbd]->[AC_acbc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC6Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC6Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC6Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeC6Ab1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC6Aad    1    MigrationToolAttrItemExpC6
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC6Abd    1    MigrationToolAttrItemExpC6
+    Execute Free Text Search And Verify No Result    itemAttributeC6Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC6Abc
+
+C7 | [AV_a1b1]->[AD_adbd BD_idjd]->[AC_acbc BD_idjd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC7Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC7Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC7Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeC7Ab1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC7Aad    1    MigrationToolAttrItemExpC7
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC7Abd    1    MigrationToolAttrItemExpC7
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC7Bid    1    MigrationToolAttrItemExpC7
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC7Bjd    1    MigrationToolAttrItemExpC7
+    Execute Free Text Search And Verify No Result    itemAttributeC7Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC7Abc
+
+C8 | [AV_a1b1]->[AD_adbd BD_idjd]->[AC_acbc BC_icjc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC8Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC8Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC8Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeC8Ab1
+    Execute Free Text Search And Verify No Result    itemAttributeC8Bi0
+    Execute Free Text Search And Verify No Result    itemAttributeC8Bj0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC8Aad    1    MigrationToolAttrItemExpC8
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC8Abd    1    MigrationToolAttrItemExpC8
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC8Bid    1    MigrationToolAttrItemExpC8
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC8Bjd    1    MigrationToolAttrItemExpC8
+    Execute Free Text Search And Verify No Result    itemAttributeC8Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC8Abc
+    Execute Free Text Search And Verify No Result    itemAttributeC8Bic
+    Execute Free Text Search And Verify No Result    itemAttributeC8Bjc
+
+C9 | [AV_a1b1 BV_i1j1]->[AD_adbd BV_i1j1]->[AC_acbc BC_icjc]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC9Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC9Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC9Bi0
+    Execute Free Text Search And Verify No Result    itemAttributeC9Bj0
+    Execute Free Text Search And Verify No Result    itemAttributeC9Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeC9Ab1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC9Aad    1    MigrationToolAttrItemExpC9
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC9Abd    1    MigrationToolAttrItemExpC9
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC9Bi1    1    MigrationToolAttrItemExpC9
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC9Bj1    1    MigrationToolAttrItemExpC9
+    Execute Free Text Search And Verify No Result    itemAttributeC9Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC9Abc
+    Execute Free Text Search And Verify No Result    itemAttributeC9Bic
+    Execute Free Text Search And Verify No Result    itemAttributeC9Bjc
+
+C10 | [AV_a1b1 BV_i1j1 CV_p1q1]->[AD_adbd BD_idjd CV_p1q1]->[AC_acbc BD_idjd CV_p1q1]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeC10Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeC10Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeC10Bi0
+    Execute Free Text Search And Verify No Result    itemAttributeC10Bj0
+    Execute Free Text Search And Verify No Result    itemAttributeC10Cp0
+    Execute Free Text Search And Verify No Result    itemAttributeC10Cq0
+    Execute Free Text Search And Verify No Result    itemAttributeC10Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeC10Ab1
+    Execute Free Text Search And Verify No Result    itemAttributeC10Bi1
+    Execute Free Text Search And Verify No Result    itemAttributeC10Bj1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC10Aad    1    MigrationToolAttrItemExpC10
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC10Abd    1    MigrationToolAttrItemExpC10
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC10Bid    1    MigrationToolAttrItemExpC10
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC10Bjd    1    MigrationToolAttrItemExpC10
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC10Cp1    1    MigrationToolAttrItemExpC10
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeC10Cq1    1    MigrationToolAttrItemExpC10
+    Execute Free Text Search And Verify No Result    itemAttributeC10Aac
+    Execute Free Text Search And Verify No Result    itemAttributeC10Abc

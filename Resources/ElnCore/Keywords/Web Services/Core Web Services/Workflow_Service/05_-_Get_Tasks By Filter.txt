@@ -1,0 +1,573 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks* endpoint (no sub-end points are covered)
+...
+...               NOTE THAT AS OF 9.3 THIS TYPE OF FILTERING IS DEPRECATED
+...
+...               {"includeAll" : true, "includeAssignedSet" : false, "includeSentSet" : false, "includeResponsibleSet" : false,
+...               \ taskProperties : {
+...               \ \ \ "workflowRequester" : "...",
+...               \ \ \ "workflowId" : "...",
+...               \ \ \ "workflowPriority" : "...",
+...               \ \ \ "workflowStatus" : "...",
+...               \ \ \ "entityPath" : "...",
+...               \ \ \ "taskId" : "...",
+...               \ \ \ "taskName : "...",
+...               \ \ \ "taskStatuses" : {
+...               \ \ \ \ \ "taskStatus" : [ {
+...               \ \ \ \ \ }, ... ]
+...               \ \ \ },
+...               \ \ \ "taskTypes" : {
+...               \ \ \ \ \ "taskType" : [ {
+...               \ \ \ \ \ }, ... ]
+...               \ \ \ },
+...               \ \ \ "assignedUser" : "...",
+...               \ \ \ "assignedUserCnt" : "...",
+...               \ \ \ "actioningUser" : "...",
+...               \ \ \ "test" : "...",
+...               \ \ \ "object" : "...",
+...               \ \ \ "actioningExperiment" : "...",
+...               \ \ \ "dueDate" : ...,
+...               \ \ \ "sentDate" : ...,
+...               \ \ \ "userPool" : "...",
+...               \ \ \ "entityType" : "...",
+...               \ \ \ "entityId" : "..."
+...               \ }
+...               }
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resourcer
+Resource          ../../../Libraries/E-WorkBook_Database/cdc_resource.txt
+Library           IDBSHttpLibrary
+Library           String
+
+*** Test Cases ***
+Get Task Information - Requestor = Non-Requestor
+    # Obtain due date that is one week from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowRequester" : "WorkflowWSUser1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Requestor = Requestor
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowRequester" : "Administrator"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+
+Get Task Information - Priority = Normal
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "Normal"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "Critical"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Priority = HIGH
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    High    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "High"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "Critical"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Priority = CRITICAL
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Critical    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "Critical"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "High"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Priority = MEDIUM
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Medium    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "Medium"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "High"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Priority = LOW
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "Low"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "High"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information -Workflow Status = NEW
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowStatus" : "NEW"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","workflowPriority" : "IN_PROGRESS"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Entity Path
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    Run Task Populate Job
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : true, "includeSentSet" : false, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityPath" : "/Root/${wf_group_name}/WF_PROJECT1/WF_EXPERIMENT_1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityPath" : "/Root/${wf_group_name}/WF_PROJECT1/WF_EXPERIMENT_2"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task ID
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${workflow guid}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskId" : "${sign off workflow id}.WF1_SIGN1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse Json    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskId" : "${sign off workflow id}.WF1_SIGN2"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task Name
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskName" : "WF1_SIGN1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskName" : "WF1_SIGN2"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","assignedUser" : "WorkflowWSUser1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","assignedUser" : "WorkflowWSUser2"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Actioning User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","actioningUser" : null}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","actioningUser" : "WorkflowWSUser1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Test
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","test" : "1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","test" : "2"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Object
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","object" : "a"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","object" : "b"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Actioning Experiment
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    ${new task id}=    Get Task ID From Workflow ID    ${workflow guid}    1
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    Set Actioning Record    ${new task id}    ${wf_experiment_1}
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","actioningExperiment" : "/Root/${wf_group_name}/WF_PROJECT1/WF_EXPERIMENT_1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","actioningExperiment" : "/Root/${wf_group_name}/WF_PROJECT1/WF_REPORT_1"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Entity Type = EXPERIMENT
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityType" : "EXPERIMENT"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityType" : "GROUP"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Entity Type = REPORT
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_report_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityType" : "REPORT"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityType" : "PROJECT"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Entity Type = TEMPLATE
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_template_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityType" : "TEMPLATE"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityType" : "EXPERIMENT"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Entity ID
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityId" : "${wf_experiment_1}"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","entityId" : "${wf_experiment_2}"}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task Type = SIGN_OFF
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskTypes" : {"taskType" : ["SIGN_OFF"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskTypes" : {"taskType" : ["REVIEW"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task Type = REVIEW
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskTypes" : {"taskType" : ["REVIEW"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskTypes" : {"taskType" : ["ALERT"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task Type = ALERT
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskTypes" : {"taskType" : ["ALERT"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskTypes" : {"taskType" : ["SIGN_OFF"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task Status = NEW
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskStatuses" : {"taskStatus" : ["NEW"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskStatuses" : {"taskStatus" : ["CLOSED"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+Get Task Information - Task Status = NEW_OVERDUE
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW - 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow guid}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Low    ${task json}
+    ${sign off workflow id}=    Get Workflow ID from GUID    ${workflow guid}
+    Run Task Populate Job
+    #Upped time from 70s to try and correct issue
+    Sleep    80s    # Wait for cdc_task_run to index tasks
+    # Get and Validate Workflow
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskStatuses" : {"taskStatus" : ["NEW_OVERDUE"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Length Should Be    ${parsed JSON response}    1
+    ${workflow tasks JSON}=    Get Task From Filter    {"viewAnyTasks" : true, "includeAssignedSet" : false, "includeSentSet" : true, "includeResponsibleSet" : false, "taskProperties" : {"workflowId" : "${sign off workflow id}","taskStatuses" : {"taskStatus" : ["REJECTED"]}}}
+    ${task detail variable}=    Get Json Value    ${workflow tasks JSON}    /taskDetail
+    ${parsed JSON response}=    Parse JSON    ${task detail variable}
+    Should be Equal    ${parsed JSON response}    ${None}
+
+*** Keywords ***
+Get Workflow ID from GUID
+    [Arguments]    ${workflow guid}
+    [Documentation]    Retrieves the workflow ID from the workflow information based on the workflow guid provided.
+    ...
+    ...    *Arguments*
+    ...    workflow guid = the GUID of the workflow
+    ...
+    ...    *Pre-conditions*
+    ...    None
+    ...
+    ...    *Return Value*
+    ...    Workflow ID = the ID of the workflow
+    ...
+    ...    *Example*
+    ...    | ${sign off workflow guid}= | Create Workflow Via WS | BY_ENTITY_ID | ${wf_experiment_1} | WF WS Workflow 1 | ${new due date} | false | false | Normal | ${task json} |
+    ...    | ${sign off workflow id}= | Get Workflow ID from GUID | ${sign off workflow guid} |
+    ${Workflow JSON}=    Get Workflow    ${workflow guid}
+    ${Temp Workflow ID}=    Get Json Value    ${Workflow JSON}    /displayId
+    ${Actual Workflow ID}=    Replace String    ${Temp Workflow ID}    "    ${EMPTY}
+    Log    ${Workflow JSON}
+    Log    ${Actual Workflow ID}
+    [Return]    ${Actual Workflow ID}

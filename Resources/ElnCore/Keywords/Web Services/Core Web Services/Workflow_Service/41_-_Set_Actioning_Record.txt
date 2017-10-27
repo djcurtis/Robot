@@ -1,0 +1,65 @@
+*** Settings ***
+Documentation     Covering the * /services/1.0/tasks/{taskid}/setactioningrecord* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+# Library           EntityAPILibrary
+Resource          task_service_common_resource.txt
+
+*** Test Cases ***
+Check can add an actioning record to a specified task
+    [Documentation]    A successful call returns the HTTP status 204.
+    ${new task id}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record    ${new task id}    ${wf_experiment_1}
+    # how to validate?
+
+Check cannot add an actioning record if task id is not supplied
+    [Documentation]    If the task id is not supplied then the HTTP status code 400 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record And Expect Error    ${SPACE}    ${wf_experiment_1}    400
+
+Check cannot add an actioning record if record id is not supplied
+    [Documentation]    If the record id is not supplied then the HTTP status code 400 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record And Expect Error    ${new task id}    ${SPACE}    400
+
+Check cannot add an actioning record with insufficient permissions
+    [Documentation]    If the user is NOT the responsible user then the HTTP status code 403 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${response}=    Set Actioning Record And Expect Error    ${new task id}    ${wf_experiment_1}    403
+
+Check cannot add an actioning record if not of type record
+    [Documentation]    If the referenced record is not a RECORD_TYPE then the HTTP status code 403 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record And Expect Error    ${new task id}    ${wf_group}    403
+
+Check cannot add an actioning record if task is not *_INPROGRESS
+    [Documentation]    If the task is not in an INPROGRESS or TIMEDOUT_INPROGRESS state then cannot be actioned and the HTTP status code 403 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record And Expect Error    ${new task id}    ${wf_group}    403
+
+Check cannot add an actioning record if task id is not found
+    [Documentation]    If the task id is not found then the HTTP status code 404 is returned to the client.
+    ${new task id}=    Set Variable    SAR-S007
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record And Expect Error    ${new task id}    ${wf_experiment_1}    404
+
+Check cannot add an actioning record if record id is not found
+    [Documentation]    If the record id is not found then the HTTP status code 404 is returned to the client.
+    ${dummy_experiment}=    Set Variable    SAR-S008
+    ${new task id}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    ${response}=    Set Actioning Record And Expect Error    ${new task id}    ${dummy_experiment}    404

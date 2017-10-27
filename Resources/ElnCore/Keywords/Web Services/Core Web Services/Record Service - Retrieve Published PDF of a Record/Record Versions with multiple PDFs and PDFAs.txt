@@ -1,0 +1,488 @@
+*** Settings ***
+Documentation     In the EWB thick client, it is possible for a record version to have more than one published PDF as document items can be published individually.
+...
+...
+...               This test suite checks that the latest PDF and PDF_A are retrieved where there are multiple PDF's for a record versions, \ using the GET request which retrieves the PDF using the endpoint: */services/1.0/records/{entityID}/publishing/pdf*
+...
+...               optional url parameters:
+...               - \ entityVersionId
+...               - \ PDFType
+Suite Setup       00 Suite Level Setup
+Force Tags        requires_desktop    EWB-GKO-PI004-R001
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_document_entity_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_non_record_entity_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_printing_publishing_options_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_record_entity_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_spreadsheet_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_workflow_actions_resource.txt
+Resource          ../Record Service/PDF content acceptance/add_image_items_to_experiments.txt
+Resource          ../Record Service/PDF content acceptance/add_items_to_experiments.txt
+Resource          ../Record Service/PDF content acceptance/test utilities.txt
+# Library           EntityAPILibrary
+Library           CheckPDFLibrary    # Library to compare PDFs
+Library           IDBSSwingLibrary
+Library           RobotRemoteAgent
+Library           TestDataGenerationLibrary
+# Library           OracleLibrary
+Library           IDBSHttpLibrary
+Resource          ../Record Service/PDF content acceptance/test utilities.txt
+
+*** Test Cases ***
+01 Multiple PDFs associated with a single record version
+    [Documentation]    Checks that the latest PDF and PDF_A is retrieved where there are multiple PDF's for a single record version.
+    ...
+    ...    *The Testflow is as follows*
+    ...    - 1. Save as VERSION experiment with 3 items.
+    ...    - 2. Publish item 1 only -> PDF & PDF_A generated - retrieve PDF/A using the GET request & check that PDF's are correct.
+    ...    - 3. Publish item 2 only -> PDF & PDF_A generated - retrieve PDF/A using the GET request & check that PDF's are correct.
+    ...    - 4. Publish item 3 only -> PDF & PDF_A generated - retrieve PDF/A using the GET request & check that PDF's are correct.
+    ...
+    ...    At this point the record/experiment version2 has 3 PDFs & 3 PDF_As associated.
+    [Setup]    01 Test Level Setup
+    #Publish item 1 only
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${SECOND USER}    ${SECOND PASSWD}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_1.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_2.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Sleep    5s
+    #Get Published PDF & PDF_As for Published Experiment Version 2
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_1_4    Enclosure1-V2-1-PDF-expected.pdf    Enclosure1-V2-1-PDF-actual.pdf
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_A    Enclosure1-V2-1-PDFA-expected.pdf    Enclosure1-V2-1-PDFA-actual.pdf
+    #Publish another experiment item2    There should now be 2 PDFs and 2PDF_a for the experiment version 2
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_2.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Sleep    5s
+    #Get Published PDF & PDF_As for Published Experiment Version 2
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_1_4    Enclosure1-V2-2-PDF-expected.pdf    Enclosure1-V2-2-PDF-actual.pdf
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_A    Enclosure1-V2-2-PDFA-expected.pdf    Enclosure1-V2-2-PDFA-actual.pdf
+    Select E-WorkBook Main Window
+    #Publish another experiment item3    There should now be 3 PDFs and 3PDF_a for the experiment version 2
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${true}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Sleep    5s
+    #Get Published PDF & PDF_As for Published Experiment Version 2
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_1_4    Enclosure1-V2-3-PDF-expected.pdf    Enclosure1-V2-3-PDF-actual.pdf
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_A    Enclosure1-V2-3-PDFA-expected.pdf    Enclosure1-V2-3-PDFA-actual.pdf
+    Select E-WorkBook Main Window
+    Close E-WorkBook
+
+02 Multiple Record & PDF versions : All parameters provided
+    [Documentation]    Where there are multiple record versions and each records version has been published several times so that therer a multiple PDF/PDFAs associated, the test checks that the latest \ PDF\PDF_As are \ retrieved for each specified version.
+    ...
+    ...    *Workflow is as follows*
+    ...    - 1. Save as VERSION experiment with 3 items
+    ...    - 2. Publish item 1 only -> PDF & PDF_A generated
+    ...    - 3. Publish item 2 only -> PDF & PDF_A generated.
+    ...    - 4. Publish item 3 only -> PDF & PDF_A generated
+    ...    - _At this point the record/experiment *V2* has 3 PDFs & 3 PDF_As associated._
+    ...    - 5. Add new 2 new items to experiment & save as VERSION
+    ...    - 6. Publish item 4 only -> PDF & PDF_A generated
+    ...    - 7. Publish item 5 only -> PDF & PDF_A generated.
+    ...    - _At this point the record/experiment *V3* has 2 PDFs & 2 PDF_As associated._
+    [Setup]    02 Test Level Setup
+    #Get Published PDF & PDF_As for Published Experiment Version 2
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_1_4    Cage1-V2-PDF-expected.pdf    Cage1-V2-PDF-actual.pdf
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV2}    PDF_A    Cage1-V2-PDFA-expected.pdf    Cage1-V2-PDFA-actual.pdf
+    #Get Published PDF & PDF_As for Published Experiment Version 3
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV3}    PDF_1_4    Cage1-V3-PDF-expected.pdf    Cage1-V3-PDF-actual.pdf
+    GET_PDF_and_compare: All Parameters    ${entityVersionIDV3}    PDF_A    Cage1-V3-PDFA-expected.pdf    Cage1-V3-PDFA-actual.pdf
+
+03 Multiple Record & PDF Versions : entityVersionID NOT provided
+    [Documentation]    *Data Setup*
+    ...    - 1. Create experiment with 3 items & save as VERSION = v2
+    ...    - 2. Publish item 1 > PDF & PDF_A generated
+    ...    - 3. Publish item 2 -> PDF & PDF_A generated
+    ...    - 4. Add \ items 4 & 5 to experiment and save as VERSION = v3
+    ...    - 5. Publish item 4 -> PDF & PDF_A generated
+    ...    - 6. Publish item 5 -> PDF & PDF_A generated
+    ...    At this point the record version3 \ has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    Check that the latest PDF and PDF_A is retrieved where there are multiple PDF's for each multiple record versions.
+    ...
+    ...    *Test Condition*
+    ...    - EntityVersionID is NOT provided
+    ...    - PDF Type is defined. \ (will test retrieval for both supported types)
+    ...
+    ...    *Expected Outcome* = Latest published version is retrieved. \ In this case PDF or PDF_A for v3 where all items 1,2 4,5 \ are published (green flag is present for items).
+    [Setup]    03 Test Level Setup
+    Comment    GET PDFType=PDF_1_4 but EntityVersionID NOT provided
+    GET_PDF_and_compare: No EntityVersionID    PDF_1_4    Pen1-V3-PDF-expected.pdf    Pen1-V3-PDF-actual.pdf
+    Comment    GET PDFType=PDF_A but EntityVersionID NOT provided
+    GET_PDF_and_compare: No EntityVersionID    PDF_A    Pen1-V3-PDFA-expected.pdf    Pen1-V3-PDFA-actual.pdf
+
+04 Multiple Record & PDF Versions : PDF Type NOT provided
+    [Documentation]    *Data Setup*
+    ...    - 1. Create experiment with 3 items & save as VERSION = v2
+    ...    - 2. Publish all 3 \ items > PDF & PDF_A generated
+    ...    - 3. Add \ items 4 & 5 to experiment and save as VERSION = v3
+    ...    - 4. Publish item 4 -> PDF & PDF_A generated
+    ...    - 5. Publish item 5 -> PDF & PDF_A generated
+    ...    At this point the record version3 \ has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    Check that the latest PDF and PDF_A is retrieved where there are multiple PDF's for each multiple record versions.
+    ...
+    ...    *Test Condition* \ \ \ \ \ \ \ = PDF Type NOT provided
+    ...
+    ...    *Expected Outcome* = Latest published version is retrieved. \ In this case the *PDF* for v3 where all items 1,2,3 4,5 \ are published (green flag is present for items).
+    [Setup]    04 Test Level Setup
+    ${Expected}=    Set Variable    Park1-V3-PDF-expected.pdf
+    ${ActualPDF}=    Set Variable    Park1-V3-PDF-actual.pdf
+    #GET Published PDF for Published Experiment Version 3
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV3}
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${Expected}
+
+05 Multiple Record & PDF Versions : NO parameters provided
+    [Documentation]    *Data Setup*
+    ...    - 1. Create experiment with 3 items & save as VERSION = v2
+    ...    - 2. Publish all 3 \ items > PDF & PDF_A generated
+    ...    - 3. Add \ items 4 & 5 to experiment and save as VERSION = v3
+    ...    - 4. Publish item 4 -> PDF & PDF_A generated
+    ...    - 5. Publish item 5 -> PDF & PDF_A generated
+    ...    At this point the record version3 \ has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    Check that the latest PDF is retrieved where there are multiple PDF's and PDF_As for each multiple record versions.
+    ...
+    ...    *Test Condition* \ \ \ \ \ \ \ = No parameters provided
+    ...
+    ...    *Expected Outcome* = Latest PDF for the latest published version is retrieved. \ In this case the *PDF* for v3 where all items 1,2,3 4,5 \ are published (green flag is present for items).
+    [Setup]    05 Test Level Setup
+    ${Expected}=    Set Variable    Compound1-V3-PDF-expected.pdf
+    ${ActualPDF}=    Set Variable    Compound1-V3-PDF-actual.pdf
+    #GET Published PDF for Published Experiment Version 3
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV3}
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${Expected}
+
+*** Keywords ***
+00 Suite Level Setup
+    [Documentation]    Sets up Gorup and Project entities for testsuite:
+    ...
+    ...    Also ensures that the Page margins are set to default=5 as PDF comparision may fail if other tests fails to reset it back to normal.
+    Set Page Config    5    5
+    ${unique_id}=    Get Time    epoch
+    #Create Group, Project to be used for suite
+    ${Group_Name}=    set variable    Multiple PDFs_${unique_id}
+    ${Project_Name}=    set variable    Project ZOO
+    ${Project_PATH}=    set variable    Root/${Group_Name}/${Project_Name}
+    Set Suite Variable    ${Project_PATH}
+    ${Group_id}=    Rest_Entity_Service_ Resource.Create Group    1    ${Group_Name}
+    Set Suite Variable    ${Group_id}
+    ${Project_id}=    Rest_Entity_Service_ Resource.Create Project    ${Group_id}    ${Project_Name}
+    Set Suite Variable    ${Project_id}
+
+01 Test Level Setup
+    [Documentation]    Sets up test data required for testcase as follows:
+    ...
+    ...    - Create Experimnent to contain 3 items.
+    ...    - Version Save experiment
+    ...
+    ...    Later on in the testcases, each experiment item will be be published on separate occasions via the EWB thick client.
+    ...
+    ...    - _(note publishing items individually is not possllbe via the Record REST service.)_
+    ${Expt_Name}=    set variable    Enclosure1
+    Set Test Variable    ${Expt_Name}
+    ${experiment_id}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Expt_Name}
+    Set Test Variable    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV2}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV2}
+    #Login to EWB using the values stored in the common resource files    Configure Publishing Options @ Project level as defined in the Path
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${SECOND USER}    ${SECOND PASSWD}
+    Setup Publishing Options    ${Project_PATH}/${Expt_Name}
+    Close E-WorkBook
+
+02 Test Level Setup
+    [Documentation]    Sets up test data required for testcase as follows:
+    ...
+    ...    - 1. Save as VERSION experiment with 3 items
+    ...    - 2. Publish item 1 only -> PDF & PDF_A generated
+    ...    - 3. Publish item 2 only -> PDF & PDF_A generated.
+    ...    At this point the record/experiment *V2* has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    - 4. Add new 2 new items to experiment & save as VERSION
+    ...    - 5. Publish item 4 only -> PDF & PDF_A generated
+    ...    - 6. Publish item 5 only -> PDF & PDF_A generated.
+    ...    At this point the record/experiment *V3* has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    - _(note publishing items individually is not possllbe via the Record REST service.)_
+    ${Expt_Name}=    set variable    Cage1
+    Set Test Variable    ${Expt_Name}
+    ${experiment_id}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Expt_Name}
+    Set Test Variable    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV2}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV2}
+    #Login to EWB using the values stored in the common resource files    Configure Publishing Options @ Project level as defined in the Path
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Setup Publishing Options    ${Project_PATH}/${Expt_Name}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_1.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_2.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_2.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Push Button    OK
+    Close E-WorkBook
+    #Add more items to experiment and VERSION save as v3 (via the Entity REST service)
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_4.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_5.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV3}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV3}
+    #Login into EWB and publish items 4 & 5 on separate occasions to produce 2 PDF/As for experiment V3
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_4.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${true}
+    Push Button    OK
+    Close E-WorkBook
+
+03 Test Level Setup
+    [Documentation]    Sets up test data required for testcase as follows:
+    ...
+    ...    - 1. Save as VERSION experiment with 3 items
+    ...    - 2. Publish item 1 only -> PDF & PDF_A generated
+    ...    - 3. Publish item 2 only -> PDF & PDF_A generated.
+    ...    At this point the record/experiment *V2* has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    - 4. Add new 2 new items to experiment & save as VERSION
+    ...    - 5. Publish item 4 only -> PDF & PDF_A generated
+    ...    - 6. Publish item 5 only -> PDF & PDF_A generated.
+    ...    At this point the record/experiment *V3* has 2 PDFs & 2 PDF_As associated.
+    ...
+    ...    - _(note publishing items individually is not possllbe via the Record REST service.)_
+    ${Expt_Name}=    set variable    Pen1
+    Set Test Variable    ${Expt_Name}
+    ${experiment_id}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Expt_Name}
+    Set Test Variable    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV2}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV2}
+    #Login to EWB using the values stored in the common resource files    Configure Publishing Options @ Project level as defined in the Path
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Setup Publishing Options    ${Project_PATH}/${Expt_Name}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_1.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_2.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_2.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Close current experiment
+    #Add more items to experiment and VERSION save as v3 (via the Entity REST service)
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_4.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_5.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV3}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV3}
+    #Login into EWB and publish items 4 & 5 on separate occasions to produce 2 PDF/As for experiment V3
+    Comment    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_4.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_3.html    Publish=${false}
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${true}
+    Push Button    OK
+    Close E-WorkBook
+
+04 Test Level Setup
+    [Documentation]    *Data Setup*
+    ...    - 1. Create experiment with 3 items & save as VERSION = v2
+    ...    - 2. Publish all 3 \ items > PDF & PDF_A generated
+    ...    - 3. Add \ items 4 & 5 to experiment and save as VERSION = v3
+    ...    - 4. Publish item 4 -> PDF & PDF_A generated
+    ...    - 5. Publish item 5 -> PDF & PDF_A generated
+    ...    At this point the record version3 \ has 2 PDFs & 2 PDF_As associated.
+    ...    - _(note publishing items individually is not possllbe via the Record REST service.)_
+    ${Expt_Name}=    set variable    Park1
+    Set Test Variable    ${Expt_Name}
+    ${experiment_id}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Expt_Name}
+    Set Test Variable    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV2}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV2}
+    #Login to EWB using the values stored in the common resource files    Configure Publishing Options @ Project level as defined in the Path
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Setup Publishing Options    ${Project_PATH}/${Expt_Name}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Publish current record entity
+    Close current experiment
+    #Add more items to experiment and VERSION save as v3 (via the Entity REST service)
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_4.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_5.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV3}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV3}
+    #Login into EWB and publish items 4 & 5 on separate occasions to produce 2 PDF/As for experiment V3
+    Comment    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_4.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${true}
+    Push Button    OK
+    Close E-WorkBook
+
+05 Test Level Setup
+    [Documentation]    *Data Setup*
+    ...    - 1. Create experiment with 3 items & save as VERSION = v2
+    ...    - 2. Publish all 3 \ items > PDF & PDF_A generated
+    ...    - 3. Add \ items 4 & 5 to experiment and save as VERSION = v3
+    ...    - 4. Publish item 4 -> PDF & PDF_A generated
+    ...    - 5. Publish item 5 -> PDF & PDF_A generated
+    ...    At this point the record version3 \ has 2 PDFs & 2 PDF_As associated.
+    ...    - _(note publishing items individually is not possllbe via the Record REST service.)_
+    ${Expt_Name}=    set variable    Compound1
+    Set Test Variable    ${Expt_Name}
+    ${experiment_id}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Expt_Name}
+    Set Test Variable    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_1.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_2.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV2}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV2}
+    #Login to EWB using the values stored in the common resource files    Configure Publishing Options @ Project level as defined in the Path
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Setup Publishing Options    ${Project_PATH}/${Expt_Name}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Publish current record entity
+    Close current experiment
+    #Add more items to experiment and VERSION save as v3 (via the Entity REST service)
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_4.html    text/html    HTML_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Animal_5.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${entityVersionIDV3}=    Get Entity Version ID    ${experiment_id}
+    Set Test Variable    ${entityVersionIDV3}
+    #Login into EWB and publish items 4 & 5 on separate occasions to produce 2 PDF/As for experiment V3
+    Comment    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Open Record Entity    ${Project_PATH}/${Expt_Name}
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_4.html    Publish=${true}
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${false}
+    Push Button    OK
+    Select E-WorkBook Main Window
+    Open Publish Experiment Items Dialog
+    Select Items to Publish    Uploaded Document    Animal_5.html    Publish=${true}
+    Push Button    OK
+    Close E-WorkBook
+
+Setup Publishing Options
+    [Arguments]    ${EntityPath}
+    [Documentation]    Opens up the Priinting/Publishing dialog and sets up the publishing/printing options for the selected entity.
+    Open Printing Publishing Options Configuration Dialog    ${EntityPath}
+    Set Print/Publishing options    Item:    Include Icon    printing_and_pdf=${true}    publishing=${true}
+    Set Print/Publishing options    Item:    Include Version    printing_and_pdf=${true}    publishing=${true}
+    Set Print/Publishing options    Item:    Include Caption    printing_and_pdf=${true}    publishing=${true}
+    Set Print/Publishing options    Item:    Include Signoffs    printing_and_pdf=${false}    publishing=${false}
+    Set Print/Publishing options    Experiment:    Include Headers    printing_and_pdf=${false}
+    Set Print/Publishing options    Experiment:    Include Experiment Attributes    printing_and_pdf=${true}
+    Enable Generate PDF/A
+    #closes dialog
+    Close Printing Publishing Options Configuration Dialog
+
+GET_PDF_and_compare: All Parameters
+    [Arguments]    ${entityVersionID}    ${PDFType}    ${ExpectedPDF}    ${ActualPDF}
+    [Documentation]    Retrieves the PDF fo a published record and compares with expected results where:
+    ...
+    ...    *GET request \ Query Parameters*
+    ...    - EntityVersionID provided
+    ...    - PDFType provided
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionID}&pdfVersion=${PDFType}
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDF}
+
+GET_PDF_and_compare: No EntityVersionID
+    [Arguments]    ${PDFType}    ${ExpectedPDF}    ${ActualPDF}
+    [Documentation]    Retrieves the PDF fo a published record and compares with expected results where:
+    ...
+    ...
+    ...    *GET request \ Query Parameters*
+    ...    - EntityVersionID *NOT* provided
+    ...    - PDFType provided
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?&pdfVersion=${PDFType}
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDF}

@@ -1,0 +1,26 @@
+*** Settings ***
+Documentation     Script for SH-1225 - data verification to be run after:
+...               - the data creation scripts have been run on a EWB 10.1.3 system
+...               - the EWB system has been upgraded to 10.2.0
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+V | [Av]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify Data By Name And Count    uniqueV1A1    1    ExperimentV1
+
+V | [Av1]->[Av2]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueV2A1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueV2A2    1    ExperimentV2
+
+V | [Av1 Bv]->[Av2 Bv]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    uniqueV3A1
+    Execute Free Text Search And Verify Data By Name And Count    uniqueV3B1    1    ExperimentV3
+    Execute Free Text Search And Verify Data By Name And Count    uniqueV3A2    1    ExperimentV3

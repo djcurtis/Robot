@@ -1,0 +1,12 @@
+*** Settings ***
+Resource          ../../../Libraries/Core Web Services/Task_Service/task_service_resource.txt
+Library           XMLLibrary
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Check can get the time of the next synchronisation run
+    [Documentation]    Returns the time of the next task synchronisation run.
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of a SAPIDateTimeResponse.
+    ${priorities}=    Get Next Synchronisation Task Run
+    ${json_value}=    Get Json Value    ${priorities}    /value

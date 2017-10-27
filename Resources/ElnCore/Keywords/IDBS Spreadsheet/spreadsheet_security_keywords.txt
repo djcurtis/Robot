@@ -1,0 +1,38 @@
+*** Settings ***
+Documentation     contains keywords to simplify working with spreadsheet EWB permissions
+Resource          ../common_resource.txt
+Resource          ../Web Services/REST_SecurityService/rest_security_service_resource.txt
+
+*** Variables ***
+${EDIT_SS_PERMISSION}    EDIT_IDBS_SPREADSHEET
+${LAUNCH_DESIGNER_PERMISSION}    LAUNCH_SPREADSHEET_DESIGNER
+${USE_MODELER_ROLE_PERMISSION}    OPEN_SPREADSHEET_DESIGNER_AS_MODELER
+${ACCESS_EWB_DESKTOP_CLIENT}    USE_EWB_DESKTOP_CLIENT
+${ACCESS_EWB_WEB_CLIENT}    USE_EWB_WEB_CLIENT
+
+*** Keywords ***
+Create System Role And Assign To Specified User
+    [Arguments]    ${user}    @{permissions}
+    [Documentation]    Creates a new system role (that has a unique name) with the specified permissions and assigns it to the passed user
+    ...
+    ...    *Arguments*
+    ...
+    ...    _user_ - the user to apply the permissions as
+    ...
+    ...    _permissions_ - a list of the permissions required
+    ...
+    ...    *Returns*
+    ...
+    ...    The name of the role created
+    ...
+    ...    *Example*
+    ...
+    ...    | @{permissions}= | create list | ${LAUNCH_DESIGNER_PERMISSION} | ${EDIT_SS_PERMISSION}
+    ...    | ${role_name}= | Create System Role And Assign To Specified User | FredBloggs | @{permissions}
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    ${unique_id}_SS_AUTOTEST
+    Create Role    ${role_name}    ${role_name}    role for spreadsheet automated permission tests    true
+    : FOR    ${permission}    IN    @{permissions}
+    \    add role permission    ${role_name}    ${permission}
+    assign user system role    ${user}    ${role_name}
+    [Return]    ${role_name}

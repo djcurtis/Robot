@@ -1,0 +1,38 @@
+*** Settings ***
+Documentation     This test adds one signature to a document containing a link item. Note with signatures the time stamp is always deifferent so the comparrison will not work that easily.
+Suite Setup       Setup standard suite
+Suite Teardown
+Test Setup
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           IDBSHttpLibrary
+# Library           EntityAPILibrary
+Library           OperatingSystem
+Resource          add_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Simple Sign of PDF
+    [Documentation]    This test adds one signature to a document containing a link item. Note with signatures the time stamp is always deifferent so the comparrison will not work that easily.
+    ...
+    ...    **
+    ...
+    ...    NOTE that only the existence of the file is checked since the timestamp of the signature changes for each invocation.
+    ...
+    ...    This should be checked more thoroughly in manual testing.
+    ...
+    ...    **
+    [Tags]    EWB-WEB-PI002-W029-01
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    http://www.google.co.uk/
+    ${rest_api_host}=    Set Variable    ${SERVER}
+    ${pdf_entity_id}=    Create PDF    ${experiment_id}
+    Sign Document    ${pdf_entity_id}    myreason    myadditionalcomment    myrole
+    ${pdf_entity_version_id}=    Get Entity Version ID    ${pdf_entity_id}
+    Get Entity Data    ${pdf_entity_id}    ${pdf_entity_version_id}
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    File should exist    ${output_folder}\\${TEST NAME}.pdf

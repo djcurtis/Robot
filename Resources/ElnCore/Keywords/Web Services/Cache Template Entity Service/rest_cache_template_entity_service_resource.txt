@@ -1,0 +1,167 @@
+*** Settings ***
+Library           String
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+Resource          ../../common_resource.txt
+Resource          ../../HTTP Common/http_common_resource.txt
+Resource          ../Entity Service/rest_entity_service_resource.txt
+
+*** Variables ***
+${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}    /ewb/services/1.0/cache/entities/templates
+
+*** Keywords ***
+Set Template Sequentially Editable
+    [Arguments]    ${template_id}    ${expected_http_status}=200
+    [Documentation]    Sets the sequential edit attribute on the template if the flag is not true already. The experiment/report user is forced to edit the items one by one and will not be allowed to re-order the items until the sequence has been completed.The template must be locked to the user making the request.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _template_id_ - the template id
+    ...
+    ...    __expected_http_status_ - the expected http status. Default value set to 200
+    ...
+    ...    *Return value*
+    ...
+    ...    The SAPIEntityVersionSequence as XML literal with the list of the impacted entity versions as
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}/${template_id}/sequentialedit
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sapi_entity_version_sequence}=    Get Response Body
+    [Return]    ${sapi_entity_version_sequence}    # The SAPIEntityVersionSequence as XML literal
+
+Set Template Not Sequentially Editable
+    [Arguments]    ${template_id}    ${expected_http_status}=200
+    [Documentation]    Resets the sequential editable attribute on the template if the flag is not false already. The template must be locked to the user making the request.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _template_id_ - the tempalte id
+    ...
+    ...    __expected_http_status_ - the expected http status. Default value set to 200
+    ...
+    ...    *Return value*
+    ...
+    ...    The SAPIEntityVersionSequence as XML literal with the list of the impacted entity versions as
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    DELETE    ${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}/${template_id}/sequentialedit
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sapi_entity_version_sequence}=    Get Response Body
+    [Return]    ${sapi_entity_version_sequence}    # The SAPIEntityVersionSequence as XML literal
+
+Set Template Confined
+    [Arguments]    ${template_id}    ${expected_http_status}=200
+    [Documentation]    Sets the confined attribute on the template if the flag is not true already. Note that setting this flag automatically pins the items and resets the published flag if set to 'Published'.The template must be locked to the user making the request.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _template_id_ - the parent entity id
+    ...
+    ...    __expected_http_status_ - the expected http status. Default value set to 200
+    ...
+    ...    *Return value*
+    ...
+    ...    The SAPIEntityVersionSequence as XML literal with the list of the impacted entity versions as
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}/${template_id}/confined
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sapi_entity_version_sequence}=    Get Response Body
+    [Return]    ${sapi_entity_version_sequence}    # The SAPIEntityVersionSequence as XML literal
+
+Set Template Unconfined
+    [Arguments]    ${template_id}    ${expected_http_status}=200
+    [Documentation]    Resets the confined attribute on the template if the flag is not false already. Note that resetting this flag automatically un-pins the items (providing the template is not set to sequential edit mode) and resets the published flag if set to 'Published'. The template must be locked to the user making the request.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _template_id_ - the parent entity id
+    ...
+    ...    __expected_http_status_ - the expected http status. Default value set to 200
+    ...
+    ...    *Return value*
+    ...
+    ...    The SAPIEntityVersionSequence as XML literal with the list of the impacted entity versions as
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    DELETE    ${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}/${template_id}/confined
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sapi_entity_version_sequence}=    Get Response Body
+    [Return]    ${sapi_entity_version_sequence}    # The SAPIEntityVersionSequence as XML literal
+
+Set Entity Pinned
+    [Arguments]    ${entity_id}    ${expected_http_status}=200
+    [Documentation]    ets the pinned attribute on the template (or item) if the flag is not true already. Note that setting this flag automatically pins the items (if a template id is supplied) and resets the published flag if set to 'Published'.The template must be locked to the user making the request.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _entity_id_ - it can be either an template item or a template id
+    ...
+    ...    __expected_http_status_ - the expected http status. Default value set to 200
+    ...
+    ...    *Return value*
+    ...
+    ...    The SAPIEntityVersionSequence as XML literal with the list of the impacted entity versions as
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}/${template_id}/pin
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sapi_entity_version_sequence}=    Get Response Body
+    [Return]    ${sapi_entity_version_sequence}    # The SAPIEntityVersionSequence as XML literal
+
+Set Entity Unpinned
+    [Arguments]    ${entity_id}    ${expected_http_status}=200
+    [Documentation]    Resets the pinned attribute on the template (or item) if the flag is not false already. Note that setting this flag automatically un-pins the items (if a template id is supplied) and resets the published flag if set to 'Published'.The template must be locked to the user making the request.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _entity_id_ - it can be either an template item or a template id
+    ...
+    ...    __expected_http_status_ - the expected http status. Default value set to 200
+    ...
+    ...    *Return value*
+    ...
+    ...    The SAPIEntityVersionSequence as XML literal with the list of the impacted entity versions as
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    DELETE    ${CACHE TAMPLATE ENTITY SERVICE ENDPOINT}/${template_id}/pin
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sapi_entity_version_sequence}=    Get Response Body
+    [Return]    ${sapi_entity_version_sequence}    # The SAPIEntityVersionSequence as XML literal

@@ -1,0 +1,66 @@
+*** Settings ***
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup standard test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+Headers and footers - many properties large font no icon
+    [Documentation]    Test ensures that
+    ...    - The contet of a PDF generated on the web client is correct when the record has large headers and footers with large fonts and no icon
+    [Tags]    EWB-WEB-PI002-W028-01
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties no icon.xml
+    ${font_config_xml}=    Get File    ${input_folder}\\Large Fonts with colours and style.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Replace Entity Config    ${experiment_id}    EXPERIMENT_FONTS    ${font_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - many properties large font with icon
+    [Documentation]    Test ensures that
+    ...    - The contet of a PDF generated on the web client is correct when the record has large headers and footers with large fonts and an icon
+    [Tags]    EWB-WEB-PI002-W028-02
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties with icon.xml
+    ${font_config_xml}=    Get File    ${input_folder}\\Large Fonts with colours and style.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Replace Entity Config    ${experiment_id}    EXPERIMENT_FONTS    ${font_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - many properties small font no icon
+    [Documentation]    Test ensures that
+    ...    - The contet of a PDF generated on the web client is correct when the record has large headers and footers with small fonts and no icon
+    [Tags]    EWB-WEB-PI002-W028-03
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties no icon.xml
+    ${font_config_xml}=    Get File    ${input_folder}\\Small Fonts with colours and style.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Replace Entity Config    ${experiment_id}    EXPERIMENT_FONTS    ${font_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - many properties small font with icon
+    [Documentation]    Test ensures that
+    ...    - The contet of a PDF generated on the web client is correct when the record has large headers and footers with small fonts and an icon
+    [Tags]    EWB-WEB-PI002-W028-04
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties with icon.xml
+    ${font_config_xml}=    Get File    ${input_folder}\\Small Fonts with colours and style.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Replace Entity Config    ${experiment_id}    EXPERIMENT_FONTS    ${font_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - all properties mixed font no icon
+    [Documentation]    Test ensures that
+    ...    - The contet of a PDF generated on the web client is correct when the record has large headers and footers with large and small fonts and no icon
+    [Tags]    EWB-WEB-PI002-W028-05
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - All properties spread no icon.xml
+    ${font_config_xml}=    Get File    ${input_folder}\\Mixed Fonts with colours and style.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Replace Entity Config    ${experiment_id}    EXPERIMENT_FONTS    ${font_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

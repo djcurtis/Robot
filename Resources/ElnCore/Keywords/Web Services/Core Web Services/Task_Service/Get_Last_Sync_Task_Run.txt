@@ -1,0 +1,8 @@
+*** Settings ***
+Resource          ../../../Libraries/Core Web Services/Task_Service/task_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Check can get time of the last synchronisation run
+    ${priorities}=    Get Last Synchronisation Task Run
+    ${json_value}=    Get Json Value    ${priorities}    /value

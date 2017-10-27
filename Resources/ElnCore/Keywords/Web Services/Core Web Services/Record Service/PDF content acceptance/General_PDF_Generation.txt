@@ -1,0 +1,191 @@
+*** Settings ***
+Documentation     This suite includes 10 tests for giving general confidence in the PDF Generation on the Web Client. The tests each use a set of document items in a record, with a pre-defined page setup and set of print/publishing options for the record. The PDF is then generated and compared to an acceptable PDF.
+...
+...               The tests here do not test any specific scenario, they instead exist to give confidence that records containing multiple items will generate as PDFs effectively and are useful for Regression in later projects where a full run of the entire PDF suite may not be practical with time contraints.
+Suite Setup       Non-Standard Suite Setup
+Test Setup        Non-Standard Test Setup
+Test Teardown     Non-Standard Test Teardown
+# Library           EntityAPILibrary
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          test utilities.txt
+Resource          add_items_to_experiments.txt
+Resource          add_image_items_to_experiments.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+
+*** Test Cases ***
+[default decoration 1][default content 1]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 1
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 1]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-001
+    Set Record Config to [default decoration 1]    ${experimentID}
+    Upload [default content 1]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+    [Teardown]
+
+[default decoration 2][default content 1]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 2
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 1]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-002
+    Set Record Config to [default decoration 2]    ${experimentID}
+    Upload [default content 1]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 3][default content 1]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 3
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 1]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-003
+    Set Record Config to [default decoration 3]    ${experimentID}
+    Upload [default content 1]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 1][default content 2]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 1
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 2]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-004
+    Set Record Config to [default decoration 1]    ${experimentID}
+    Upload [default content 2]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 2][default content 2]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 2
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 2]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-005
+    Set Record Config to [default decoration 2]    ${experimentID}
+    Upload [default content 2]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 3][default content 2]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 3
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 2]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-006
+    Set Record Config to [default decoration 3]    ${experimentID}
+    Upload [default content 2]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 1][default content 3]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 1
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 3]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-007
+    Set Record Config to [default decoration 1]    ${experimentID}
+    Upload [default content 3]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 2][default content 3]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 2
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 3]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-008
+    Set Record Config to [default decoration 2]    ${experimentID}
+    Upload [default content 3]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 3][default content 3]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 3
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 3]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-009
+    Set Record Config to [default decoration 3]    ${experimentID}
+    Upload [default content 3]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+[default decoration 1][default content 4]
+    [Documentation]    This test
+    ...    - Configures a record to default decoration 1
+    ...    - Inserts the files and previews found in ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 4]
+    ...    - Generates a PDF of the record
+    ...    - Compares the generated PDF to the expected output
+    [Tags]    EWB-WEB-PI002-W001-010
+    Set Record Config to [default decoration 1]    ${experimentID}
+    Upload [default content 4]
+    Assert Pdf As Expected    ${experimentID}    ${ExpectedFilePath}    ${OutputFilePath}
+
+*** Keywords ***
+Upload [default content 1]
+    Add Text Item To Experiment    ${experimentID}    ${default_content_1_folder}\\Default Text Item.html
+    Add DOCUMENT To Experiment    ${experimentID}    ${default_content_1_folder}\\Default Image.emf    application/octet-stream    FILE    Added Item
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_1_folder}\\Word 2007 With Portrait Pages.docx    ${default_content_1_folder}\\Word 2007 With Portrait Pages Preview.zip    application/vnd.openxmlformats-officedocument.wordprocessingml.document    FILE    Added Item
+    Add SVG Item To Experiment    ${experimentID}    ${default_content_1_folder}\\Default Sketch.svg
+    Add Text Item To Experiment    ${experimentID}    ${default_content_1_folder}\\Text Item With Formatted Text.html
+    Add DOCUMENT To Experiment    ${experimentID}    ${default_content_1_folder}\\Taller and Wider Than Page.wmf    application/octet-stream    FILE    Added Item
+    Add Text Item To Experiment    ${experimentID}    ${default_content_1_folder}\\Text Item Contains Table Taller Than Page.html
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_1_folder}\\Word 2003 - MUST DISPLAY AND CROP PAGES.doc    ${default_content_1_folder}\\Word 2003 - MUST DISPLAY AND CROP PAGES Preview.zip    application/vnd.openxmlformats-officedocument.wordprocessingml.document    FILE    Added Item
+    Add PNG Item To Experiment    ${experimentID}    ${default_content_1_folder}\\Image Taller and Wider Than Page.png
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_1_folder}\\Word 2007 With Table.docx    ${default_content_1_folder}\\Word 2007 With Table Preview.zip    application/vnd.openxmlformats-officedocument.wordprocessingml.document    FILE    Added Item
+    Add GIF Item To Experiment    ${experimentID}    ${default_content_1_folder}\\Default Image.gif
+    Add Link    ${experimentID}    Web Link    WEB_LINK    https://www.bbc.co.uk
+
+Upload [default content 2]
+    Add PNG Item To Experiment    ${experimentID}    ${default_content_2_folder}\\Image Taller and Wider Than Page.png
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_2_folder}\\Powerpoint 2003 - MUST DISPLAY PAGES.ppt    ${default_content_2_folder}\\Powerpoint 2003 - MUST DISPLAY PAGES Preview.zip    application/vnd.ms-powerpoint    FILE    Added Item
+    Add Text Item To Experiment    ${experimentID}    ${default_content_2_folder}\\Text Item Contains a Table.html
+    ${item_id1}=    Add Text Item to Experiment    ${experimentID}    ${default_content_2_folder}\\Text Item Wider Than Page.html
+    Add Text Component to Item    ${experimentID}    ${item_id1}    ${default_content_2_folder}\\Image_Wider_Than_Page.png
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_2_folder}\\Excel 2007 With Special Characters.xlsx    ${default_content_2_folder}\\Excel 2007 With Special Characters Preview.zip    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet    FILE    Added Item
+    Add SVG Item To Experiment    ${experimentID}    ${default_content_2_folder}\\Sketch Wider Than Page.svg
+    Add JPEG Item To Experiment    ${experimentID}    ${default_content_2_folder}\\Image Wider Than Page.jpg
+    ${item_id2}=    Add Text Item to Experiment    ${experimentID}    ${default_content_2_folder}\\Text Item With Image Taller Than Page.html
+    Add Text Component to Item    ${experimentID}    ${item_id2}    ${default_content_2_folder}\\E-WorkBook20Suite209_2_020E-WorkBook20Database20ERD.png
+    Add PNG Item To Experiment    ${experimentID}    ${default_content_2_folder}\\Image_Wider_Than_Page.png
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_2_folder}\\Excel 2003 - DISPLAY PAGES.xls    ${default_content_2_folder}\\Excel 2003 - DISPLAY PAGES Preview.zip    application/vnd.ms-excel    FILE    Added Item
+    Add BMP Item To Experiment    ${experimentID}    ${default_content_2_folder}\\Image Taller Than Page.bmp
+
+Upload [default content 3]
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_3_folder}\\Excel 2003 Formatted Text.xls    ${default_content_3_folder}\\Excel 2003 Formatted Text Preview.zip    application/vnd.ms-excel    FILE    Added Item
+    Add Text Item To Experiment    ${experimentID}    ${default_content_3_folder}\\Text Item Taller Than Page.html
+    Add BMP Item To Experiment    ${experimentID}    ${default_content_3_folder}\\Image Taller Than Page.bmp
+    ${item_id2}=    Add Text Item to Experiment    ${experimentID}    ${default_content_3_folder}\\Text Item With Image Taller Than Page.html
+    Add Text Component to Item    ${experimentID}    ${item_id2}    ${default_content_3_folder}\\E-WorkBook20Suite209_2_020E-WorkBook20Database20ERD.png
+    Add TIF Item To Experiment    ${experimentID}    ${default_content_3_folder}\\Image Taller Than Page.tif
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_3_folder}\\Landscape Word 2003.doc    ${default_content_3_folder}\\Landscape Word 2003 Preview.zip    application/msword    FILE    Added Item
+    Add SVG Item To Experiment    ${experimentID}    ${default_content_3_folder}\\Sketch Taller Than Page.svg
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_3_folder}\\Office Document With Image Larger Than Page.pptx    ${default_content_3_folder}\\Office Document With Image Larger Than Page Preview.zip    application/vnd.openxmlformats-officedocument.presentationml.presentation    FILE    Added Item
+    Add DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_3_folder}\\Powerpoint 2007 With Landscape Pages.pptx    ${default_content_3_folder}\\Powerpoint 2007 With Landscape Pages Preview.zip    application/vnd.openxmlformats-officedocument.presentationml.presentation    FILE    Added Item
+    ${item_id1}=    Add Text Item to Experiment    ${experimentID}    ${default_content_3_folder}\\Text Item Wider Than Page.html
+    Add Text Component to Item    ${experimentID}    ${item_id1}    ${default_content_3_folder}\\Image_Wider_Than_Page.png
+
+Upload [default content 4]
+    Lock Entity    ${experimentID}
+    Add SPREADSHEET_DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_4_folder}\\[default content1] BioBook Spreadsheet.bss    ${default_content_4_folder}\\[default content1] BioBook Spreadsheet Preview.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Lock Entity    ${experimentID}
+    Add CHEMISTRY_DOCUMENT (and Preview) With File Data    ${experimentID}    ${default_content_4_folder}\\Chemistry With Stoich.chembss    ${default_content_4_folder}\\Chemistry With Stoich Preview.zip    application/x-idbs-spreadsheet-chemistry    CHEMISTRY
+    Lock Entity    ${experimentID}
+    Add DOCUMENT (and Preview) With File Data    ${experimentID}    ${default_content_4_folder}\\Default Biological Sequence.gb    ${default_content_4_folder}\\Default Biological Sequence Preview.zip    application/x-idbs-ewb-sequence-data    BIOLOGICAL_SEQUENCE
+    Add SPREADSHEET_DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_4_folder}\\[default content2] BioBook Spreadsheet.bss    ${default_content_4_folder}\\[default content2] BioBook Spreadsheet Preview.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Lock Entity    ${experimentID}
+    Add DOCUMENT (and Preview) With File Data    ${experimentID}    ${default_content_4_folder}\\Circular Biological Sequence.gb    ${default_content_4_folder}\\Circular Biological Sequence Preview.zip    application/x-idbs-ewb-sequence-data    BIOLOGICAL_SEQUENCE
+    Add DOCUMENT (and Preview) With File Data    ${experimentID}    ${default_content_4_folder}\\Analytical Spectra Default.ch    ${default_content_4_folder}\\Analytical Spectra Default Preview.zip    application/x-idbs-ewb-analytic-data    ANALYTICDATA
+    Add SPREADSHEET_DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_4_folder}\\[default content3] BioBook Spreadsheet.bss    ${default_content_4_folder}\\[default content3] BioBook Spreadsheet Preview.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Lock Entity    ${experimentID}
+    Add CHEMISTRY_DOCUMENT (and Preview) With File Data    ${experimentID}    ${default_content_4_folder}\\[default content1] ChemBook Spreadsheet.chembss    ${default_content_4_folder}\\[default content1] ChemBook Spreadsheet Preview.zip    application/x-idbs-spreadsheet-chemistry    CHEMISTRY
+    Add SPREADSHEET_DOCUMENT (and Preview) To Experiment    ${experimentID}    ${default_content_4_folder}\\Chemistry With MetID.bss    ${default_content_4_folder}\\Chemistry With MetID Preview.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Lock Entity    ${experimentID}
+    Add DOCUMENT (and Preview) With File Data    ${experimentID}    ${default_content_4_folder}\\Analytical Spectra With Annotations and Spectrum Links.anl    ${default_content_4_folder}\\Analytical Spectra With Annotations and Spectrum Links Preview.zip    application/x-idbs-ewb-analytic-data    ANALYTICDATA
+    Unlock Entity    ${experimentID}

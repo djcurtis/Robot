@@ -1,0 +1,237 @@
+*** Settings ***
+Documentation     It adds a new entity to a parent entity and returns the newly created entity id.
+...
+...               *end point:* POST /services/1.0/cache/entities/{entityId}
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags           Update Cache Entity
+Resource          ../../../Libraries/common_resource.txt
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+${experiment_id}    ${EMPTY}
+
+*** Test Cases ***
+Update entity
+    [Documentation]    A successful call returns the HTTP status 200 and the new entity version id. The entity is updated
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S001
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkNameUpdated    http://www.idbs.com/updated    Unpublished
+    Lock Entity    ${experiment_id}
+    # Checking expectations
+    ${web_link_version_id}=    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    200
+    ${entity_dto}=    Get Entity New    ${web_link_id}    ${web_link_version_id}    200    includeVersionInfo=true
+    Check Xml Element Value Contains    check entity id value    ${entity_dto}    ${web_link_id}    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    ${web_link_version_id}    versionId    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    CACHE    versionState    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    TestWebLinkNameUpdated    entityName    elementNamespace=http://entity.services.ewb.idbs.com
+    ${entity_data}=    Get Entity Data    ${web_link_id}    ${web_link_version_id}
+    Should Be Equal As Strings    ${entity_data}    http://www.idbs.com/updated
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with invalid entity version id
+    [Documentation]    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S002
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkName    http://www.idbs.com    Unpublished
+    # wrong version id
+    Update Cache Entity    ${web_link_id}    WrongEntityVersionId    ${updated_web_link_dto}    404
+    # missing version id
+    Update Cache Entity    ${web_link_id}    ${EMPTY}    ${updated_web_link_dto}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with invalid DTO
+    [Documentation]    If the request body SAPIEntityDefinition is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S003
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    # Build DTO with invalid publishing state
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkName    http://www.idbs.com    WrongPublishingState
+    # wrong DTO
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    400
+    # missing DTO
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${EMPTY}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with not existing entity
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S004
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkName    http://www.idbs.com    Unpublished
+    # wrong entity id
+    Update Cache Entity    WrongEntityId    ${web_link_version_id}    ${updated_web_link_dto}    404
+    # missing entity id results in an wrong URL z//x, hence not found (404)
+    Update Cache Entity    ${EMPTY}    ${web_link_version_id}    ${updated_web_link_dto}    404
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with no lock
+    [Documentation]    If the container entity is not locked, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S005
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    Save As Draft Entity    ${experiment_id}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkName    http://www.idbs.com    Unpublished
+    Unlock Entity    ${experiment_id}
+    # no lock
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S006
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkName    http://www.idbs.com    Unpublished
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # No EDIT permission
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity when sequentially editable enabled
+    [Documentation]    If the entity is sequentially editable and the order is not respected, then the HTTP status code 403 is returned to the client
+    [Setup]    Disable Template Show Reviewed
+    ${experiment_name}=    Set Variable    UEN-S007
+    @{web_link_ids}=    Create Sequential Editable Experiment Witn 2 Web Links    ${experiment_name}    ${experiment_name}
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]    # the second web link
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    ${updated_web_link_dto}=    Build web link DTO    TestWebLinkName    http://www.idbs.com/2/updated    Unpublished
+    Lock Entity    ${experiment_id}
+    # Edit 2nd item before 1st is edited
+    ${web_link_id}=    Update Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${updated_web_link_dto}    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with data with legal different file extension
+    [Documentation]    If the entity is sequentially editable and the order is not respected, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S008
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${updated_web_link_dto}=    Build Jpeg Image Entity DTO    Test image    Fake binary data
+    Lock Entity    ${experiment_id}
+    # Update entity with an entity with different data file extension
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    200
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Update entity with with legal different file extension and oversized
+    [Documentation]    If a file validation rule enforcing the max file size is violated, then the HTTP status code 413 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Rule Max File Size 1KB
+    ${experiment_name}=    Set Variable    UEN-S008
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${binary_data_2KB}=    Set Variable    FakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KB    # 2KB entity data
+    ${updated_web_link_dto}=    Build Generic Entity DTO    Test Image    DOCUMENT    image/jpg    .jpg    JPG_IMAGE
+    ...    ${binary_data_2KB}    ${EMPTY}
+    Lock Entity    ${experiment_id}
+    # Update entity with an entity with different data file extension
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    413
+    Unlock Entity    ${experiment_id}
+    [Teardown]    Disable Rule Max File Size 1KB
+
+Update entity with with illegal different file extention
+    [Documentation]    If a file validation rule enforcing the max file size is violated, then the HTTP status code 413 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Rule Max File Size 1KB
+    ${experiment_name}=    Set Variable    UEN-S009
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${binary_data_legal}=    Set Variable    LegalFakeData
+    ${updated_web_link_dto}=    Build Generic Entity DTO    Test Image    DOCUMENT    image/jpg    .jp    JPG_IMAGE
+    ...    ${binary_data_legal}    ${EMPTY}
+    Lock Entity    ${experiment_id}
+    # Update entity with an entity with different data file extension
+    Update Cache Entity    ${web_link_id}    ${web_link_version_id}    ${updated_web_link_dto}    415
+    Unlock Entity    ${experiment_id}
+    [Teardown]    Disable Rule Max File Size 1KB
+
+*** Keywords ***
+Create Sequential Editable Experiment Witn 2 Web Links
+    [Arguments]    ${title}    ${name}
+    [Documentation]    Creates a sequentially editable template with with two Web Link children. Creates an experiment from the template and save it as VESION. Experiment is not kept locked.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment web link ids. Also, it sets the suite variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    # Creates template
+    ${template_dto}=    Build Template DTO    ${name}-TEM    ${title}-TEM
+    ${template_id}=    Add Entity With Custom DTO    ${project_id}    ${template_dto}
+    Lock Entity    ${template_id}
+    # Adds web links
+    Add Web Link Entity    ${template_id}    www.idbs.com/1
+    Add Web Link Entity    ${template_id}    www.idbs.com/2
+    Set Template Sequentially Editable    ${template_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Creates experiment from template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${title}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Get experiment Web Link ids
+    ${sapi_entity_ definition}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true    includeAttributes=true
+    ${sapi_entity_sequence}=    XMLLibrary.Get Element Xml    ${sapi_entity_ definition}    http://entity.services.ewb.idbs.com    entity
+    @{web_link_ids}=    XMLLibrary.Get Element Value    ${sapi_entity_sequence}    http://entity.services.ewb.idbs.com    entityId
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    @{web_link_ids}    # The ids of children Web Link items
+
+Create Experiment With 1 Web Link
+    [Arguments]    ${experiment_title}
+    [Documentation]    Creates a CACHE experiment with 1 Web Link children. The experiment is locked.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment web link ids. Also, it sets the suit variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_title}
+    Lock Entity    ${experiment_id}
+    # Adds web links
+    ${web_link_id}=    Add Web Link Entity    ${experiment_id}    www.idbs.com
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    ${web_link_id}

@@ -1,0 +1,101 @@
+*** Settings ***
+Documentation     SH-748 jira stoty
+Suite Setup       Login to EWB
+Suite Teardown    Close Browser
+Test Setup        testsetup
+Test Teardown     testteardown
+Library           IDBSSelenium2Library
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/save_search_dialog.txt
+Library           DateTime
+
+*** Test Cases ***
+Update Saved Search
+    [Documentation]    Update Saved Search
+    ...    - Create dummy search via API
+    ...    - Navigate to Search sreen, populate search text field
+    ...    - Open Save Search dialog, select 'Replace existing (My Searches)' option
+    ...    - Replace search
+    ...    - Verify that search was updated
+    ...    - Restore search, verify text field
+    [Tags]    SRCH-SAV-MY
+    Perform Text Search    New Search Text
+    Open Save Search Dialog
+    Select From Save Search DropDown    Replace existing (My Searches)
+    Verify Items In the Saved Search List    ${search1}    ${search2}    ${search3}
+    Select Saved Search    ${search2}
+    Click Save
+    Reload Page
+    Restore Saved Search    ${search2}    1
+    Verify Search Text Field    New Search Text
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Restore Saved Search    ${search2}    1
+    Verify Search Text Field    New Search Text
+
+Verify No Search Replacement After Cancel Button Clicking
+    [Documentation]    Verify No Search Replacement After Cancel Button Clicking
+    ...    - Create searches via API
+    ...    - Populate search text editor on search screen
+    ...    - click save and select Replace existing item, select item to replace
+    ...    - click Cancel
+    ...    - verify search was not replaced and is correct after relogin
+    [Tags]    SRCH-SAV-MY
+    Perform Text Search    New Search Text
+    Open Save Search Dialog
+    Select From Save Search DropDown    Replace existing (My Searches)
+    Verify Items In the Saved Search List    ${search1}    ${search2}    ${search3}
+    Select Saved Search    ${search2}
+    Close Save Search Dialog
+    # verify search restored correctly
+    Reload Page
+    Restore Saved Search    ${search2}    1
+    Verify Search Text Field    Search_Template
+    # verify search restored correctly after relogin
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Restore Saved Search    ${search2}    1
+    Verify Search Text Field    Search_Template
+
+Verify No Search Replacement Without Save Button Click
+    [Documentation]    Verify No Search Replacement After Cancel Button Clicking
+    ...    - Create searches via API
+    ...    - Populate search text editor on search screen
+    ...    - click save and select Replace existing item, select item to replace
+    ...    - reload page
+    ...    - verify search was not replaced and is correct after relogin
+    [Tags]    SRCH-SAV-MY
+    Perform Text Search    New Search Text
+    Open Save Search Dialog
+    Select From Save Search DropDown    Replace existing (My Searches)
+    Verify Items In the Saved Search List    ${search1}    ${search2}    ${search3}
+    Select Saved Search    ${search2}
+    Reload Page
+    Restore Saved Search    ${search2}    1
+    Verify Search Text Field    Search_Template
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Restore Saved Search    ${search2}    1
+    Verify Search Text Field    Search_Template
+
+*** Keywords ***
+testsetup
+    ${currentDate}=    Get Current Date
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    ${search2}=    Set Variable    Search 2 ${currentDate}
+    ${search3}=    Set Variable    Search 3 ${currentDate}
+    Set Suite Variable    ${search1}
+    Set Suite Variable    ${search2}
+    Set Suite Variable    ${search3}
+    Delete All Searches Via API
+    Create Searches Via API    ${search1}    ${search2}    ${search3}
+    Navigate Search Screen
+
+testteardown
+    Delete All Searches Via API
+    Reload Page

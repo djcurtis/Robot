@@ -1,0 +1,467 @@
+*** Settings ***
+Documentation     This test will test the functionality of the entity permissions 'CANCEL_ANY_WORKFLOW' and will be split into a positive and negative test. The positive test will check that a user un-associated with a task (not the requestor or the actioner/reviewer), with the entity permission CANCEL_ANY_TASK *is* able to cancel the relevant task. The negative test will check that a user un-associated with a task without the entity permissions CANCEL_ANY_TASK is *not* able to cancel the relevant task.
+Suite Setup       Suite Setup
+Suite Teardown    Teardown
+Test Setup
+Test Teardown
+Force Tags        Workflow Service
+Default Tags
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           TestDataGenerationLibrary
+Resource          ../../../Libraries/Web Client/Selenium/hierarchy_resource.txt
+Resource          ../../../Libraries/Web Client/Selenium/workflow_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Web Client/Selenium/workflow_resource.txt
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_configuration_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+# Library           OracleLibrary
+
+*** Variables ***
+${username1}      USER021    # Recipient of tasks
+${password1}      USER0211
+${username2}      USER022    # No cancel any workflow permission
+${password2}      USER0221
+${user}           Administrator    # sender of tasks
+${username3}      USER023    # cancel any workflow permission
+${password3}      USER0231
+${workflow-configurations}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Core Web Services${/}TaskFlow Services${/}Workflow Configurations${/}
+
+*** Test Cases ***
+Setup experiments and workflows
+    [Documentation]    Test used to create experiments within a hirearchy and populate these experiments. Workflows are then configured against this hierarchy.
+    [Tags]    Cancel task permission
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    Set Suite Variable    ${rest_api_user}    ${VALID USER}
+    Set Suite Variable    ${rest_api_password}    ${VALID PASSWD}
+    ${time}=    Get Time    epoch
+    ${wfc_group_name}=    Evaluate    "Workflow Cancellation Group - ${time}"
+    ${wfc_group_id}=    EntityAPILibrary.Create Group    1    ${wfc_group_name}
+    ${wfc_project_id}=    EntityAPILibrary.Create Project    ${wfc_group_id}    WF_PROJECTA
+    ${wfc_experiment_A_id}=    EntityAPILibrary.Create Experiment    ${wfc_project_id}    WF_EXPERIMENT_A
+    ${wfc_experiment_B_id}=    EntityAPILibrary.Create Experiment    ${wfc_project_id}    WF_EXPERIMENT_B
+    Set Suite Variable    ${wfc_group_name}
+    Set Suite Variable    ${wfc_group_id}
+    Set Suite Variable    ${wfc_project_id}
+    Set Suite Variable    ${wfc_experiment_B_id}
+    Set Suite Variable    ${wfc_experiment_A_id}
+    Populate WF_EXPERIMENT    ${wfc_experiment_A_id}
+    Create Workflow Configurations    ${wfc_group_id}
+
+Negative - CANCEL_ANY_WORKFLOW permission
+    [Documentation]    In this test the administrator user initiates a new workflow on wfc_experiment_A to USER021. USER022 then attempts to cancel this task (without the CANCEL_ANY_WORKFLOW permission) - the request should fail and task status remain 'new'
+    [Tags]    Cancel task permission
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}=    Create Due Date Format    NOW
+    # Create new workflow
+    ${SERVICES USERNAME}    Set Variable    ${user}
+    ${SERVICES PASSWORD}    Set Variable    ${user}
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "USER021"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wfc_experiment_A_id}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Cancel Task as user without cancel any workflow permission and not asssociated with task
+    ${SERVICES USERNAME}    Set Variable    ${username2}
+    ${SERVICES PASSWORD}    Set Variable    ${password2}
+    Cancel Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${SERVICES USERNAME}    Set Variable    ${username1}
+    ${SERVICES PASSWORD}    Set Variable    ${password1}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    [Teardown]
+
+Positive - CANCEL_ANY_WORKFLOW permission
+    [Documentation]    In this test the administrator user initiates a new workflow on wfc_experiment_B to USER021. USER023 then attempts to cancel this task (with the CANCEL_ANY_WORKFLOW permission) - the request should pass and tehe task status changed to 'Cancelled'.
+    [Tags]    Cancel task permission
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}=    Create Due Date Format    NOW
+    # Create new workflow
+    ${SERVICES USERNAME}    Set Variable    ${user}
+    ${SERVICES PASSWORD}    Set Variable    ${user}
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "USER021"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wfc_experiment_B_id}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Cancel Task as user with cancel any workflow permission and not asssociated with task
+    ${SERVICES USERNAME}    Set Variable    ${username3}
+    ${SERVICES PASSWORD}    Set Variable    ${password3}
+    Cancel Multiple Tasks    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=CANCELLED
+    [Teardown]
+
+*** Keywords ***
+Suite Setup
+    [Documentation]    CANCEL_ANY_WORKFLOW entity permission is added to entity permissions list and included in 'All entity permissions' and 'Task Manager' entity roles by default
+    Create Entity Role with all User Permissions Except CANCEL_ANY_WORKFLOW    No Cancel Any Workflow    No Cancel Any Workflow    Entity Role with all user permissions excluding the 'CANCEL_ANY_WORKFLOW' permission    false
+    #creating user021 to receive all tasks
+    Create User And Don't Fail If It Exists    ${username1}    ${password1}    USER021    exampleuser@idbs.com    TESTING    ANY_ROLES
+    Run Keyword And Ignore Error    Assign Entity Role To User    ${username1}    All Entity Permissions    /Root
+    Run Keyword And Ignore Error    Assign User System Role    ${username1}    All System Permissions
+    #creating user022 who does not have cancel any workflow permission
+    Create User And Don't Fail If It Exists    ${username2}    ${password2}    USER022    exampleuser@idbs.com    TESTING    ANY_ROLES
+    Run Keyword And Ignore Error    Remove Entity Role From User    ${username2}    All Entity Permissions    1
+    Run Keyword And Ignore Error    Assign Entity Role To User    ${username2}    No Cancel Any Workflow    /Root
+    Run Keyword And Ignore Error    Assign User System Role    ${username2}    All System Permissions
+    #creating user023 who does have cancel any workflow permission
+    Create User And Don't Fail If It Exists    ${username3}    ${password3}    USER023    exampleuser@idbs.com    TESTING    ANY_ROLES
+    Run Keyword And Ignore Error    Assign Entity Role To User    ${username3}    All Entity Permissions    /Root
+    Run Keyword And Ignore Error    Assign User System Role    ${username3}    All System Permissions
+
+Create Entity Role with all User Permissions Except CANCEL_ANY_WORKFLOW
+    [Arguments]    ${EntityRoleName}    ${EntityRoleDisplayName}    ${EntityRoleDescription}    ${SystemRole}
+    [Documentation]    Description: This keyword is used to create a new user role that contains all permissions excluding the 'CANCEL_ANY_WORKFLOW' permission by commenting out the addition of this permission to the role. This keyword can be copied & edited to comment out a custom selection of permissions to create any role containing all permission excluding one/a few.
+    ...
+    ...    Arguments:
+    ...
+    ...    ${EntityRoleName} - name of the new role |
+    ...
+    ...    ${EntityRoleDisplayName} - display name of the new role |
+    ...
+    ...    ${EntityRoleDescription} - description of the new role (eg. role with all permissions excluding...) |
+    ...
+    ...    ${SystemRole} - whether the role is a system role ("true") or not ("false") |
+    Create Role And Validate    ${EntityRoleName}    ${EntityRoleDisplayName}    ${EntityRoleDescription}    ${SystemRole}
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    ASSIGN_ROLES
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_FORM
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_FORM
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_FORM
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_FORM
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    BBSS_SET_BLINDING
+    Ensure Role has Permission    ${EntityRoleName}    BBSS_SET_DICTMAPPINGS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_TASK_TYPES
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_TASK
+    Ensure Role has Permission    ${EntityRoleName}    SIGNOFF_TASK
+    Ensure Role has Permission    ${EntityRoleName}    ALLOW_DRAFT_EXPERIMENTS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_HEADER_FOOTER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_PDF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_PDF
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_PDF
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_PDF
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_PDF
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_PDF
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_PUBLISHING_RULE
+    Ensure Role has Permission    ${EntityRoleName}    INITIATE_PUBLISHING
+    Ensure Role has Permission    ${EntityRoleName}    SET_SPREADSHEET_GLP
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_EXPERIMENT_FONTS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ANY_TASK
+    Ensure Role has Permission    ${EntityRoleName}    REASSIGN_ANY_TASK
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_TEST_REQUEST
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_TEST_REQUEST
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_DISPLAY_ITEM_PROPERTIES
+    Ensure Role has Permission    ${EntityRoleName}    USE_SPREADSHEET_DESIGNERS
+    Ensure Role has Permission    ${EntityRoleName}    USE_IMPORT_UTILITY
+    Ensure Role has Permission    ${EntityRoleName}    USE_DATA_READER
+    Ensure Role has Permission    ${EntityRoleName}    USE_RANDOMISATION
+    Ensure Role has Permission    ${EntityRoleName}    USE_TESTABLE_OBJECTS
+    Ensure Role has Permission    ${EntityRoleName}    USE_SPREADSHEET_AUDITING_TOOLS
+    Ensure Role has Permission    ${EntityRoleName}    INSERT_SPREADSHEET_COMPONENT
+    Ensure Role has Permission    ${EntityRoleName}    USE_KNOCKOUT
+    Ensure Role has Permission    ${EntityRoleName}    PDF_SIGNOFF
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_FORM
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_PDF
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    CBSS_SET_DICTMAPPINGS
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_FIT_AND_CHART_SETTINGS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    UPDATE_CATALOG_FROM_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_ANY_COMMENT
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_PRINT_LABELS_OPTION
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_DND_FILE_OPTIONS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_MENU_DISPLAY
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    FILL_IN_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    COPY_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    COPY_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_FILE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_FILE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_FILE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_FILE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_FILE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_FILE
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_VERSION_SAVE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_FORM
+    Ensure Role has Permission    ${EntityRoleName}    COPY_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    COPY_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    COPY_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    COPY_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    COPY_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    COPY_PDF
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    COPY_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    COPY_FILE
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_PRINT_PUBLISHING_OPTIONS
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_CREATION_OPTIONS
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_MS_WORD_REPORT_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ENTITY_ROLES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_PDF
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_FILE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SIGNED_ITEM
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SIGNED_ITEM
+    Ensure Role has Permission    ${EntityRoleName}    PREVENT_RECORD_EDIT
+    Ensure Role has Permission    ${EntityRoleName}    ALLOW_RECORD_EDIT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_TAGS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_ANY_TAG
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_COMMENTS
+    Ensure Role has Permission    ${EntityRoleName}    AH1_DELETE_ASSET
+    Ensure Role has Permission    ${EntityRoleName}    AH1_EDIT_ASSET
+    Ensure Role has Permission    ${EntityRoleName}    AH1_VIEW_ASSET
+    COMMENT    Ensure Role has Permission    ${EntityRoleName}    CANCEL_ANY_WORKFLOW
+
+Create Workflow Configurations
+    [Arguments]    ${group_name_id}
+    [Documentation]    This Keyword creates several workflow configurations for use in the Cancelling Tasks - CANCEL_ANY_WORKFLOW Permission Test Suite
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    DELETE FROM entity_configurations WHERE entity_id='${wfc_group_id}'
+    # Workflow Webservice Workflow 1 - Single Sign-off
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 1.xml
+    # Workflow Webservice Workflow 2 - Single Review
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 2.xml
+    # Workflow Webservice Workflow 3 - Single Alert
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 3.xml
+    # Workflow Webservice Workflow 4 - Multiple Sequential Tasks
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 4.xml
+    # Workflow Webservice Workflow 5 - Multiple Parallel Tasks
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 5.xml
+    # Workflow Webservice Workflow 6 - Status Change And Publish
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 6.xml
+    # Workflow Webservice Workflow 7 - All Items Must Be Signed equals NO
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 7.xml
+    # Workflow Webservice Workflow 8 - All Items Must Be Signed equals YES
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 8.xml
+    # Workflow Webservice Workflow 9 - Single Sign-off - Lock Experiment On Completion
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow 9.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - No Task.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Published Only.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Most Recent PDF.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Most Recent PDF And Published Only.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Sign Off Task Actioner Role.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Generate PDF.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Generate PDF And Publish All.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Change Experiment Status.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Auto Close Task.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Delete All Comments.xml
+    Add Workflow Configuration    ${group_name_id}    ${workflow-configurations}WF WS Workflow - Lock Against Editing.xml
+    Disconnect From Database
+
+Populate WF_EXPERIMENT
+    [Arguments]    ${experiment_name}
+    [Documentation]    This keyword populates the experiment and version saves
+    ${experiment-1-document-id}=    EntityAPILibrary.Create Web Link Document    ${experiment_name}    http://www.idbs.com
+    Set Suite Variable    ${experiment-1-document-id}
+    EntityAPILibrary.Version Save    ${experiment_name}    Data Added
+    ${experiment-comment-id}=    EntityAPILibrary.Add Comment    ${experiment_name}    Experiment Comment
+    EntityAPILibrary.Add Reply    ${experiment_name}    ${experiment-comment-id}    Experiment Reply
+    ${document-comment-id}=    EntityAPILibrary.Add Comment    ${experiment-1-document-id}    Document Comment
+    EntityAPILibrary.Add Reply    ${experiment-1-document-id}    ${document-comment-id}    Document Reply
+
+Add Workflow Configuration
+    [Arguments]    ${entity-id}    ${filename}
+    [Documentation]    Adds the given workflow configuration to the specified entity
+    ${uuid}=    Create Hex GUID
+    Execute    INSERT INTO entity_configurations VALUES ('${uuid}', '${entity-id}', 'WORKFLOW', empty_blob())
+    Update Blob Column    entity_configurations    config_data    config_id = '${uuid}'    ${filename}
+
+Teardown
+    [Documentation]    Deletes the hirearchy set up for this test suite and removes all entity permissions given to USER021, USER022 and USER023
+    EntityAPILibrary.Delete Entity    ${wfc_group_id}    As Intended    Deleting Entity
+    Remove Entity Role From User    ${username1}    All Entity Permissions    1
+    Remove Entity Role From User    ${username2}    No Cancel Any Workflow    /Root
+    Remove Entity Role From User    ${username3}    All Entity Permissions    1

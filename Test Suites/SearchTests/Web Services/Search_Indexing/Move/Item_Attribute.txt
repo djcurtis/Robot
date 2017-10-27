@@ -1,0 +1,43 @@
+*** Settings ***
+Documentation     Created for story SH-1301
+Suite Setup       setup test
+Suite Teardown    teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Move Record
+    [Documentation]    Record - Cloned Record - Version Save
+    ...
+    ...    - verify that record is searchable by attribute text after version save
+    ${experimentId}=    rest_entity_service_resource.Move Entity    ${experimentMoveId}    ${projectId}    As Intended    As Intended
+    sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty    all    Group|name|is|"${groupName}"    Project|title|is|"project move to"
+    Execute Search And Verify No Result    caption_qwerty    all    Group|name|is|"${groupName}"    Project|title|is|"project move from"
+
+*** Keywords ***
+setup test
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${experimentName}=    Set Variable    Experiment ${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectCloneFromId}=    EntityAPILibrary.Create Project    ${groupId}    project move from
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project move to
+    Set Suite Variable    ${projectId}
+    ${experimentMoveId}=    EntityAPILibrary.Create Experiment    ${projectCloneFromId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentMoveId}
+    EntityAPILibrary.Create Web Link Document    ${experimentMoveId}    www.ewb.com    caption_qwerty
+
+teardown test
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended

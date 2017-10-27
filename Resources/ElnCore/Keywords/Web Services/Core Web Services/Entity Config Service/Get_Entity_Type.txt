@@ -1,0 +1,22 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/entitytypes/{entityTypeName}
+Suite Setup
+Force Tags        Entity Config Service
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Library           XMLLibrary
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Can get a specific entity type
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityType
+    ${xml_response}=    Get Entity Type    EXPERIMENT
+    Check Xml Contains Element    check displayName element exists    ${xml_response}    displayName    elementNamespace=http://entitytypeconfig.services.ewb.idbs.com
+    Check Xml Element Value Contains    check displayName element value is Experiment    ${xml_response}    Experiment    displayName    elementNamespace=http://entitytypeconfig.services.ewb.idbs.com
+    Check Xml Element Values Contain Sublist    check entityTypes list contain values {EXPERIMENT}    ${xml_response}    EXPERIMENT    name    elementNamespace=http://entitytypeconfig.services.ewb.idbs.com
+
+Get Entity Type Fails With Bad Type Specified
+    [Documentation]    If the entity type does not exist, then the HTTP status code 404 is returned to the client
+    ${xml_response}=    Get Entity Type    DOES-NOT-EXIST    404
+    Response Body Should Contain    Resource not found for given ID: No entity type name found.

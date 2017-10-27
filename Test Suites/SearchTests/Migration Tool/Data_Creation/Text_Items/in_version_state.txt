@@ -1,0 +1,66 @@
+*** Settings ***
+Documentation     Test case names have the format:
+...
+...               (entity save state) | [itemA(save state) itemB(save state)] -> [itemA(save state) itemB(save state)]
+...               -> represent a save state change action such as version/draft save, or no save
+...
+...               Script for SH-1225 - data creation script to be run:
+...               - on a EWB 10.1.3 system
+...
+...               (this script is written to work with the corresponding data verification scripts)
+Suite Setup       setup suite
+Library           Collections
+Library           DateTime
+Library           EntityAPILibrary
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../migration_tool_variables.txt
+
+*** Test Cases ***
+V | [Av]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity
+    ...    - version save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentV1    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    uniqueV1A1
+
+V | [Av1]->[Av2]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity
+    ...    - version save experiment
+    ...    - edit text entity
+    ...    - version save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentV2    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    uniqueV2A1
+    Sleep    ${wait}
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    uniqueV2A2
+
+V | [Av1 Bv]->[Av2 Bv]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity (x2)
+    ...    - version save experiment
+    ...    - edit first text entity
+    ...    - version save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentV3    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueV3A1
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdB}    uniqueV3B1
+    Sleep    ${wait}
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdA}    uniqueV3A2
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    0s
+    Set Suite Variable    ${wait}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${GROUP_NAME}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Project_V
+    Set Suite Variable    ${projectId}

@@ -1,0 +1,760 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<setup>
+	<hierarchy>
+		<group name="Workflow WS Group">
+		  <project name="WF_PROJECT1" autonumber="no">
+			  <experiment name="WF_EXPERIMENT_1" autonumber="no" save="version" published="yes" status="Started">
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Text\Text Item 1.html" caption="Blaah blaah" />
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Spreadsheets\Chart Context Settings Test.bss" />
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Chemistry\reaction3.cdx" caption="Blaah blaah 2" />
+			  </experiment>
+			  <experiment name="WF_EXPERIMENT_2" autonumber="no" save="version" published="no" status="Started">
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Chemistry\reaction3.cdx" caption="First Experiment Item" />
+			  </experiment>		
+			  <experiment name="WF_EXPERIMENT_3" autonumber="no" save="draft" published="no" status="Started">
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Chemistry\reaction3.cdx" caption="First Experiment Item" />
+			  </experiment>
+			  <experiment name="WF_EXPERIMENT_4" autonumber="no" save="version" published="no" status="Started">
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Text\Text Item 1.html" caption="Blaah blaah" />
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Spreadsheets\Chart Context Settings Test.bss" />
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Chemistry\reaction3.cdx" caption="Blaah blaah 2" />
+			  </experiment>
+			  <experiment name="WF_EXPERIMENT_5" autonumber="no" save="version" published="no" status="Started">
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Text\Text Item 1.html" caption="Blaah blaah" />
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Spreadsheets\Chart Context Settings Test.bss" />
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Chemistry\reaction3.cdx" caption="Blaah blaah 2" />
+			  </experiment>
+              <experiment name="WF_EXPERIMENT_6" autonumber="no" save="draft" published="no" status="Started">
+			  </experiment>                   
+			  <experiment name="WF_EXPERIMENT_NO_WORKFLOW" autonumber="no" save="version" published="no" status="Started">
+					<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Chemistry\reaction3.cdx" caption="First Experiment Item" />
+			  </experiment>	
+			  <report name="WF_REPORT_1" autonumber="no" save="version" published="yes" status="Completed"> 
+				<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Images\image.bmp" />
+		  </report>
+		  <template name="WF_TEMPLATE_1" autonumber="no" save="version" published="no" status="Archived"> 
+				<document file="C:\QTP Data\E-Workbook\Test Data\Search Test Data\Forms\Dissolution.dsf" />
+		  </template>
+		  </project>
+		</group>
+	</hierarchy>
+	<entityroles>
+    
+    <entityrole name="VIEW_ANY_TASK_ONLY" description="Only the view any task permission">
+		  <permission>VIEW_ANY_TASK</permission>
+    </entityrole>
+    <entityrole name="NO_PERMISSIONS" description="No Permissions">
+    </entityrole>
+	<entityrole name="No Workflow Permissions" description="No Workflow Related Permissions">
+		  <permission>CREATE_EXPERIMENT</permission>
+		  <permission>EDIT_EXPERIMENT</permission>
+		  <permission>VIEW_EXPERIMENT</permission>
+		  <permission>DELETE_EXPERIMENT</permission>
+		  <permission>OPEN_EXPERIMENT</permission>
+		  <permission>CREATE_REPORT</permission>
+		  <permission>EDIT_REPORT</permission>
+		  <permission>VIEW_REPORT</permission>
+		  <permission>DELETE_REPORT</permission>
+		  <permission>OPEN_REPORT</permission>
+		  <permission>CREATE_TEMPLATE</permission>
+		  <permission>EDIT_TEMPLATE</permission>
+		  <permission>VIEW_TEMPLATE</permission>
+		  <permission>DELETE_TEMPLATE</permission>
+		  <permission>OPEN_TEMPLATE</permission>
+		  <permission>ASSIGN_ROLES</permission>
+		  <permission>CREATE_FORM</permission>
+		  <permission>EDIT_FORM</permission>
+		  <permission>VIEW_FORM</permission>
+		  <permission>DELETE_FORM</permission>
+		  <permission>OPEN_FORM</permission>
+		  <permission>CREATE_DEVDEF</permission>
+		  <permission>EDIT_DEVDEF</permission>
+		  <permission>DELETE_DEVDEF</permission>
+		  <permission>BBSS_SET_BLINDING</permission>
+		  <permission>BBSS_SET_DICTMAPPINGS</permission>
+		  <permission>VIEW_DEVDEF</permission>
+		  <permission>OPEN_DEVDEF</permission>
+		  <permission>CREATE_PROJECT</permission>
+		  <permission>EDIT_PROJECT</permission>
+		  <permission>VIEW_PROJECT</permission>
+		  <permission>DELETE_PROJECT</permission>
+		  <permission>OPEN_PROJECT</permission>
+		  <permission>ALLOW_DRAFT_EXPERIMENTS</permission>
+		  <permission>EDIT_ROOT</permission>
+		  <permission>OPEN_ROOT</permission>
+		  <permission>CREATE_GROUP</permission>
+		  <permission>EDIT_GROUP</permission>
+		  <permission>VIEW_GROUP</permission>
+		  <permission>DELETE_GROUP</permission>
+		  <permission>OPEN_GROUP</permission>
+		  <permission>CREATE_FOLDER</permission>
+		  <permission>EDIT_FOLDER</permission>
+		  <permission>VIEW_FOLDER</permission>
+		  <permission>DELETE_FOLDER</permission>
+		  <permission>OPEN_FOLDER</permission>
+		  <permission>CREATE_DEVDEF_FOLDER</permission>
+		  <permission>EDIT_DEVDEF_FOLDER</permission>
+		  <permission>VIEW_DEVDEF_FOLDER</permission>
+		  <permission>DELETE_DEVDEF_FOLDER</permission>
+		  <permission>OPEN_DEVDEF_FOLDER</permission>
+		  <permission>CREATE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>EDIT_SPREADSHEET_PROTOCOL</permission>
+		  <permission>VIEW_SPREADSHEET_PROTOCOL</permission>
+		  <permission>DELETE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>OPEN_SPREADSHEET_PROTOCOL</permission>
+		  <permission>CREATE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>EDIT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>VIEW_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>DELETE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>OPEN_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>CREATE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>EDIT_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>VIEW_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>DELETE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>OPEN_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>CREATE_SPREADSHEET</permission>
+		  <permission>EDIT_SPREADSHEET</permission>
+		  <permission>VIEW_SPREADSHEET</permission>
+		  <permission>DELETE_SPREADSHEET</permission>
+		  <permission>OPEN_SPREADSHEET</permission>
+		  <permission>VIEW_SPREADSHEET_FOLDER</permission>
+		  <permission>EDIT_SPREADSHEET_FOLDER</permission>
+		  <permission>CONFIGURE_HEADER_FOOTER</permission>
+		  <permission>VIEW_PDF_FOLDER</permission>
+		  <permission>CREATE_PDF</permission>
+		  <permission>EDIT_PDF</permission>
+		  <permission>VIEW_PDF</permission>
+		  <permission>DELETE_PDF</permission>
+		  <permission>OPEN_PDF</permission>
+		  <permission>CONFIGURE_PUBLISHING_RULE</permission>
+		  <permission>INITIATE_PUBLISHING</permission>
+		  <permission>SET_SPREADSHEET_GLP</permission>
+		  <permission>CONFIGURE_EXPERIMENT_FONTS</permission>
+		  <permission>CONFIGURE_DISPLAY_ITEM_PROPERTIES</permission>
+		  <permission>USE_SPREADSHEET_DESIGNERS</permission>
+		  <permission>USE_IMPORT_UTILITY</permission>
+		  <permission>USE_DATA_READER</permission>
+		  <permission>USE_RANDOMISATION</permission>
+		  <permission>USE_TESTABLE_OBJECTS</permission>
+		  <permission>USE_SPREADSHEET_AUDITING_TOOLS</permission>
+		  <permission>INSERT_SPREADSHEET_COMPONENT</permission>
+		  <permission>USE_KNOCKOUT</permission>
+		  <permission>CREATE_SEARCH</permission>
+		  <permission>EDIT_SEARCH</permission>
+		  <permission>VIEW_SEARCH</permission>
+		  <permission>DELETE_SEARCH</permission>
+		  <permission>OPEN_SEARCH</permission>
+		  <permission>CREATE_SEARCH_CATEGORY</permission>
+		  <permission>EDIT_SEARCH_CATEGORY</permission>
+		  <permission>VIEW_SEARCH_CATEGORY</permission>
+		  <permission>DELETE_SEARCH_CATEGORY</permission>
+		  <permission>OPEN_SEARCH_CATEGORY</permission>
+		  <permission>EDIT_USER_SEARCHES</permission>
+		  <permission>OPEN_USER_SEARCHES</permission>
+		  <permission>VIEW_USER_SEARCHES</permission>
+		  <permission>MOVE_EXPERIMENT</permission>
+		  <permission>MOVE_REPORT</permission>
+		  <permission>MOVE_TEMPLATE</permission>
+		  <permission>MOVE_FORM</permission>
+		  <permission>MOVE_DEVDEF</permission>
+		  <permission>MOVE_DEVDEF_FOLDER</permission>
+		  <permission>MOVE_PROJECT</permission>
+		  <permission>MOVE_GROUP</permission>
+		  <permission>MOVE_FOLDER</permission>
+		  <permission>MOVE_SPREADSHEET</permission>
+		  <permission>MOVE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>MOVE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>MOVE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>MOVE_PDF</permission>
+		  <permission>MOVE_SEARCH</permission>
+		  <permission>MOVE_SEARCH_CATEGORY</permission>
+		  <permission>CBSS_SET_DICTMAPPINGS</permission>
+		  <permission>CONFIGURE_FIT_AND_CHART_SETTINGS</permission>
+		  <permission>VIEW_ROOT</permission>
+		  <permission>UPDATE_CATALOG_FROM_SPREADSHEET</permission>
+		  <permission>VIEW_USER_AREA</permission>
+		  <permission>OPEN_USER_AREA</permission>
+		  <permission>EDIT_USER_AREA</permission>
+		  <permission>CREATE_USER_INBOX_CATEGORY</permission>
+		  <permission>EDIT_USER_INBOX_CATEGORY</permission>
+		  <permission>VIEW_USER_INBOX_CATEGORY</permission>
+		  <permission>MOVE_USER_INBOX_CATEGORY</permission>
+		  <permission>DELETE_USER_INBOX_CATEGORY</permission>
+		  <permission>OPEN_USER_INBOX_CATEGORY</permission>
+		  <permission>VIEW_USER_INBOX</permission>
+		  <permission>OPEN_USER_INBOX</permission>
+		  <permission>EDIT_USER_INBOX</permission>
+		  <permission>CREATE_FILE</permission>
+		  <permission>EDIT_FILE</permission>
+		  <permission>VIEW_FILE</permission>
+		  <permission>MOVE_FILE</permission>
+		  <permission>DELETE_FILE</permission>
+		  <permission>OPEN_FILE</permission>
+		  <permission>CONFIGURE_VERSION_SAVE</permission>
+		  <permission>COPY_EXPERIMENT</permission>
+		  <permission>COPY_REPORT</permission>
+		  <permission>COPY_TEMPLATE</permission>
+		  <permission>COPY_FORM</permission>
+		  <permission>COPY_DEVDEF</permission>
+		  <permission>COPY_DEVDEF_FOLDER</permission>
+		  <permission>COPY_PROJECT</permission>
+		  <permission>COPY_GROUP</permission>
+		  <permission>COPY_FOLDER</permission>
+		  <permission>COPY_SPREADSHEET</permission>
+		  <permission>COPY_SPREADSHEET_PROTOCOL</permission>
+		  <permission>COPY_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>COPY_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>COPY_PDF</permission>
+		  <permission>COPY_SEARCH</permission>
+		  <permission>COPY_SEARCH_CATEGORY</permission>
+		  <permission>COPY_USER_INBOX_CATEGORY</permission>
+		  <permission>COPY_FILE</permission>
+		  <permission>CONFIGURE_PRINT_PUBLISHING_OPTIONS</permission>
+		  <permission>CREATE_MS_WORD_TEMPLATE</permission>
+		  <permission>EDIT_MS_WORD_TEMPLATE</permission>
+		  <permission>VIEW_MS_WORD_TEMPLATE</permission>
+		  <permission>DELETE_MS_WORD_TEMPLATE</permission>
+		  <permission>MOVE_MS_WORD_TEMPLATE</permission>
+		  <permission>OPEN_MS_WORD_TEMPLATE</permission>
+		  <permission>COPY_MS_WORD_TEMPLATE</permission>
+		  <permission>CREATE_MS_WORD_REPORT</permission>
+		  <permission>EDIT_MS_WORD_REPORT</permission>
+		  <permission>VIEW_MS_WORD_REPORT</permission>
+		  <permission>DELETE_MS_WORD_REPORT</permission>
+		  <permission>MOVE_MS_WORD_REPORT</permission>
+		  <permission>OPEN_MS_WORD_REPORT</permission>
+		  <permission>COPY_MS_WORD_REPORT</permission>
+		  <permission>VIEW_MS_WORD_REPORT_FOLDER</permission>
+		</entityrole>
+        <entityrole name="No VAT or RAT" description="No VIEW_ANY_TASKS Permission">
+          <permission>CREATE_TASK</permission>
+          <permission>CONFIGURE_TEST_REQUEST</permission>
+          <permission>CREATE_TEST_REQUEST</permission>
+          <permission>CONFIGURE_TASK_TYPES</permission>
+		  <permission>CREATE_EXPERIMENT</permission>
+		  <permission>EDIT_EXPERIMENT</permission>
+		  <permission>VIEW_EXPERIMENT</permission>
+		  <permission>DELETE_EXPERIMENT</permission>
+		  <permission>OPEN_EXPERIMENT</permission>
+		  <permission>CREATE_REPORT</permission>
+		  <permission>EDIT_REPORT</permission>
+		  <permission>VIEW_REPORT</permission>
+		  <permission>DELETE_REPORT</permission>
+		  <permission>OPEN_REPORT</permission>
+		  <permission>CREATE_TEMPLATE</permission>
+		  <permission>EDIT_TEMPLATE</permission>
+		  <permission>VIEW_TEMPLATE</permission>
+		  <permission>DELETE_TEMPLATE</permission>
+		  <permission>OPEN_TEMPLATE</permission>
+		  <permission>ASSIGN_ROLES</permission>
+		  <permission>CREATE_FORM</permission>
+		  <permission>EDIT_FORM</permission>
+		  <permission>VIEW_FORM</permission>
+		  <permission>DELETE_FORM</permission>
+		  <permission>OPEN_FORM</permission>
+		  <permission>CREATE_DEVDEF</permission>
+		  <permission>EDIT_DEVDEF</permission>
+		  <permission>DELETE_DEVDEF</permission>
+		  <permission>BBSS_SET_BLINDING</permission>
+		  <permission>BBSS_SET_DICTMAPPINGS</permission>
+		  <permission>VIEW_DEVDEF</permission>
+		  <permission>OPEN_DEVDEF</permission>
+		  <permission>CREATE_PROJECT</permission>
+		  <permission>EDIT_PROJECT</permission>
+		  <permission>VIEW_PROJECT</permission>
+		  <permission>DELETE_PROJECT</permission>
+		  <permission>OPEN_PROJECT</permission>
+		  <permission>ALLOW_DRAFT_EXPERIMENTS</permission>
+		  <permission>EDIT_ROOT</permission>
+		  <permission>OPEN_ROOT</permission>
+		  <permission>CREATE_GROUP</permission>
+		  <permission>EDIT_GROUP</permission>
+		  <permission>VIEW_GROUP</permission>
+		  <permission>DELETE_GROUP</permission>
+		  <permission>OPEN_GROUP</permission>
+		  <permission>CREATE_FOLDER</permission>
+		  <permission>EDIT_FOLDER</permission>
+		  <permission>VIEW_FOLDER</permission>
+		  <permission>DELETE_FOLDER</permission>
+		  <permission>OPEN_FOLDER</permission>
+		  <permission>CREATE_DEVDEF_FOLDER</permission>
+		  <permission>EDIT_DEVDEF_FOLDER</permission>
+		  <permission>VIEW_DEVDEF_FOLDER</permission>
+		  <permission>DELETE_DEVDEF_FOLDER</permission>
+		  <permission>OPEN_DEVDEF_FOLDER</permission>
+		  <permission>CREATE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>EDIT_SPREADSHEET_PROTOCOL</permission>
+		  <permission>VIEW_SPREADSHEET_PROTOCOL</permission>
+		  <permission>DELETE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>OPEN_SPREADSHEET_PROTOCOL</permission>
+		  <permission>CREATE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>EDIT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>VIEW_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>DELETE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>OPEN_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>CREATE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>EDIT_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>VIEW_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>DELETE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>OPEN_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>CREATE_SPREADSHEET</permission>
+		  <permission>EDIT_SPREADSHEET</permission>
+		  <permission>VIEW_SPREADSHEET</permission>
+		  <permission>DELETE_SPREADSHEET</permission>
+		  <permission>OPEN_SPREADSHEET</permission>
+		  <permission>VIEW_SPREADSHEET_FOLDER</permission>
+		  <permission>EDIT_SPREADSHEET_FOLDER</permission>
+		  <permission>CONFIGURE_HEADER_FOOTER</permission>
+		  <permission>VIEW_PDF_FOLDER</permission>
+		  <permission>CREATE_PDF</permission>
+		  <permission>EDIT_PDF</permission>
+		  <permission>VIEW_PDF</permission>
+		  <permission>DELETE_PDF</permission>
+		  <permission>OPEN_PDF</permission>
+		  <permission>CONFIGURE_PUBLISHING_RULE</permission>
+		  <permission>INITIATE_PUBLISHING</permission>
+		  <permission>SET_SPREADSHEET_GLP</permission>
+		  <permission>CONFIGURE_EXPERIMENT_FONTS</permission>
+		  <permission>CONFIGURE_DISPLAY_ITEM_PROPERTIES</permission>
+		  <permission>USE_SPREADSHEET_DESIGNERS</permission>
+		  <permission>USE_IMPORT_UTILITY</permission>
+		  <permission>USE_DATA_READER</permission>
+		  <permission>USE_RANDOMISATION</permission>
+		  <permission>USE_TESTABLE_OBJECTS</permission>
+		  <permission>USE_SPREADSHEET_AUDITING_TOOLS</permission>
+		  <permission>INSERT_SPREADSHEET_COMPONENT</permission>
+		  <permission>USE_KNOCKOUT</permission>
+		  <permission>CREATE_SEARCH</permission>
+		  <permission>EDIT_SEARCH</permission>
+		  <permission>VIEW_SEARCH</permission>
+		  <permission>DELETE_SEARCH</permission>
+		  <permission>OPEN_SEARCH</permission>
+		  <permission>CREATE_SEARCH_CATEGORY</permission>
+		  <permission>EDIT_SEARCH_CATEGORY</permission>
+		  <permission>VIEW_SEARCH_CATEGORY</permission>
+		  <permission>DELETE_SEARCH_CATEGORY</permission>
+		  <permission>OPEN_SEARCH_CATEGORY</permission>
+		  <permission>EDIT_USER_SEARCHES</permission>
+		  <permission>OPEN_USER_SEARCHES</permission>
+		  <permission>VIEW_USER_SEARCHES</permission>
+		  <permission>MOVE_EXPERIMENT</permission>
+		  <permission>MOVE_REPORT</permission>
+		  <permission>MOVE_TEMPLATE</permission>
+		  <permission>MOVE_FORM</permission>
+		  <permission>MOVE_DEVDEF</permission>
+		  <permission>MOVE_DEVDEF_FOLDER</permission>
+		  <permission>MOVE_PROJECT</permission>
+		  <permission>MOVE_GROUP</permission>
+		  <permission>MOVE_FOLDER</permission>
+		  <permission>MOVE_SPREADSHEET</permission>
+		  <permission>MOVE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>MOVE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>MOVE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>MOVE_PDF</permission>
+		  <permission>MOVE_SEARCH</permission>
+		  <permission>MOVE_SEARCH_CATEGORY</permission>
+		  <permission>CBSS_SET_DICTMAPPINGS</permission>
+		  <permission>CONFIGURE_FIT_AND_CHART_SETTINGS</permission>
+		  <permission>VIEW_ROOT</permission>
+		  <permission>UPDATE_CATALOG_FROM_SPREADSHEET</permission>
+		  <permission>VIEW_USER_AREA</permission>
+		  <permission>OPEN_USER_AREA</permission>
+		  <permission>EDIT_USER_AREA</permission>
+		  <permission>CREATE_USER_INBOX_CATEGORY</permission>
+		  <permission>EDIT_USER_INBOX_CATEGORY</permission>
+		  <permission>VIEW_USER_INBOX_CATEGORY</permission>
+		  <permission>MOVE_USER_INBOX_CATEGORY</permission>
+		  <permission>DELETE_USER_INBOX_CATEGORY</permission>
+		  <permission>OPEN_USER_INBOX_CATEGORY</permission>
+		  <permission>VIEW_USER_INBOX</permission>
+		  <permission>OPEN_USER_INBOX</permission>
+		  <permission>EDIT_USER_INBOX</permission>
+		  <permission>CREATE_FILE</permission>
+		  <permission>EDIT_FILE</permission>
+		  <permission>VIEW_FILE</permission>
+		  <permission>MOVE_FILE</permission>
+		  <permission>DELETE_FILE</permission>
+		  <permission>OPEN_FILE</permission>
+		  <permission>CONFIGURE_VERSION_SAVE</permission>
+		  <permission>COPY_EXPERIMENT</permission>
+		  <permission>COPY_REPORT</permission>
+		  <permission>COPY_TEMPLATE</permission>
+		  <permission>COPY_FORM</permission>
+		  <permission>COPY_DEVDEF</permission>
+		  <permission>COPY_DEVDEF_FOLDER</permission>
+		  <permission>COPY_PROJECT</permission>
+		  <permission>COPY_GROUP</permission>
+		  <permission>COPY_FOLDER</permission>
+		  <permission>COPY_SPREADSHEET</permission>
+		  <permission>COPY_SPREADSHEET_PROTOCOL</permission>
+		  <permission>COPY_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>COPY_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>COPY_PDF</permission>
+		  <permission>COPY_SEARCH</permission>
+		  <permission>COPY_SEARCH_CATEGORY</permission>
+		  <permission>COPY_USER_INBOX_CATEGORY</permission>
+		  <permission>COPY_FILE</permission>
+		  <permission>CONFIGURE_PRINT_PUBLISHING_OPTIONS</permission>
+		  <permission>CREATE_MS_WORD_TEMPLATE</permission>
+		  <permission>EDIT_MS_WORD_TEMPLATE</permission>
+		  <permission>VIEW_MS_WORD_TEMPLATE</permission>
+		  <permission>DELETE_MS_WORD_TEMPLATE</permission>
+		  <permission>MOVE_MS_WORD_TEMPLATE</permission>
+		  <permission>OPEN_MS_WORD_TEMPLATE</permission>
+		  <permission>COPY_MS_WORD_TEMPLATE</permission>
+		  <permission>CREATE_MS_WORD_REPORT</permission>
+		  <permission>EDIT_MS_WORD_REPORT</permission>
+		  <permission>VIEW_MS_WORD_REPORT</permission>
+		  <permission>DELETE_MS_WORD_REPORT</permission>
+		  <permission>MOVE_MS_WORD_REPORT</permission>
+		  <permission>OPEN_MS_WORD_REPORT</permission>
+		  <permission>COPY_MS_WORD_REPORT</permission>
+		  <permission>VIEW_MS_WORD_REPORT_FOLDER</permission>
+		</entityrole>
+		<entityrole name="No Workflow Or View" description="No Workflow or View Report Related Permissions">
+		  <permission>CREATE_EXPERIMENT</permission>
+		  <permission>EDIT_EXPERIMENT</permission>
+		  <permission>VIEW_EXPERIMENT</permission>
+		  <permission>DELETE_EXPERIMENT</permission>
+		  <permission>OPEN_EXPERIMENT</permission>
+		  <permission>CREATE_REPORT</permission>
+		  <permission>EDIT_REPORT</permission>
+		  <permission>DELETE_REPORT</permission>
+		  <permission>OPEN_REPORT</permission>
+		  <permission>CREATE_TEMPLATE</permission>
+		  <permission>EDIT_TEMPLATE</permission>
+		  <permission>VIEW_TEMPLATE</permission>
+		  <permission>DELETE_TEMPLATE</permission>
+		  <permission>OPEN_TEMPLATE</permission>
+		  <permission>ASSIGN_ROLES</permission>
+		  <permission>CREATE_FORM</permission>
+		  <permission>EDIT_FORM</permission>
+		  <permission>VIEW_FORM</permission>
+		  <permission>DELETE_FORM</permission>
+		  <permission>OPEN_FORM</permission>
+		  <permission>CREATE_DEVDEF</permission>
+		  <permission>EDIT_DEVDEF</permission>
+		  <permission>DELETE_DEVDEF</permission>
+		  <permission>BBSS_SET_BLINDING</permission>
+		  <permission>BBSS_SET_DICTMAPPINGS</permission>
+		  <permission>VIEW_DEVDEF</permission>
+		  <permission>OPEN_DEVDEF</permission>
+		  <permission>CREATE_PROJECT</permission>
+		  <permission>EDIT_PROJECT</permission>
+		  <permission>VIEW_PROJECT</permission>
+		  <permission>DELETE_PROJECT</permission>
+		  <permission>OPEN_PROJECT</permission>
+		  <permission>ALLOW_DRAFT_EXPERIMENTS</permission>
+		  <permission>EDIT_ROOT</permission>
+		  <permission>OPEN_ROOT</permission>
+		  <permission>CREATE_GROUP</permission>
+		  <permission>EDIT_GROUP</permission>
+		  <permission>VIEW_GROUP</permission>
+		  <permission>DELETE_GROUP</permission>
+		  <permission>OPEN_GROUP</permission>
+		  <permission>CREATE_FOLDER</permission>
+		  <permission>EDIT_FOLDER</permission>
+		  <permission>VIEW_FOLDER</permission>
+		  <permission>DELETE_FOLDER</permission>
+		  <permission>OPEN_FOLDER</permission>
+		  <permission>CREATE_DEVDEF_FOLDER</permission>
+		  <permission>EDIT_DEVDEF_FOLDER</permission>
+		  <permission>VIEW_DEVDEF_FOLDER</permission>
+		  <permission>DELETE_DEVDEF_FOLDER</permission>
+		  <permission>OPEN_DEVDEF_FOLDER</permission>
+		  <permission>CREATE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>EDIT_SPREADSHEET_PROTOCOL</permission>
+		  <permission>VIEW_SPREADSHEET_PROTOCOL</permission>
+		  <permission>DELETE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>OPEN_SPREADSHEET_PROTOCOL</permission>
+		  <permission>CREATE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>EDIT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>VIEW_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>DELETE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>OPEN_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>CREATE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>EDIT_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>VIEW_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>DELETE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>OPEN_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>CREATE_SPREADSHEET</permission>
+		  <permission>EDIT_SPREADSHEET</permission>
+		  <permission>VIEW_SPREADSHEET</permission>
+		  <permission>DELETE_SPREADSHEET</permission>
+		  <permission>OPEN_SPREADSHEET</permission>
+		  <permission>VIEW_SPREADSHEET_FOLDER</permission>
+		  <permission>EDIT_SPREADSHEET_FOLDER</permission>
+		  <permission>CONFIGURE_HEADER_FOOTER</permission>
+		  <permission>VIEW_PDF_FOLDER</permission>
+		  <permission>CREATE_PDF</permission>
+		  <permission>EDIT_PDF</permission>
+		  <permission>VIEW_PDF</permission>
+		  <permission>DELETE_PDF</permission>
+		  <permission>OPEN_PDF</permission>
+		  <permission>CONFIGURE_PUBLISHING_RULE</permission>
+		  <permission>INITIATE_PUBLISHING</permission>
+		  <permission>SET_SPREADSHEET_GLP</permission>
+		  <permission>CONFIGURE_EXPERIMENT_FONTS</permission>
+		  <permission>CONFIGURE_DISPLAY_ITEM_PROPERTIES</permission>
+		  <permission>USE_SPREADSHEET_DESIGNERS</permission>
+		  <permission>USE_IMPORT_UTILITY</permission>
+		  <permission>USE_DATA_READER</permission>
+		  <permission>USE_RANDOMISATION</permission>
+		  <permission>USE_TESTABLE_OBJECTS</permission>
+		  <permission>USE_SPREADSHEET_AUDITING_TOOLS</permission>
+		  <permission>INSERT_SPREADSHEET_COMPONENT</permission>
+		  <permission>USE_KNOCKOUT</permission>
+		  <permission>CREATE_SEARCH</permission>
+		  <permission>EDIT_SEARCH</permission>
+		  <permission>VIEW_SEARCH</permission>
+		  <permission>DELETE_SEARCH</permission>
+		  <permission>OPEN_SEARCH</permission>
+		  <permission>CREATE_SEARCH_CATEGORY</permission>
+		  <permission>EDIT_SEARCH_CATEGORY</permission>
+		  <permission>VIEW_SEARCH_CATEGORY</permission>
+		  <permission>DELETE_SEARCH_CATEGORY</permission>
+		  <permission>OPEN_SEARCH_CATEGORY</permission>
+		  <permission>EDIT_USER_SEARCHES</permission>
+		  <permission>OPEN_USER_SEARCHES</permission>
+		  <permission>VIEW_USER_SEARCHES</permission>
+		  <permission>MOVE_EXPERIMENT</permission>
+		  <permission>MOVE_REPORT</permission>
+		  <permission>MOVE_TEMPLATE</permission>
+		  <permission>MOVE_FORM</permission>
+		  <permission>MOVE_DEVDEF</permission>
+		  <permission>MOVE_DEVDEF_FOLDER</permission>
+		  <permission>MOVE_PROJECT</permission>
+		  <permission>MOVE_GROUP</permission>
+		  <permission>MOVE_FOLDER</permission>
+		  <permission>MOVE_SPREADSHEET</permission>
+		  <permission>MOVE_SPREADSHEET_PROTOCOL</permission>
+		  <permission>MOVE_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>MOVE_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>MOVE_PDF</permission>
+		  <permission>MOVE_SEARCH</permission>
+		  <permission>MOVE_SEARCH_CATEGORY</permission>
+		  <permission>CBSS_SET_DICTMAPPINGS</permission>
+		  <permission>CONFIGURE_FIT_AND_CHART_SETTINGS</permission>
+		  <permission>VIEW_ROOT</permission>
+		  <permission>UPDATE_CATALOG_FROM_SPREADSHEET</permission>
+		  <permission>VIEW_USER_AREA</permission>
+		  <permission>OPEN_USER_AREA</permission>
+		  <permission>EDIT_USER_AREA</permission>
+		  <permission>CREATE_USER_INBOX_CATEGORY</permission>
+		  <permission>EDIT_USER_INBOX_CATEGORY</permission>
+		  <permission>VIEW_USER_INBOX_CATEGORY</permission>
+		  <permission>MOVE_USER_INBOX_CATEGORY</permission>
+		  <permission>DELETE_USER_INBOX_CATEGORY</permission>
+		  <permission>OPEN_USER_INBOX_CATEGORY</permission>
+		  <permission>VIEW_USER_INBOX</permission>
+		  <permission>OPEN_USER_INBOX</permission>
+		  <permission>EDIT_USER_INBOX</permission>
+		  <permission>CREATE_FILE</permission>
+		  <permission>EDIT_FILE</permission>
+		  <permission>VIEW_FILE</permission>
+		  <permission>MOVE_FILE</permission>
+		  <permission>DELETE_FILE</permission>
+		  <permission>OPEN_FILE</permission>
+		  <permission>CONFIGURE_VERSION_SAVE</permission>
+		  <permission>COPY_EXPERIMENT</permission>
+		  <permission>COPY_REPORT</permission>
+		  <permission>COPY_TEMPLATE</permission>
+		  <permission>COPY_FORM</permission>
+		  <permission>COPY_DEVDEF</permission>
+		  <permission>COPY_DEVDEF_FOLDER</permission>
+		  <permission>COPY_PROJECT</permission>
+		  <permission>COPY_GROUP</permission>
+		  <permission>COPY_FOLDER</permission>
+		  <permission>COPY_SPREADSHEET</permission>
+		  <permission>COPY_SPREADSHEET_PROTOCOL</permission>
+		  <permission>COPY_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>COPY_ROOT_SPREADSHEET_PROTOCOL_GROUP</permission>
+		  <permission>COPY_PDF</permission>
+		  <permission>COPY_SEARCH</permission>
+		  <permission>COPY_SEARCH_CATEGORY</permission>
+		  <permission>COPY_USER_INBOX_CATEGORY</permission>
+		  <permission>COPY_FILE</permission>
+		  <permission>CONFIGURE_PRINT_PUBLISHING_OPTIONS</permission>
+		  <permission>CREATE_MS_WORD_TEMPLATE</permission>
+		  <permission>EDIT_MS_WORD_TEMPLATE</permission>
+		  <permission>VIEW_MS_WORD_TEMPLATE</permission>
+		  <permission>DELETE_MS_WORD_TEMPLATE</permission>
+		  <permission>MOVE_MS_WORD_TEMPLATE</permission>
+		  <permission>OPEN_MS_WORD_TEMPLATE</permission>
+		  <permission>COPY_MS_WORD_TEMPLATE</permission>
+		  <permission>CREATE_MS_WORD_REPORT</permission>
+		  <permission>EDIT_MS_WORD_REPORT</permission>
+		  <permission>VIEW_MS_WORD_REPORT</permission>
+		  <permission>DELETE_MS_WORD_REPORT</permission>
+		  <permission>MOVE_MS_WORD_REPORT</permission>
+		  <permission>OPEN_MS_WORD_REPORT</permission>
+		  <permission>COPY_MS_WORD_REPORT</permission>
+		  <permission>VIEW_MS_WORD_REPORT_FOLDER</permission>
+		</entityrole>
+	</entityroles>
+	<users>
+		<user username="WorkflowWSUser1" fullname="Workflow Webservice User 1" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="All Entity Permissions" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+		<user username="WorkflowWSUser2" fullname="Workflow Webservice User 2" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="All Entity Permissions" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+		<user username="WorkflowWSUser3" fullname="Workflow Webservice User 3" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="No Workflow Permissions" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+		<user username="WorkflowWSUser4" fullname="Workflow Webservice User 4" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="No Workflow Or View" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+        <user username="WorkflowWSUser5" fullname="Workflow Webservice User 5" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="No VAT or RAT" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+        <user username="WorkflowWSUser6" fullname="Workflow Webservice User 6" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="VIEW_ANY_TASK_ONLY" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+        <user username="WorkflowWSUser7" fullname="Workflow Webservice User 7" department="Testing" email="workflowws@idbs.com">
+			<userrole>All System Permissions</userrole>
+			<entityrole role="NO_PERMISSIONS" path="/Root" />
+			<assignableuserrole>ALL</assignableuserrole>
+		</user>
+        
+	</users>	
+	  <workflows>
+		<!-- Workflow WS Workflows -->
+		<workflow name="WF WS Workflow 1" description="Workflow Webservice Workflow 1 - Single Sign-off With User Pool" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF1_SIGN1" type="Sign Off" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+		<workflow name="WF WS Workflow 2" description="Workflow Webservice Workflow 2 - Single Review With User Pool" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF2_REVIEW1" type="Review" role="Reviewer" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+		<workflow name="WF WS Workflow 3" description="Workflow Webservice Workflow 3 - Single Alert With User Pool" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF3_ALERT1" type="Alert" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+		<workflow name="WF WS Workflow 4" description="Workflow Webservice Workflow 4 - Multiple Sequential Tasks With User Pool" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF4_REVIEW1" type="Review" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		  <task name="WF4_SIGN1" type="Sign Off" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		  <task name="WF4_ALERT1" type="Alert" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+		<workflow name="WF WS Workflow 5" description="Workflow Webservice Workflow 5 - Multiple Parallel Tasks With User Pool" process="Parallel" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF5_REVIEW1" type="Review" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		  <task name="WF5_SIGN1" type="Sign Off" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		  <task name="WF5_ALERT1" type="Alert" role="Actioner" setstatusto="" publishrecord="" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+		<workflow name="WF WS Workflow 6" description="Workflow Webservice Workflow 6 - Status Change And Publish" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF6_SIGN1" type="Sign Off" role="Actioner" setstatusto="Completed" publishrecord="Yes" constraintopool="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+        <workflow name="WF WS Workflow 7" description="Workflow Webservice Workflow 7 - All Items Must Be Signed equals NO" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF7_SIGN1" type="Sign Off" role="Actioner" setstatusto="Completed" publishrecord="Yes" constraintopool="No" allitemsmustbesigned="No">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+        <workflow name="WF WS Workflow 8" description="Workflow Webservice Workflow 8 - All Items Must Be Signed equals YES" process="Sequential" timelimit="1 Days" termid="" path="/Root/Workflow WS Group">
+		  <task name="WF8_SIGN1" type="Sign Off" role="Actioner" setstatusto="Completed" publishrecord="Yes" constraintopool="No" allitemsmustbesigned="Yes">
+			<userorgroup>WorkflowWSUser1</userorgroup>
+			<userorgroup>WorkflowWSUser2</userorgroup>
+			<userorgroup>WorkflowWSUser3</userorgroup>
+			<userorgroup>WorkflowWSUser4</userorgroup>
+            <userorgroup>WorkflowWSUser5</userorgroup>
+            <userorgroup>WorkflowWSUser6</userorgroup>
+            <userorgroup>WorkflowWSUser7</userorgroup>
+		  </task>
+		</workflow>
+	  </workflows>
+</setup>

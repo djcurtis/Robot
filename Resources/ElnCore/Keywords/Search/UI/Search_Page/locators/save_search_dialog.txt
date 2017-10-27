@@ -1,0 +1,13 @@
+*** Settings ***
+Documentation     Locators for "Save Search" dialog
+...               (OPTIONS > Save Search from search screen)
+
+*** Variables ***
+${searchNameTextField}    css=.mySearches #name
+${saveSearchButton}    //*[@class='mySearches']//button[contains(@class,'ok')]
+${saveSearchNavigatorButton}    css=#dialog .ok
+${searchDescriptionTextFiled}    //*[@id="description"]
+${cancelSearchNavigatorButton}    css=#dialog .cancel
+${cancelSaveSearchButton}    //button[contains(text(),'Cancel')]
+${saveSearchDialogTitle}    //span[text()='Save Search']
+${savingOptions}    savingOptions

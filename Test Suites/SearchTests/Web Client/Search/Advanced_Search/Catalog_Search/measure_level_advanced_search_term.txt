@@ -1,0 +1,233 @@
+*** Settings ***
+Documentation     Measure Level Advanced Search Term
+...
+...               suite created from story SH-1223
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     Reload Page
+Resource          ../../../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../../Libraries/IDBS Spreadsheet/common_spreadsheet_keywords.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/quantrix_web_resource.txt
+Resource          ../../../../../../Libraries/IDBS Spreadsheet/searching/embedded_search_keywords.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+
+*** Test Cases ***
+One Measure - Same One NonMeasure - One Experiment
+    [Documentation]    One Measure - Same One NonMeasure - One Experiment
+    ...    - verify search with:
+    ...    - measure = 1, treatment = treatmentB1, experiment = experiment 1
+    ...    - verify one record as result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 1
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|1    Dictionary1070|treatment1|treatment1|is|TEXTFIELD|treatmentB1
+    Verify Search Result List Exact By Title    Experiment 1
+
+One Measure 2 - Same One NonMeasure - One Experiment
+    [Documentation]    One Measure 2 - Same One NonMeasure - One Experiment
+    ...    - execute search with:
+    ...    - measure3 = 6, treatment1 = treatmentB2, experiment = experiment 1
+    ...    - verify one record result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 1
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure3|measure3|is|TEXTFIELD|6    Dictionary1070|treatment1|treatment1|is|TEXTFIELD|treatmentB2
+    Verify Search Result List Exact By Title    Experiment 1
+
+One Measure - Diff One NonMeasure - One Experiment
+    [Documentation]    One Measure - Diff One NonMeasure - One Experiment
+    ...    - execute catalog search with:
+    ...    - measure3 = 6.3, treatment = treatmentB2, experiment = experiment 1
+    ...    - verify blank search result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 1
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure3|measure3|is|TEXTFIELD|6.3    Dictionary1070|treatment1|treatment1|is|TEXTFIELD|treatmentB2
+    Verify Blank Search Result
+
+Two Same Measures - One Experiment
+    [Documentation]    Two Same Measures - One Experiment
+    ...    - execute search with:
+    ...    - measure1 = 1, measure2 = 2.75, experiment = experiment 1
+    ...    - verfiy one record result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 1
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|1    Dictionary1070|measure1|measure2|is|TEXTFIELD|2.75
+    Verify Search Result List Exact By Title    Experiment 1
+
+One Measure - Diff NonMeasure - One Experiment
+    [Documentation]    One Measure - Diff NonMeasure - One Experiment
+    ...    - execute search with:
+    ...    - measure1 = 1.95, treatment1 = treatmentC2, experiment = experiment 2
+    ...    - verify blank result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 2
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|1.95    Dictionary1070|treatment1|treatment1|is|TEXTFIELD|treatmentC2
+    Verify Blank Search Result
+
+One Measure Wrong Value - Same One NonMeasure - One Experiment
+    [Documentation]    One Measure Wrong Value - Same One NonMeasure - One Experiment
+    ...    - execute search with:
+    ...    - measure = 2.63, object1 = ObjectB2, experiment = Experiment 2
+    ...    - verify blank search result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 2
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|2.63    Dictionary1070|object1|object1|is|TEXTFIELD|objectB2
+    Verify Blank Search Result
+
+One Measure NonKey - Same None Measure - One Experiment
+    [Documentation]    One Measure NonKey - Same None Measure - One Experiment
+    ...    - execute search with:
+    ...    - measure2 = 7, object1 = objectB8, experiment = experiment 1
+    ...    - verify blank result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 2
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure2|is|TEXTFIELD|7    Dictionary1070|object1|object1|is|TEXTFIELD|objectB8
+    Verify Blank Search Result
+
+One Measure - One Measure NonKey - Two Experiments
+    [Documentation]    One Measure - One Measure NonKey - Two Experiments
+    ...    - exeute search with:
+    ...    - measure =1, measure2 = 2.75, experiment name starts with 'experiment
+    ...    - verify 2 records result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|starts with|Experiment
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|1    Dictionary1070|measure1|measure2|is|TEXTFIELD|2.75
+    Verify Search Result List Exact By Title    Experiment 2    Experiment 1
+
+One NonMeasure - Same Multiple NonMeasure - Two Experiments
+    [Documentation]    One NonMeasure - Same Multiple NonMeasure - Two Experiments
+    ...    - execute searcH with:
+    ...    - treatment1 = treatmentB8, object1 starts with 'object', experiment name starts with 'experiment'
+    ...    - verify 2 records result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|starts with|Experiment
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|treatment1|treatment1|is|TEXTFIELD|treatmentB8    Dictionary1070|object1|object1|starts with|TEXTFIELD|object
+    Verify Blank Search Result
+
+Two Different Measures - Same NonMeasure - Two Experiments
+    [Documentation]    Two Different Measures - Same NonMeasure - Two Experiments
+    ...    - execute search with :
+    ...    - measure = 1, measure = 5.6 object starts with 'object', experiment name starts with 'experiment'
+    ...    - verify blank result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|starts with|Experiment
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|1    Dictionary1070|measure1|measure1|is|TEXTFIELD|5.6
+    Verify Blank Search Result
+
+Save And Restore Search
+    [Documentation]    Save And Restore Search
+    ...    - perform Search by catalog with all measures option selected
+    ...    - verify result
+    ...    - save search
+    ...    - restore search and click search button
+    ...    - verify result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 1
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary1070|measure1|measure1|is|TEXTFIELD|1    Dictionary1070|treatment1|treatment1|is|TEXTFIELD|treatmentB1
+    Verify Search Result List Exact By Title    Experiment 1
+    Save Search Via UI    Search 1    ${groupName} Search
+    Reload page
+    Capture Page Screenshot
+    Restore Saved Search    ${groupName} Search    0
+    Capture Page Screenshot
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment 1
+
+One Record
+    [Documentation]    One Record
+    ...
+    ...    Is to verify that there is not problem when search with measure option without selecting any catalog tiles
+    ...
+    ...    The test is for SH-1262 added as extra-verification.
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Any Record|Name|is|Experiment 1
+    Click Search Button
+    Select Match Conditions    ALL MEASURE
+    Verify Search Result List Exact By Title    Experiment 1
+
+One Term
+    [Documentation]    One Term
+    ...
+    ...    Is to verify that there is not problem when search with measure option without selecting any catalog tiles
+    ...
+    ...    The test is for SH-1262 added as extra-verification.
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${groupName}    Document|Item Type|is|Other
+    Click Search Button
+    Select Match Conditions    ALL MEASURE
+    Verify Search Result List Exact By Title    Experiment 2    Experiment 1
+
+*** Keywords ***
+setup
+    [Documentation]    - Create one dictionary with 4 terms using API
+    ...    - Create Group with project and 2 experiments with one spreadsheet per one
+    ...    - Versioned save experiments
+    ${currentDate}=    Get Current Date
+    ${disctionaryName}=    set variable    Dictionary1070
+    ${measure}=    set variable    /IDBS-Applications/Core/Results Hub/Measure
+    ${measureId}=    Get Term Guid From Catalog Webservice    ${measure}
+    ${object}=    set variable    /IDBS-Applications/Core/Results Hub/Object
+    ${objectId}=    Get Term Guid From Catalog Webservice    ${object}
+    ${treatment}=    set variable    /IDBS-Applications/Core/Results Hub/Treatment
+    ${treatmentId}=    Get Term Guid From Catalog Webservice    ${treatment}
+    ${dictionaryId}=    Create Root Element    DICTIONARY    ${disctionaryName}    some description    true
+    Set Suite Variable    ${dictionaryId}
+    ${measure1}=    Create Property JSON    measure1    NUMBER    Key    true    true
+    ${measure2}=    Create Property JSON    measure2    NUMBER    Description text    false    false
+    ${allProps}=    Create Properties JSON    ${measure1}    ${measure2}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    measure1    measure1    true    {"inheritedTerm":[{"inheritedTermPath":"${measure}","inheritedTermId":"${measureId}"}]}
+    ...    ${allProps}
+    ${measure3}=    Create Property JSON    measure3    NUMBER    Key    true    true
+    ${allProps}=    Create Properties JSON    ${measure3}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    measure3    measure3    true    {"inheritedTerm":[{"inheritedTermPath":"${measure}","inheritedTermId":"${measureId}"}]}
+    ...    ${allProps}
+    ${object1}=    Create Property JSON    object1    STRING    Key    true    true
+    ${allProps}=    Create Properties JSON    ${object1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    object1    object1    true    {"inheritedTerm":[{"inheritedTermPath":"${object}","inheritedTermId":"${objectId}"}]}
+    ...    ${allProps}
+    ${treatment1}=    Create Property JSON    treatment1    STRING    Key    true    true
+    ${allProps}=    Create Properties JSON    ${treatment1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    treatment1    treatment1    true    {"inheritedTerm":[{"inheritedTermPath":"${treatment}","inheritedTermId":"${treatmentId}"}]}
+    ...    ${allProps}
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project 1
+    ${experiment1Id}=    EntityAPILibrary.Create Experiment    ${projectId}    Experiment 1    Started
+    ${experiment2Id}=    EntityAPILibrary.Create Experiment    ${projectId}    Experiment 2    Started
+    ${spreadsheet1Id}=    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment1Id}    ${CURDIR}/Test_Data/1070SpreadSheet1.ewbss
+    ${spreadsheet2Id}=    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment2Id}    ${CURDIR}/Test_Data/1070SpreadSheet2.ewbss
+    Designer Open Browser To Entity    ${experiment1Id}    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    5    1
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    Sleep    20s
+    Go To Experiment    ${experiment2Id}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    5    2
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    Sleep    20s
+
+teardown
+    [Documentation]    Delete all created test case data
+    Delete Element    ${dictionaryId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    close browser

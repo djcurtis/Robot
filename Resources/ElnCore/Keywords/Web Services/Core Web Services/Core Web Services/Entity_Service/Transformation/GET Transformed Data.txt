@@ -1,0 +1,578 @@
+*** Settings ***
+Documentation     *Test Suite Coverage*
+...
+...               EWB Publishing Service Public API: check that you can:
+...               - retrieve \ actual tranformed data
+...               *Endpoints*
+...               | Action | URL | Query Parameters | Optional |
+...               | GET | ewb/services/1.0/entities/{entityId}/transformation/info | entityVersionId / tranformationType | No/ No |
+...               | GET | ewb/services/1.0/entities/{entityId}/transformation/data | entityVersionId / tranformationType | No/ No |
+Suite Setup       Transformation Suite Setup
+Suite Teardown    Transformation Suite Teardown
+Test Setup        Transformation Test Setup
+Test Teardown     Transformation Test Teardown
+Force Tags        requires_desktop
+Default Tags      EWB-GKO-PI004-R002
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ../../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_document_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_non_record_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_printing_publishing_options_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_record_entity_actions_resource.txt
+Resource          ../../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Resource          ../../Record Service/PDF content acceptance/add_image_items_to_experiments.txt
+Resource          ../../Record Service/PDF content acceptance/add_items_to_experiments.txt
+Resource          ../../Record Service/PDF content acceptance/test utilities.txt
+Resource          ../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+# Library           EntityAPILibrary
+Library           CheckPDFLibrary    # Library to compare PDFs
+Library           IDBSSwingLibrary
+Library           RobotRemoteAgent
+Library           TestDataGenerationLibrary
+Library           ImageLibrary
+Library           FileLibrary
+# Library           OracleLibrary
+Library           SystemUtilitiesLibrary
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+GET Transformed data TXT
+    [Documentation]    *Check that supported transformed data can retrieved & is correct*
+    ...
+    ...    *Endpoint tested*
+    ...    GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid \ |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid \ |
+    ...
+    ...    Tranformation data in the Blob column is a uploaded TXT file.
+    Create Testdata    GET Transformed data TXT    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    Replace existing transformation data    to_xml    application/xml    .xml    ${Item2_EVID}    COUNTRIES.xml
+    GET tranformation data and compare    ${Item1_ID}    ${Item1_EVID}    to_text    ${ExperimentName}-Actual-Data-ANIMALS.txt    ANIMALS.txt    Output-Data-ANIMALS.txt
+
+GET Transformed data XML
+    [Documentation]    *Check that supported transformed data can retrieved & is correct*
+    ...
+    ...    *Endpoint tested*
+    ...    GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid \ |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid \ |
+    ...
+    ...    Tranformation data in the Blob column is a uploaded XML file.
+    Create Testdata    GET Transformed data XML    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    Replace existing transformation data    to_xml    application/xml    .xml    ${Item2_EVID}    COUNTRIES.xml
+    GET tranformation data and compare    ${Item2_ID}    ${Item2_EVID}    to_xml    ${ExperimentName}-Actual-Data-COUNTRIES.xml    COUNTRIES.xml    Output-data-COUNTRIES.xml
+
+GET Transformed data PDF
+    [Documentation]    *Check that supported transformed data can retrieved & is correct*
+    ...
+    ...    *Endpoint tested*
+    ...    GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid \ |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid \ |
+    ...
+    ...    Tranformation data in the Blob column is a uploaded XML file.
+    #enter the name of the uploaded testfile
+    ${Testfile}=    Set Variable    FRUITS.pdf
+    Create Testdata    GET Transformed data PDF    ${Project_PATH1}    ${Project_ID1}    FRUITS.bss
+    Replace existing transformation data    to_pdf    application/pdf    .pdf    ${Item1_EVID}    ${Testfile}
+    GET tranformation data and compare    ${Item1_ID}    ${Item1_EVID}    to_pdf    ${ExperimentName}-ACTUAL-${Testfile}    ${Testfile}    ${ExperimentName}-output-${Testfile}
+
+GET Transformed data LOCKED RECORD
+    [Documentation]    *Check that supported transformed data can retrieved & is correct*
+    ...    - covers scenario where a different user has locked the record, the requestor should still be able to retrieve data.
+    ...
+    ...    *Endpoint tested*
+    ...    GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid \ |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid \ |
+    ...
+    ...    Tranformation data in the Blob column is a uploaded XML file.
+    #enter the name of the uploaded testfile
+    ${Testfile}=    Set Variable    FRUITS.pdf
+    Create Testdata    LOCKED RECORD    ${Project_PATH1}    ${Project_ID1}    FRUITS.bss
+    Replace existing transformation data    to_pdf    application/pdf    .pdf    ${Item1_EVID}    ${Testfile}
+    Lock Entity with specific user    ${Item1_ID}    Lynda    Lynda1    200
+    GET tranformation data and compare    ${Item1_ID}    ${Item1_EVID}    to_pdf    ${ExperimentName}-ACTUAL-${Testfile}    ${Testfile}    ${ExperimentName}-output-${Testfile}
+    Unlock Entity with specific user    ${Item1_ID}    Lynda    Lynda1    204
+
+INVALID EntityID1
+    [Documentation]    *Test for INVALID EntityID where it exists but not associated with defined EntityVersionID*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 404
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | INVALID |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid \ \ |
+    Create Testdata    INVALID-EntityID not associated with EntityVersionID    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    Replace existing transformation data    to_xml    application/xml    .xml    ${Item2_EVID}    COUNTRIES.xml
+    GET tranformation data - HTTPStatus    ${Item2_ID}    ${Item1_EVID}    to_xml    404
+
+INVALID EntityID2
+    [Documentation]    *Test for INVALID EntityID where it does not exist*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 404
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | INVALID |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid \ \ |
+    Create Testdata    INVALID-EntityID not exist    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    RUBBISH    ${Item1_EVID}    to_text    404
+
+INVALID EntityVersionID
+    [Documentation]    *Test for INVALID EntityVersionID*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 404
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | INVALID \ |
+    ...    | transformationType | valid\ \ |
+    Create Testdata    INVALID EntityVersionID    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    ${Item1_ID}    RUBBISH    to_text    404
+
+INVALID TransformationTYPE
+    [Documentation]    *Test for INVALID transformationType - not matching*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 404
+    ...
+    ...    _test scenario tranformation type exists in database, but is NOT associated wtih the queried record item_
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | INVALID\ \ |
+    Create Testdata    INVALID TransformationTYPE1    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    to_xml    404
+
+INVALID Entity Type
+    [Documentation]    *Test for INVALID ItemType i.e. it is not of type= DOCUMENT* e.g Group, Project
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 400
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | invalid as it is for a GROUP entity \ |
+    ...    | entityVersionId | invalid as it is for a GROUP entity\ |
+    ...    | transformationType | N/A due to above\ \ |
+    GET tranformation data - HTTPStatus    ${Group_ID}    ${Group_EVID}    to_text    400
+
+MISSING EntityID Value
+    [Documentation]    *Test for MISSING entityId Value*
+    ...
+    ...    - *Endpoint tested* : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 404
+    ...
+    ...    In this case: the call parameter ‘entityId’ is missing, the URL is malformed as it contains a double forward slash
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | no value |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid\ \ |
+    Create Testdata    MISSING EntityID Value    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    ${EMPTY}    ${Item1_EVID}    to_text    404
+
+MISSING EntityID
+    [Documentation]    *Test for MISSING entityId Value*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/transformation/data \ ** note no entityID in endpoint which is different from a missing value //
+    ...    - *Expected Response*: 404
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | MISSING |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | valid\ \ |
+    Create Testdata    MISSING EntityID    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    ${entityVersionId}=    set variable    ${Item1_EVID}
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    Administrator    Administrator
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    GET    ${ENTITY SERVICE ENDPOINT}/transformation/data?entityVersionId=${entityVersionId}&transformationType=to_text
+    Response Status Code Should Equal    404
+
+MISSING EntityVersionID value
+    [Documentation]    *Test for MISSING TransformationType value*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 400
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | MISSING value \ |
+    ...    | transformationType | valid \ \ |
+    Create Testdata    MISSING EntityVersionID value    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${EMPTY}    to_text    400
+
+MISSING EntityVersionID Parameter
+    [Documentation]    *Test for MISSING TransformationType parameter*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 400
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | MISSING parameter \ |
+    ...    | transformationType | valid \ \ |
+    Create Testdata    MISSING EntityVersionID parameter    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    ${EntityId}=    Set Variable    ${Item1_ID}
+    ${entityVersionId}=    Set Variable    ${Item1_EVID}
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    GET    ${ENTITY SERVICE ENDPOINT}/${EntityId}/transformation/data?transformationType=to_text
+    Response Status Code Should Equal    400
+
+MISSING TransformationType value
+    [Documentation]    *Test for MISSING TransformationType value*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 400
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | MISSING value\ \ |
+    Create Testdata    MISSING TransformationTYPE value    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    ${EMPTY}    400
+
+MISSING TransformationType Parameter
+    [Documentation]    *Test for MISSING TransformationType parameter*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 400
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | MISSING parameter \ |
+    ...    | transformationType | valid \ \ |
+    Create Testdata    MISSING TransformationType parameter    ${Project_PATH1}    ${Project_ID1}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    ${EntityId}=    Set Variable    ${Item1_ID}
+    ${entityVersionId}=    Set Variable    ${Item1_EVID}
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    GET    ${ENTITY SERVICE ENDPOINT}/${EntityId}/transformation/data?entityVersionId=${entityVersionId}
+    Response Status Code Should Equal    400
+
+NO Transformation data
+    [Documentation]    *Test for NO Transformation Data existing*
+    ...
+    ...    - *Endpoint tested* \ GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    ...    - *Expected Response*: 404
+    ...
+    ...
+    ...    _by no Tranformation Data we mean no row for the given entityVersionID \ in the CORE.ENTITY_TRANS_VERSION_ DATA table_
+    ...
+    ...    *Test Conditions*
+    ...    | *Parameters* | *Values/Condition* |
+    ...    | entityId | valid |
+    ...    | entityVersionId | valid \ |
+    ...    | transformationType | n/a\ \ |
+    Create Testdata    No Transformation Data    ${Project_PATH1}    ${Project_ID1}
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    to_text    404
+
+Permissions - Entity Access
+    [Documentation]    *Permissions: Entity Access*
+    ...
+    ...    - User has been assigned *All Entity permissions* \ but only on project = HAS ACCESS
+    ...    - Checks that the correct responses are returned, if \ the request conditions are as follows:
+    ...
+    ...    | Permissions | expected HTTP status |
+    ...    | User has access to record | 204 |
+    ...    | User has record access permissions but not on the record to be queried | 403 |
+    [Setup]    Setup: Permissions Entity Acess
+    #Has Access to project
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    to_text    200    USER014    USER0141
+    #Has No Access to project
+    GET tranformation data - HTTPStatus    ${Item2_ID}    ${Item2_EVID}    to_xml    403    USER014    USER0141
+
+Permissions - Roles Test
+    [Documentation]    *Permssions: Record OPEN permissions*
+    ...
+    ...    Test that the user needs to have OPEN permissions on record to retrieve transformed data.
+    ...
+    ...    | Permissions | expected HTTP status |
+    ...    | User has VIEW, EDIT, OPEN entity role permissions | 200 |
+    ...    | User has VIEW, OPEN entity role permissions | 200 |
+    ...    | User has VIEW, EDIT entity role permissions | 200 |
+    ...
+    ...    *Endpoint tested*
+    ...    GET : \ ewb/services/1.0/entities/{entityId}/transformation/data
+    Create Testdata    Role Permissions    ${Project_PATH2}    ${Project_ID2}
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    to_text    200    ${VIEW OPEN EDIT USER}    ${VIEW OPEN EDIT PASSWD}
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    to_text    200    ${VIEW OPEN USER}    ${VIEW OPEN PASSWD}
+    GET tranformation data - HTTPStatus    ${Item1_ID}    ${Item1_EVID}    to_text    403    ${VIEW USER}    ${VIEW PASSWD}
+
+*** Keywords ***
+Transformation Suite Setup
+    [Documentation]    Setup up Group and Projects for TestSuite and sets suite variables
+    ...    Opens up E-Work Client ready for Testrums
+    ${unique_ID}=    Get Time    epoch
+    Set Global Variable    ${unique_ID}
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    #Create Group
+    Set Suite Variable    ${Group_Name}    Record Service Transformation_${unique_ID}
+    ${Group_ID}=    Rest_Entity_Service_ Resource.Create Group    1    ${Group_Name}
+    Set Suite Variable    ${Group_ID}
+    ${Group_EVID}=    Get Entity Version ID    ${Group_ID}
+    Set Suite Variable    ${Group_EVID}
+    #Create Projects
+    #Project1
+    Set Suite Variable    ${Project_Name1}    GENERAL Project
+    ${Project_PATH1}=    set variable    Root/${Group_Name}/${Project_Name1}
+    Set Suite Variable    ${Project_PATH1}
+    ${Project_ID1}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name1}
+    Set Suite Variable    ${Project_ID1}
+    #Project2
+    Set Suite Variable    ${Project_Name2}    HAS_ACCESS
+    ${Project_PATH2}=    set variable    Root/${Group_Name}/${Project_Name2}
+    Set Suite Variable    ${Project_PATH2}
+    ${Project_ID2}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name2}
+    Set Suite Variable    ${Project_ID2}
+    #Project3
+    Set Suite Variable    ${Project_Name3}    NO_ACCESS
+    ${Project_PATH3}=    set variable    Root/${Group_Name}/${Project_Name3}
+    Set Suite Variable    ${Project_PATH3}
+    ${Project_ID3}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name3}
+    Set Suite Variable    ${Project_ID3}
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+
+Transformation Suite Teardown
+    #Check if the application is still open as it could have been shut down by the test teardown
+    ${result}    ${message}=    Run Keyword And Ignore Error    IDBSSwingLibrary.Select Window    regexp=IDBS E-WorkBook.*    5
+    Run Keyword If    '${result}'=='PASS'    Close E-WorkBook
+    Run Keyword If    '${result}'=='PASS'    SystemUtilitiesLibrary.Kill Processes With Name    EWBClient.exe
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    rest_entity_service_resource.Delete Entity    ${Group_ID}
+
+Transformation Test Setup
+    ${result}    ${message}=    Run Keyword and Ignore Error    Connect To Java Application    EWB-Client    5s
+    Run Keyword If    '${result}'!='PASS'    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Run Keyword If    '${result}'!='PASS'    IDBSSwingLibrary.Load Library Into Remote Application
+    ${window}    ${wmessage}=    Run Keyword and Ignore Error    IDBSSwingLibrary.Select Window    IDBS E-WorkBook - Home Page    30
+    Run Keyword If    '${window}'!='PASS'    Select from E-WorkBook Main Menu    Tools    Home
+
+Transformation Test Teardown
+    sleep    2
+    log    ${OUTPUTDIR}\Timer_results.csv
+    Comment    If the test has failed, kill the client and make it reopen
+    Run Keyword If    '${TEST_STATUS}'=='FAIL'    SystemUtilitiesLibrary.Kill Processes With Name    EWBClient.exe
+
+Create Experiment Data
+    [Documentation]    Creates intial testdata using the REST client by:
+    ...    - creating an experiment containing 2 items
+    ...    - saving as version
+    ${Experiment_ID}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID}    ${ExperimentName}
+    Set Test Variable    ${Experiment_ID}
+    Lock Entity    ${Experiment_ID}
+    #Item1
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${Experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Transformations/Record Items/${Item1_bss}    application/x-idbs-spreadsheet    SPREADSHEET
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    #Item2
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${Experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Transformations/Record Items/${Item2_bss}    application/x-idbs-spreadsheet    SPREADSHEET
+    Set Test Variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set Test Variable    ${Item2_EVID}
+    Commit Draft Entity    ${Experiment_ID}
+    Unlock Entity    ${Experiment_ID}
+
+Create Testdata
+    [Arguments]    ${ExperimentName}    ${Project_PATH}    ${Project_ID}    ${Item1_bss}=ANIMALS.bss    ${Item2_bss}=COUNTRIES.bss
+    [Documentation]    Creates testdata for test
+    ...
+    ...
+    ...    | *Argument* | *Description* |
+    ...    | ${ExperimentName} | This can be anything as defined by user \ |
+    ...    | ${Project_PATH} | e.g ${Project_PATH1} if using values from Suite Setup, but must exist |
+    ...    | ${Project_ID} | GUID for the project. e.g \ ${Project_ID1} if using values from Suite Setup or /Root/Group1/Project1 |
+    ...    | ${Item1_bss}=ANIMALS.bss | bss file to transform \ |
+    ...    | ${Item2_bss}=COUNTRIES.bss | bss file to transform |
+    Set Test Variable    ${ExperimentName}
+    Set Test Variable    ${Project_ID}
+    Set Test Variable    ${Item1_bss}
+    Set Test Variable    ${Item2_bss}
+    Create Experiment Data
+    #Save experiment as version via the thick client in order to trigger experiments documents to transform    note: experiments saved via REST are not transformed.
+    Select E-WorkBook Main Window
+    Refresh Navigator Tree
+    Open Experiment    ${Project_PATH}/${ExperimentName}
+    Select E-WorkBook Main Window
+    Save current record as version    ${ADMIN USER}    ${ADMIN PASSWD}    Break
+    Sleep    5s    Give E-WorkBook time to transform
+    Close current record entity
+
+Replace existing transformation data
+    [Arguments]    ${transformationType}    ${externalType}    ${fileType}    ${entityVersionID}    ${blobdata}
+    [Documentation]    *Updates existing transformation data so that can be used for testing*
+    ...    _Note: the EWB default transforms e.g. spreadsheet transformation are currently not supported._
+    ...
+    ...    This updates/creates psuedo transformed data in the database so that can be used for testing, by logging into the database and updating the blob_data with supported testdata.
+    ...
+    ...    | *argument* | *database column updated* | *example value* |
+    ...    | ${transformationType} | TRANSFORMATION_TYPE | custom:to_type \ this can be anything |
+    ...    | ${externalType} | EXTERNAL_TYPE | e.g plain/text , application/xml ,application/pdf |
+    ...    | ${fileType} | FILE_TYPE | e.g .txt .pdf .xml |
+    ...    | ${blobdata} | TRANS_DATA | file containing supported data to be loaded \ e.g ANIMALS.pdf |
+    ...
+    ...    | ${entityVersionID} | entityVersionID of the experiment item |
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    UPDATE ENTITY_VERSION_TRANS_DATA SET TRANSFORMATION_TYPE='${transformationType}', EXTERNAL_TYPE='${externalType}' , FILE_TYPE='${fileType}' WHERE ENTITY_VERSION_ID='${entityVersionID}' AND TRANSFORMATION_TYPE = 'idbs:spreadsheet_mart'
+    Execute    COMMIT
+    Update Blob Column    ENTITY_VERSION_TRANS_DATA    TRANS_DATA    ENTITY_VERSION_ID='${entityVersionID}' \    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Transformations/Record Items/${blobdata}
+    Execute    COMMIT
+
+GET tranformation data and compare
+    [Arguments]    ${EntityId}    ${entityVersionId}    ${transformationTYPE}    ${ActualOutput}    ${ExpectedOutput}    ${OutputFile}
+    ...    ${CustomUser}=Administrator    ${CustomUserPW}=Administrator
+    [Documentation]    *Retrieves the transformation data and compare with the expected ouptput*
+    ...
+    ...    Request Parameters
+    ...    - ${EntityId} = entityID of the record item
+    ...    - ${entityVersionId} \ = entityVersionID of the record item
+    ...    - ${transformationTYPE} = transformation type e.g. to_text
+    ...
+    ...
+    ...    Response saved to the following as defined
+    ...    - ${ActualOutput} : actual output to file as defined
+    ...    - ${ExpectedOutput} : comparision file
+    ...    - ${OutputFile}: just a general output file.
+    ...    Optional: defaults can be overridden with user defined values
+    ...    - ${CustomUser}=Administrator
+    ...    - ${CustomUserPW}=Administrator
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${CustomUser}    ${CustomUserPW}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    GET    ${ENTITY SERVICE ENDPOINT}/${EntityId}/transformation/data?entityVersionId=${entityVersionId}&transformationType=${transformationTYPE}
+    Response Status Code Should Equal    200
+    ${ExpectedOutput}=    Set Variable    ${ExpectedOutput}
+    ${ActualOutput}=    Set Variable    ${ActualOutput}
+    Save Response Body    ${OUTPUT_DIR}/${ActualOutput}
+    Compare Files    ${OUTPUT_DIR}/${ActualOutput}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Transformations/Record Items/${ExpectedOutput}    ${OUTPUT_DIR}/${OutputFile}
+
+GET tranformation data - HTTPStatus
+    [Arguments]    ${EntityId}    ${entityVersionId}    ${transformationTYPE}    ${ExpectedResponse}    ${CustomUser}=Administrator    ${CustomUserPW}=Administrator
+    [Documentation]    *Runs GET request and checks response code*
+    ...
+    ...    Request Parameters
+    ...    - ${EntityId} = entityID of the record item
+    ...    - ${entityVersionId} \ = entityVersionID of the record item
+    ...    - ${transformationTYPE} = transformation type e.g. to_text
+    ...
+    ...    Note:
+    ...    $ {ExpectedResponse} = test dependant
+    ...    Testdata not downloaded as this is to check response status code
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${CustomUser}    ${CustomUserPW}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    GET    ${ENTITY SERVICE ENDPOINT}/${EntityId}/transformation/data?entityVersionId=${entityVersionId}&transformationType=${transformationTYPE}
+    Response Status Code Should Equal    ${ExpectedResponse}
+
+Setup: Permissions Entity Acess
+    [Documentation]    Setup for test = *Permissions*
+    ...
+    ...    Creates the following test entities
+    ...
+    ...    | Project | Experiment |
+    ...    | Have_Access | \ Expt-A \ |
+    ...    | NO_Access \ | \ \ Expt-B \ |
+    ...
+    ...    All experiment records are published.
+    ...
+    ...    *Permissions setup*
+    ...    - Creates *NO RECORD EDIT* Entity Role
+    ...    - USER012 assigned *ALL_ENTITY_PERMISSIONS* on project = Have_Accessl
+    ...    - USER013 assigned *NO EDIT* Entity Role at root level
+    #Create experiment in Project = HAS_ACCESS
+    ${experiment_ID1}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID2}    Expt-A
+    Set test variable    ${experiment_ID1}
+    Lock Entity    ${experiment_ID1}
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID1}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Transformations/Record Items/ANIMALS.bss    application/x-idbs-spreadsheet    SPREADSHEET
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    Commit Draft Entity    ${experiment_ID1}
+    Unlock Entity    ${experiment_ID1}
+    #Creates experiment in Project = NO_ACCESS    Project = NO Access
+    Set test variable    ${Project_ID3}
+    ${experiment_ID2}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID3}    Expt-B
+    Set test variable    ${experiment_ID2}
+    Lock Entity    ${experiment_ID2}
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${experiment_ID2}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Transformations/Record Items/COUNTRIES.bss    application/x-idbs-spreadsheet    SPREADSHEET
+    Set Test Variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set Test Variable    ${Item2_EVID}
+    Commit Draft Entity    ${experiment_ID2}
+    Unlock Entity    ${experiment_ID2}
+    Comment    ${Status}    ${Value}=    Run Keyword And Ignore Error    Check Role Not Present    NO_RECORD_EDIT
+    Comment    Run Keyword If    '${Status}'=='PASS'    Create Test Entity Role
+    Select E-WorkBook Main Window
+    Refresh Navigator Tree
+    Open Experiment    ${Project_PATH2}/Expt-A
+    Select E-WorkBook Main Window
+    Save current record as version    ${ADMIN USER}    ${ADMIN PASSWD}    Break
+    Close current record entity
+    Open Experiment    ${Project_PATH3}/Expt-B
+    Select E-WorkBook Main Window
+    Save current record as version    ${ADMIN USER}    ${ADMIN PASSWD}    Break
+    Close current record entity
+    Replace existing transformation data    to_text    plain/text    .txt    ${Item1_EVID}    ANIMALS.txt
+    Replace existing transformation data    to_xml    plain/text    .txt    ${Item2_EVID}    COUNTRIES.xml
+    Assign User Entity Role    USER014    ALL_ENTITY_PERMISSIONS    ${Project_ID2}

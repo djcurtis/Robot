@@ -1,0 +1,91 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that have number (float) filters conditions. \ \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+
+*** Keywords ***
+Run Float Datatype Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have a number (float) filter condition. \ \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.\n
+    # select float property
+    Execute Data Query and Verify Values    SELECT ${floatColumn} FROM ${term path}    ${null value}    -219.2    -0.001    0.1    3.001
+    ...    0    0.1
+    # = operator
+    Execute Data Query and Verify Values    SELECT ${booleanColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${floatColumn} = -0.001    F,1340392376000
+    # != operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn},${floatColumn} FROM ${term path} AS t WHERE t.${floatColumn} != 0.1    Mixed Case String,-219.2    ${null value},-0.001    string with %,3.001    ${null value},0
+    # > operator
+    Execute Data Query and Verify Values    SELECT ${timestampColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${floatColumn} > 0    ${null value},T    1336604400000,${null value}    ${null value},${null value}
+    # >= operator
+    Execute Data Query and Verify Values    SELECT ${timestampColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${floatColumn} >= 0    ${null value},T    1336604400000,${null value}    ${null value},${null value}    1336604400000,F
+    # < operator
+    Execute Data Query and Verify Values    SELECT ${floatColumn},${integerColumn} FROM ${term path} AS t WHERE t.${floatColumn} < 0.1    -219.2,${null value}    -0.001,321    0,0
+    # <= operator
+    Execute Data Query and Verify Values    SELECT ${integerColumn} FROM ${term path} AS t WHERE t.${floatColumn} <= 0.1    ${null value}    321    0    -1    -1
+    # OR operator
+    Execute Data Query and Verify Values    SELECT ${booleanColumn},${stringColumn} FROM ${term path} AS t WHERE t.${floatColumn} = -219.2 OR t.${floatColumn} = 3.001    F,Mixed Case String    ${null value},string with %
+    # AND operator
+    Execute Data Query and Verify Values    SELECT ${booleanColumn},${stringColumn} FROM ${term path} AS t WHERE t.${floatColumn} != -219.2 AND t.${floatColumn} != 3.001    F,${null value}    T,string with 'quotes'    F,${null value}    ${null value},${null value}
+    # ORDER BY operator
+    Execute Data Query and Verify Values    SELECT ${timestampColumn},${floatColumn} FROM ${term path} AS t WHERE t.${floatColumn} <= 88888.024224 ORDER BY ${floatColumn}, ${booleanColumn}    949363200000,-219.2    1340392376000,-0.001    1336604400000,0    ${null value},0.1    ${null value},0.1
+    ...    1336604400000,3.001
+    # MIN() function
+    Execute Data Query and Verify Values    SELECT MIN(${floatColumn}) FROM ${term path}    -219.2
+    # MAX() function
+    Execute Data Query and Verify Values    SELECT MAX(${floatColumn}) FROM ${term path}    3.001
+    # AVG() function
+    Execute Data Query and Verify Values    SELECT AVG(${floatColumn}) FROM ${term path}    -36
+    # COUNT() and DISTINCT() function
+    Execute Data Query and Verify Values    SELECT COUNT(*), COUNT(${floatColumn}), COUNT(DISTINCT ${floatColumn}) FROM ${term path}    7,6,5
+    # IN() function
+    Execute Data Query and Verify Values    SELECT ${timestampColumn}, \ ${booleanColumn} FROM ${term path} AS t WHERE t.${floatColumn} IN(-219.2, 3.001)    949363200000,F    1336604400000,null
+
+Run Float Datatype Parameterised Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have a number (float) filter condition. \ \n\nAll queries will be executed in parameterised form. \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.\n
+    # select float property
+    @{parameterised query 1}=    Create List    SELECT ${floatColumn} FROM ${term path}    java.lang.Float,p,0.0000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 1}    ${null value}    -219.2    -0.001    0.1    3.001
+    ...    0    0.1
+    # = operator
+    @{parameterised query 2}=    Create List    SELECT ${booleanColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${floatColumn} = :p    java.lang.Float,p,-0.001
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 2}    F,1340392376000
+    # != operator
+    @{parameterised query 3}=    Create List    SELECT ${stringColumn},${floatColumn} FROM ${term path} AS t WHERE t.${floatColumn} != :p    java.lang.Float,p,0.1
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 3}    Mixed Case String,-219.2    ${null value},-0.001    string with %,3.001    ${null value},0
+    # > operator
+    @{parameterised query 4}=    Create List    SELECT ${timestampColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${floatColumn} > :p    java.lang.Float,p,0
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 4}    ${null value},T    1336604400000,${null value}    ${null value},${null value}
+    # >= operator
+    @{parameterised query 5}=    Create List    SELECT ${timestampColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${floatColumn} >= :p    java.lang.Float,p,0
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 5}    ${null value},T    1336604400000,${null value}    ${null value},${null value}    1336604400000,F
+    # < operator
+    @{parameterised query 6}=    Create List    SELECT ${floatColumn},${integerColumn} FROM ${term path} AS t WHERE t.${floatColumn} < :p    java.lang.Float,p,0.1
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 6}    -219.2,${null value}    -0.001,321    0,0
+    # <= operator
+    @{parameterised query 7}=    Create List    SELECT ${integerColumn} FROM ${term path} AS t WHERE t.${floatColumn} <= :p    java.lang.Float,p,0.1
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 7}    ${null value}    321    0    -1    -1
+    # OR operator
+    @{parameterised query 8}=    Create List    SELECT ${booleanColumn},${stringColumn} FROM ${term path} AS t WHERE t.${floatColumn} = :p OR t.${floatColumn} = :q    java.lang.Float,p,-219.2    java.lang.Float,q,3.001
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 8}    F,Mixed Case String    ${null value},string with %
+    # AND operator
+    @{parameterised query 9}=    Create List    SELECT ${booleanColumn},${stringColumn} FROM ${term path} AS t WHERE t.${floatColumn} != :p AND t.${floatColumn} != :q    java.lang.Float,p,-219.2    java.lang.Float,q,3.001
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 9}    F,${null value}    T,string with 'quotes'    F,${null value}    ${null value},${null value}
+    # ORDER BY operator
+    @{parameterised query 10}=    Create List    SELECT ${timestampColumn},${floatColumn} FROM ${term path} AS t WHERE t.${floatColumn} <= :p ORDER BY ${floatColumn}    java.lang.Float,p,88888.024224
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 10}    949363200000,-219.2    1340392376000,-0.001    1336604400000,0    ${null value},0.1    ${null value},0.1
+    ...    1336604400000,3.001
+    # MIN() function
+    @{parameterised query 11}=    Create List    SELECT MIN(${floatColumn}) FROM ${term path}    java.lang.Float,p,0.0000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 11}    -219.2
+    # MAX() function
+    @{parameterised query 12}=    Create List    SELECT MAX(${floatColumn}) FROM ${term path}    java.lang.Float,p,0.0000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 12}    3.001
+    # AVG() function
+    @{parameterised query 13}=    Create List    SELECT AVG(${floatColumn}) FROM ${term path}    java.lang.Float,p,0.0000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 13}    -36
+    # COUNT() and DISTINCT() functions
+    @{parameterised query 14}=    Create List    SELECT COUNT(*), COUNT(${floatColumn}), COUNT(DISTINCT ${floatColumn}) FROM ${term path}    java.lang.Float,p,0.0000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 14}    7,6,5
+    # IN() function
+    @{parameterised query 15}=    Create List    SELECT ${timestampColumn}, \ ${booleanColumn} FROM ${term path} AS t WHERE t.${floatColumn} IN(:p)    java.lang.Float,p,-219.2,3.001
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 15}    949363200000,F    1336604400000,null

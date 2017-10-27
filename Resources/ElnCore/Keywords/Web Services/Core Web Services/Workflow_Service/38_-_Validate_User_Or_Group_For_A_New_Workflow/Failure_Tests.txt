@@ -1,0 +1,78 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/userpool/validate* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Test 1 - User Without Permission For The Endpoint
+    [Documentation]    Call as user without permissions to use the endpoint, should get 403 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-14
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser7
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser71
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    0    ${wf_experiment_1}    ${User Pool JSON}    403
+
+Test 2 - Invalid Workflow Name
+    [Documentation]    Call with an invalid workflow configuration name, should get 404 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-15
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    IDONTEXIST    0    ${wf_experiment_1}    ${User Pool JSON}    404
+
+Test 3 - Missing Workflow Name
+    [Documentation]    Call without a workflow configuration name, should get 400 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-16
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    \    0    ${wf_experiment_1}    ${User Pool JSON}    400
+
+Test 3 - Non Numeric Task Index
+    [Documentation]    Call for a non numeric task index, should get 404 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-17
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    ABC    ${wf_experiment_1}    ${User Pool JSON}    404
+
+Test 4 - Negative Task Index
+    [Documentation]    Call for a negative task index, should get 400 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-18
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    -1    ${wf_experiment_1}    ${User Pool JSON}    400
+
+Test 5 - Too High Task Index
+    [Documentation]    Call for too high a task index, should get 404 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-19
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    16000000    ${wf_experiment_1}    ${User Pool JSON}    404
+
+Test 6 - Missing Task Index
+    [Documentation]    Call without a task index, should get 404 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-20
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    \    ${wf_experiment_1}    ${User Pool JSON}    404
+
+Test 7 - Missing Entity Id
+    [Documentation]    Call without an entity id, should get 400 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-21
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    0    \    ${User Pool JSON}    400
+
+Test 8 - Invalid Entity Id
+    [Documentation]    Call without an entity id, should get 403 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-22
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    0    IDONTEXIST    ${User Pool JSON}    403
+
+Test 9 - User Pool With Invalid User
+    [Documentation]    Call for a userPool with an invalid user, should get 400 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-23
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only Users    IDONTEXIST
+    Log Json    ${User Pool JSON}
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    0    ${wf_experiment_1}    ${User Pool JSON}    400
+
+Test 10 - User Pool With Invalid Group
+    [Documentation]    Call for a userPool with an invalid group, should get 400 response
+    [Tags]    EWB-WEB-ICM-PI004-W010-24
+    ${User Pool JSON}=    Build JSON For a User Pool Using Only User Groups    IDONTEXIST
+    Log Json    ${User Pool JSON}
+    Validate UserPool Against A New Workflow Task And Expect Error    WF%20WS%20Workflow%201    0    ${wf_experiment_1}    ${User Pool JSON}    400

@@ -1,0 +1,66 @@
+*** Settings ***
+Library           String
+Library           XMLLibrary
+## Library           OracleLibrary
+Library           TestDataGenerationLibrary
+
+*** Variables ***
+
+*** Keywords ***
+Insert User Setting
+    [Arguments]    ${setting_name}    ${setting_value}    ${user_id}=${ADMIN ID}
+    [Documentation]    Inserts a single (string currently) property into the user settings table
+    ...
+    ...    *Arguments*
+    ...    $(user_id) Defaults to ${ADMIN ID} (the administrator)
+    ...    ${setting_name) The name of the setting e.g hMargin
+    ...    ${setting_value} The value of the setting e.g. 10 (should be string)
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    The setting should not be in the database.
+    ...
+    ...    *Example*
+    ${setting_pk_guid}=    Create Hex GUID
+    ${user settings insert statement}    Set Variable    INSERT INTO user_settings (user_settings_id, user_id, settings_name, order_key, data_type, string_data) VALUES ('${setting_pk_guid}', '${user_id}', '${setting_name}', 0, 'STRING', '${setting_value}')
+    Execute    ${user settings insert statement}
+
+Delete User Setting
+    [Arguments]    ${setting_name}
+    [Documentation]    Deletes a single setting in the user settings table
+    ...
+    ...    *Arguments*
+    ...    ${setting_name) The name of the setting e.g hMargin
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    ${user settings delete statement}    Set Variable    DELETE FROM user_settings WHERE settings_name = '${setting_name}'
+    Execute    ${user settings delete statement}
+
+Replace User Setting
+    [Arguments]    ${setting_name}    ${setting_value}    ${user_id}=${ADMIN ID}
+    [Documentation]    Updates \ a single (string currently) property into the user settings table
+    ...
+    ...    *Arguments*
+    ...    $(user_id) Defaults to ${ADMIN ID} (the administrator)
+    ...    ${setting_name) The name of the setting e.g hMargin
+    ...    ${setting_value} The value of the setting e.g. 10 (should be string)
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Connect To Database    ${POOL_USERNAME}    ${POOL_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Delete User Setting    ${setting_name}
+    Insert User Setting    ${setting_name}    ${setting_value}    ${user_id}
+    Disconnect From Database

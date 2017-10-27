@@ -1,0 +1,232 @@
+*** Settings ***
+Documentation     It replaces a cached entity with the new entity. The entity is replaced with the copy of the existing entity or with the new entity according to the entity definition provided. When using existing entity the entity info can contain the new entity name and entity attributes to override the source entity attributes.
+...
+...               *end point:* PUT /services/1.0/cache/entities/{entityId}
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags           Replace Cache Entity
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Replace entity
+    [Documentation]    A successful call returns the HTTP status 200 and the entity id. The entity is replaced
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S001
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}
+    # Checking expectations
+    ${replaced_entity_version_id}=    Get Entity Version ID    ${replaced_entity_id}
+    ${entity_dto}=    Get Entity New    ${replaced_entity_id}    ${replaced_entity_version_id}    200    includeAttributes=true    includeVersionInfo=true
+    Check Xml Element Value Contains    check entity id value    ${entity_dto}    ${replaced_entity_id}    entityId    elementNamespace=${ENTITY_XMLNS}
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    CACHE    versionState    elementNamespace=${ENTITY_XMLNS}
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    ${replaced_entity_name}    entityName    elementNamespace=${ENTITY_XMLNS}
+    @{id_values}=    XMLLibrary.Get Element Attribute    ${entity_dto}    link    id    elementNamespace=${ENTITY_XMLNS}
+    Should Be Equal    ${experiment_id}    @{id_values}[0]
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Replace entity with invalid entity version id
+    [Documentation]    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S002
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    # Wrong entity version id
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    WrongEntityVersionId    ${replace_entity_info}    404
+    # Empty entity version id
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${EMPTY}    ${replace_entity_info}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Replace entity invalid DTO
+    [Documentation]    If the call parameter SAPIReplaceEntityInfo is missing or invalid, then the HTTP status code 400 is returned to the client
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S003
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    # Wrong source entity id
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    WrongSourceEntityId    ${replaced_entity_name}    publishingState=Published
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}    400
+    # Empty source entity id
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    ${EMPTY}    ${replaced_entity_name}    publishingState=Published
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}    400
+    # Wrong attribute value
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=WrongValue
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Replace not existing entity
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S004
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    # Wrong entity id
+    ${replaced_entity_id}=    Replace Cache Entity    WrongEntityId    ${web_link_2_version_id}    ${replace_entity_info}    404
+    # Empty entity id
+    ${replaced_entity_id}=    Replace Cache Entity    ${EMPTY}    ${web_link_2_version_id}    ${replace_entity_info}    404
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Replace entity not locked
+    [Documentation]    If the container entity is not locked by the current user, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S005
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    # Not locked
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}    403
+    [Teardown]
+
+Replace entity with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S006
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    # No permissions
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Replace entity with sequential edit enabled
+    [Documentation]    If the entity is sequentially editable and the order is not respected, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S007
+    @{web_link_ids}=    Create Sequential Editable Experiment Witn 2 Web Links    ${experiment_name}    ${experiment_name}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    # Replace Link 2 before Link 1 on sequentially editable recrod
+    Lock Entity    ${experiment_id}
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Replace entity when published
+    [Documentation]    If the entity is published, then the updated entity publishing state is “Unpublished”
+    [Setup]
+    ${experiment_name}=    Set Variable    REN-S008
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Commit Versioned Entity    ${experiment_id}
+    Publish Record    ${experiment_id}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${web_link_2_version_id}=    Get Entity Version ID    ${web_link_2_id}
+    # Creates DTO to replace Link 2 with Link 1 changing entity name and publishing state
+    ${replaced_entity_name}=    Set Variable    Replaced Web Link
+    ${replace_entity_info}=    Build Replace Item With Existing Item DTO    @{web_link_ids}[0]    ${replaced_entity_name}    publishingState=Published
+    ${replaced_entity_id}=    Replace Cache Entity    ${web_link_2_id}    ${web_link_2_version_id}    ${replace_entity_info}
+    # Checking expectations
+    ${replaced_entity_version_id}=    Get Entity Version ID    ${replaced_entity_id}
+    ${entity_dto}=    Get Entity New    ${replaced_entity_id}    ${replaced_entity_version_id}    200    includeAttributes=true    includeVersionInfo=true
+    Check Xml Element Value Contains    check entity id value    ${entity_dto}    ${replaced_entity_id}    entityId    elementNamespace=${ENTITY_XMLNS}
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    CACHE    versionState    elementNamespace=${ENTITY_XMLNS}
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    ${replaced_entity_name}    entityName    elementNamespace=${ENTITY_XMLNS}
+    # Checks attribute copiedFrom link id
+    @{id_values}=    XMLLibrary.Get Element Attribute    ${entity_dto}    link    id    elementNamespace=${ENTITY_XMLNS}
+    Should Be Equal    ${experiment_id}    @{id_values}[0]
+    # Checks attributes have one with value set to Unpublished
+    @{attributes_values}=    XMLLibrary.Get Element Value    ${entity_dto}    ${ENTITY_XMLNS}    value
+    Should Contain    ${attributes_values}    Unpublished
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+*** Keywords ***
+Create Sequential Editable Experiment Witn 2 Web Links
+    [Arguments]    ${title}    ${name}
+    [Documentation]    Creates a sequentially editable template with with two Web Link children. Creates an experiment from the template and save it as VESION. Experiment is not kept locked.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment web link ids. Also, it sets the suite variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    # Creates template
+    ${template_dto}=    Build Template DTO    ${name}-TEM    ${title}-TEM
+    ${template_id}=    Add Entity With Custom DTO    ${project_id}    ${template_dto}
+    Lock Entity    ${template_id}
+    # Adds web links
+    Add Web Link Entity    ${template_id}    www.idbs.com/1
+    Add Web Link Entity    ${template_id}    www.idbs.com/2
+    Set Template Sequentially Editable    ${template_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Creates experiment from template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${title}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Get experiment Web Link ids
+    ${sapi_entity_ definition}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true    includeAttributes=true
+    ${sapi_entity_sequence}=    XMLLibrary.Get Element Xml    ${sapi_entity_ definition}    http://entity.services.ewb.idbs.com    entity
+    @{web_link_ids}=    XMLLibrary.Get Element Value    ${sapi_entity_sequence}    http://entity.services.ewb.idbs.com    entityId
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    @{web_link_ids}    # The ids of children Web Link items

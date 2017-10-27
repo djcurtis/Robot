@@ -1,0 +1,249 @@
+*** Settings ***
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+POST Sign-Off Task - Experiment
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=SIGN_OFF
+
+POST Sign-Off Task - Report
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_report_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=SIGN_OFF
+
+POST Sign-Off Task - Template
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_template_1}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=SIGN_OFF
+
+POST Sign-Off Task - Project
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_project}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}    400
+
+POST Sign-Off Task - Group
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_group}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}    400
+
+POST Sign-Off Task - PDF
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1_pdf}    WF WS Workflow 1    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=SIGN_OFF
+
+POST Review Task - Experiment
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+POST Review Task - Report
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_report_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+POST Review Task - Template
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_template_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+POST Review Task - Project
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_project}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+POST Review Task - Group
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_group}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+POST Review Task - PDF
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1_pdf}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=REVIEW
+
+POST Alert Task - Experiment
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=ALERT
+
+POST Alert Task - Report
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_report_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=ALERT
+
+POST Alert Task - Template
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_template_1}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=ALERT
+
+POST Alert Task - Project
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_project}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=ALERT
+
+POST Alert Task - Group
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_group}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=ALERT
+
+POST Alert Task - PDF
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1_pdf}    WF WS Workflow 3    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=ALERT
+

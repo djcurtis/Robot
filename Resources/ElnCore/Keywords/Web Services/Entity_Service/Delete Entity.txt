@@ -1,0 +1,62 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-DEN    Delete Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Delete entity
+    [Documentation]    EWB-SAPI-SSP-RES-DEN-S001
+    ...
+    ...    A successful call returns the HTTP status 204 and the entity is deleted
+    [Tags]    EWB-SAPI-SSP-ENT-DEN-S001
+    ${experiment_name}=    Set Variable    DEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    rest_entity_service_resource.Delete Entity    ${experiment_id}
+    # Checking expectations
+    Get Entity    ${experiment_id}    ${entity_version_id}    false    false    false    false
+    ...    false    false    false    false    false    false
+    ...    404
+
+Delete entity with malformed SAPIUserAction
+    [Documentation]    EWB-SAPI-SSP-RES-DEN-S003
+    ...
+    ...    If the SAPIUserActionInfo is missing or malformed, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-DEN-S003
+    ${experiment_name}=    Set Variable    DEN-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    rest_entity_service_resource.Delete Entity With Custom DTO    ${experiment_id}    Wrong DTO    400
+
+Delete entity with not existing entity
+    [Documentation]    EWB-SAPI-SSP-RES-DEN-S001
+    ...
+    ...    A successful call returns the HTTP status 204 and the entity is deleted
+    [Tags]    EWB-SAPI-SSP-ENT-DEN-S004
+    ${experiment_name}=    Set Variable    DEN-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    rest_entity_service_resource.Delete Entity    WrongEntityId    Deleted Test Entitiy    404
+
+Delete entity without permission DELETE_EXPERIMENT
+    [Documentation]    EWB-SAPI-SSP-RES-DEN-S001
+    ...
+    ...    A successful call returns the HTTP status 204 and the entity is deleted
+    [Tags]    EWB-SAPI-SSP-ENT-DEN-S002
+    ${experiment_name}=    Set Variable    DEN-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    rest_entity_service_resource.Delete Entity    ${experiment_id}    Delete Test Entity    403
+
+*** Keywords ***

@@ -1,0 +1,118 @@
+*** Settings ***
+Documentation     Created for story SH-1302
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record With Keyword - Edit Attribute - Draft - Restore 1 Version - Draft
+    [Documentation]    Record With Keyword - Edit Attribute - Draft - Restore 1 Version - Draft
+    ...    - verify record is searchable by restore attribute after draft save
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    qwerty2    ${experimentName}2    Started
+    Draft Save    ${experimentId}
+    Sleep    ${wait}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Draft Save    ${experimentId}
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty2    all    Experiment|title|is|"${experimentName}2"
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record With Keyword - Edit Attribute - Version - Restore 1 Version - Version
+    [Documentation]    Record With Keyword - Edit Attribute - Version - Restore 1 Version - Version
+    ...    - verify record is searchable by restore attribute after version save
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    qwerty2    ${experimentName}2    Started
+    Version Save    ${experimentId}    Data Added
+    Sleep    ${wait}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Version Save    ${experimentId}    Data Added
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty2    all    Experiment|title|is|"${experimentName}2"
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record With Keyword - Edit Attribute - Draft - Restore 1 Version - Version
+    [Documentation]    Record With Keyword - Edit Attribute - Draft - Restore 1 Version - Version
+    ...    - verify record is searchable by restore attribute after version save
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    qwerty2    ${experimentName}2    Started
+    Draft Save    ${experimentId}
+    Sleep    ${wait}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Version Save    ${experimentId}    Data Added
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty2    all    Experiment|title|is|"${experimentName}2"
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record With Keyword - Edit Attribute - Vesrion - Restore 1 Version - Draft
+    [Documentation]    Record With Keyword - Edit Attribute - Vesrion - Restore 1 Version - Draft
+    ...    - verify record is searchable by restore attribute after version save
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    qwerty2    ${experimentName}2    Started
+    Version Save    ${experimentId}    Data Added
+    Sleep    ${wait}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Draft Save    ${experimentId}
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty2    all    Experiment|title|is|"${experimentName}2"
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record With Keyword - Edit Attribute - Draft - Restore 1 Version - Not Save
+    [Documentation]    Record With Keyword - Edit Attribute - Draft - Restore 1 Version - Not Save
+    ...    - verify record is not \ searchable by restore attribute without saving
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    qwerty2    ${experimentName}2    Started
+    Draft Save    ${experimentId}
+    Sleep    ${wait}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    qwerty2    all    Experiment|title|is|"${experimentName}2"
+
+Record With Keyword - Edit Attribute - Vesrion - Restore 1 Version - Not Save
+    [Documentation]    Record With Keyword - Edit Attribute - Vesrion - Restore 1 Version - Not Save
+    ...    - verify record is not \ searchable by restore attribute without saving
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    qwerty2    ${experimentName}2    Started
+    Version Save    ${experimentId}    Data Added
+    Sleep    ${wait}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    qwerty2    all    Experiment|title|is|"${experimentName}2"
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    10s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${currentDate}=    Get Current Date
+    Set Suite Variable    ${currentDate}
+    ${experimentName}=    Set Variable    Experiment ${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started    keywords:::qwerty
+    Set Suite Variable    ${experimentId}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

@@ -1,0 +1,456 @@
+*** Settings ***
+Documentation     Contains tests for the insert template item contents endpoint of the cache entity service.
+...
+...               *end point:* /services/1.0/cache/entities/{recordId}/children/append/fromtemplate
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Test Setup        Insert Template Contents Test Setup
+Test Teardown     Insert Template Contents Test Teardown
+Force Tags        /services/1.0/cache/entities/{recordId}/children/append/fromtemplate
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Library           IDBSHttpLibrary
+Resource          ../../../Libraries/HTTP Common/http_common_resource.txt
+
+*** Variables ***
+${experiment_id}    ${EMPTY}
+${role name}      ${EMPTY}
+${user group name}    ${EMPTY}
+
+*** Test Cases ***
+Template contents are added to record
+    [Documentation]    \
+    ...    A successful call returns the HTTP status 204. The template contents are added.
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Add Web Link Entity    ${template_id}    http://www.idbs.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    2    ${number of children}
+
+Template contents are added to template
+    [Documentation]    \
+    ...    A successful call returns the HTTP status 204. The template contents are added.
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # create new target template
+    Unlock Entity    ${experiment_id}
+    ${target_template_id}=    Create Template    ${project_id}    I want content
+    # to ensure we unlock it later
+    Set Suite Variable    ${experiment_id}    ${target_template_id}
+    Lock Entity    ${target_template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${target_template_id}    ${template_id}    ${True}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${target_template_id}
+    Should Be Equal As Numbers    1    ${number of children}
+
+Missing recordID returns error
+    [Documentation]    \
+    ...    A missing recordId returns the HTTP status 404.
+    Insert Template Contents Into Record    ${EMPTY}    na    ${True}    404
+
+whitespace recordID returns error
+    [Documentation]    \
+    ...    A whitespace recordId returns the HTTP status 400.
+    Insert Template Contents Into Record    ${SPACE}    na    ${True}    400
+
+invalid templateID returns error
+    [Documentation]    \
+    ...
+    ...    A invalid template returns the HTTP status 400.
+    # missing entry
+    Insert Template Contents Into Record    a_record    ${EMPTY}    ${True}    400
+    # whitespace entry
+    Insert Template Contents Into Record    a_record    %20    ${True}    400
+
+matching recordID and templateID returns error
+    [Documentation]    \
+    ...    A identical record & template ids returns the HTTP status 400.
+    Insert Template Contents Into Record    abc    abc    ${True}    400
+
+specified record does not exist returns error
+    [Documentation]    \
+    ...    If no record exists for the specified entity ID returns the HTTP status 404
+    Insert Template Contents Into Record    thereIsNoWayICanExist    template    ${True}    404
+
+specifying a non record entity returns error
+    [Documentation]    \
+    ...    Specifying a non record entity to insert into returns the HTTP status 400.
+    Insert Template Contents Into Record    ${project_id}    template    ${True}    400
+
+using unlocked record returns error
+    [Documentation]    \
+    ...    An unlocked record returns the HTTP status 403.
+    Unlock Entity    ${experiment_id}
+    Insert Template Contents Into Record    ${experiment_id}    template    ${True}    403
+
+using prevent further editing record returns error
+    [Documentation]    \
+    ...    Specifying a record that is locked against futher editing returns the HTTP status 403.
+    Set Read Only    ${experiment_id}
+    Insert Template Contents Into Record    ${experiment_id}    template    ${True}    403
+
+using confined experiment returns error
+    [Documentation]    \
+    ...    trying to use an experiment created from a confined template returns the HTTP status 403.
+    # create new confined template
+    ${confined_template_id}=    Create Confined Template    ${project_id}    I am confined
+    Lock Entity    ${confined_template_id}
+    Add Web Link Entity    ${confined_template_id}    http://www.google.com
+    Commit Versioned Entity    ${confined_template_id}
+    unlock entity    ${confined_template_id}
+    # create experiment from confined template
+    Unlock Entity    ${experiment_id}
+    ${experiment_id}=    Create Confined Experiment from Template    ${project_id}    I am confined    ${confined_template_id}    200
+    Lock Entity    ${experiment_id}
+    # insert contents
+    Insert Template Contents Into Record    ${experiment_id}    ${confined_template_id}    ${True}    403
+
+inserting into template created from confined template is allowed
+    [Documentation]    \
+    ...    trying to insert into a confined template workds and returns the HTTP status 204.
+    # create new confined template
+    ${confined_template_id}=    Create Confined Template    ${project_id}    I am confined
+    Lock Entity    ${confined_template_id}
+    Add Web Link Entity    ${confined_template_id}    http://www.google.com
+    Commit Versioned Entity    ${confined_template_id}
+    unlock entity    ${confined_template_id}
+    # create a confined template to insert into
+    Unlock Entity    ${experiment_id}
+    ${experiment_id}=    Create Confined Template    ${project_id}    I am confined
+    Lock Entity    ${experiment_id}
+    # insert contents
+    Insert Template Contents Into Record    ${experiment_id}    ${confined_template_id}    ${True}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    1    ${number of children}
+
+specified template does not exist returns error
+    [Documentation]    \
+    ...    If no template exists for the specified entity ID returns the HTTP status 404
+    Insert Template Contents Into Record    ${experiment_id}    IShouldNotExistInTheSystem    ${True}    404
+
+Insufficient permssions on template returns error
+    [Documentation]    \
+    ...    If the user does not have the relevant permissions on the template then it returns the HTTP status 403.
+    ${user}=    Set Variable    auto_ws_user
+    ${password}=    Set Variable    password
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I am not accessible
+    User can only view templates    ${user}
+    # insert template contents
+    Insert Template Contents Into Record Using Specific User    ${user}    ${password}    ${experiment_id}    ${template_id}    ${True}    403
+    [Teardown]    ITC Custom Security Test Teardown
+
+specifying a non template entity returns error
+    [Documentation]    \
+    ...    specifying a non-tempate entity returns the HTTP status 400.
+    Insert Template Contents Into Record    ${experiment_id}    ${project_id}    ${True}    400
+
+incompatible target type on template returns error
+    [Documentation]    \
+    ...    specifying a template that is not allowed for the experiment type returns the HTTP status 400.
+    # create a template with some items
+    ${template_id}=    Create Restricted Target Template    ${project_id}    I have contents    REPORT
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    400
+
+using unreviewed template when use reviewed is turned on returns error
+    [Documentation]    \
+    ...    specifying an usigned template when "show reviewd templates" is enabled returns the HTTP status 400.
+    # enable reviewed templates only
+    Replace System Setting    Templates/Templates_Show_Reviewed    true    BOOLEAN
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    400
+    [Teardown]    ITC Use Reviewed Template Setting Test Teardown
+
+Updated record is in CACHE
+    [Documentation]    \
+    ...    The Updated record should be in the CACHE
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # record should now be in cache mode
+    ${versionType}=    Get Entity Version Type    ${experiment_id}
+    Should Be Equal As Strings    CACHE    ${versionType}
+
+Updated record includes the template version id in it's attributes
+    [Documentation]    \
+    ...    The Updated record should include the template version id in is attributes
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # check for template version id in record attributes
+    ${template_version_id}=    Get Entity Version ID    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${attributes}=    Get Attributes    ${experiment_id}    ${experiment_version_id}
+    Should Contain    ${attributes}    ${template_version_id}
+
+Template contents are added to record after existing items
+    [Documentation]    \
+    ...    The template contents are added after any existing contents
+    # add an item to the experiment
+    Add Page Break Entity    ${experiment_id}
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    2    ${number of children}
+    # validate their data types
+    Check Child Data Type    ${experiment_id}    0    PAGE_BREAK
+    Check Child Data Type    ${experiment_id}    1    WEB_LINK
+
+Data for added content is correct within experiment
+    [Documentation]    \
+    ...    The data in the template contents is correctly copied across
+    # Disabling this system property otherwise to avoid signing template
+    System_Setting_Resource.Replace System Setting    Templates/Templates_Show_Reviewed    false    BOOLEAN
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate the data
+    Check Child Data    ${experiment_id}    0    http://www.google.com
+
+Preview for added content is correct within experiment
+    [Documentation]    \
+    ...    The preview in the template contents is correctly copied across
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${base_folder}=    set variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${tempate_child_id}=    Add SPREADSHEET_DOCUMENT (and Preview) With File Data    ${template_id}    ${base_folder}\\spreadsheet.bss    ${base_folder}\\spreadsheet.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate the preview
+    comment    template preview
+    ${template_child_ver_id}=    Get Entity Version ID    ${tempate_child_id}
+    ${template_preview}=    Get Entity Preview    ${tempate_child_id}    ${template_child_ver_id}
+    ${template_preview_length}=    Get Length    ${template_preview}
+    comment    record preview
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    ${child_ver_id}=    Get Entity Version ID    ${child_id}
+    ${actual_preview}=    Get Entity Preview    ${child_id}    ${child_ver_id}
+    ${preview_length}=    Get Length    ${actual_preview}
+    should be equal    ${preview_length}    ${template_preview_length}
+
+Child entities for added content is present within experiment
+    [Documentation]    \
+    ...    The child entities of template content are copied across to the experiment
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${base_folder}=    set variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${template_child_id}=    Add SPREADSHEET_DOCUMENT (and Preview) With File Data    ${template_id}    ${base_folder}\\spreadsheet.bss    ${base_folder}\\spreadsheet.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Comment    add a child sheet
+    create spreadsheet document child entity    ${template_child_id}    TABLE_SHEET    sheet1
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # check for a child of the experiment content
+    ${doc_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    ${doc_child_count}=    Get Entity Child Count    ${doc_id}
+    Should Be Equal As Numbers    ${doc_child_count}    1
+
+Inserted content version info is reset
+    [Documentation]    \
+    ...    Inserted template contents have their version numbers reset to 0 (zero)
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${template_doc_id}=    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    ${template_doc_version_id}=    Get Entity Version ID    ${template_doc_id}
+    comment    update an attribute
+    Update Cache Entity    ${template_doc_id}    ${template_doc_version_id}    <?xml version="1.0" encoding="UTF-8"?><entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>DOCUMENT</entityType><entityName>Web Link2</entityName><attributes><attribute><name>registeredids</name><values/></attribute><attribute><name>allowedDataType</name><values/></attribute><attribute><name>link</name><values/></attribute><attribute><name>itemType</name><values><value>Web Link2</value></values></attribute><attribute><name>hasDataExchangeTables</name><values/></attribute><attribute><name>sequentialEdit</name><values/></attribute><attribute><name>publishingState</name><values><value>Unpublished</value></values></attribute><attribute><name>caption</name><values/></attribute><attribute><name>copiedFrom</name><values/></attribute><attribute><name>hasLinkedDataFields</name><values/></attribute><attribute><name>allowDropUpdate</name><values><value>false</value></values></attribute><attribute><name>preregisteredids</name><values/></attribute><attribute><name>annotations</name><values/></attribute><attribute><name>allowedFileType</name><values/></attribute><attribute><name>pinnedEntity</name><values><value>false</value></values></attribute></attributes><data><data><dataText>http://www.google.com</dataText></data><dataInfo mimeType="application/x-url" fileType=".url" dataType="WEB_LINK"/></data></entityDefinition>
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate content version
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    ${version_number}=    Get Entity Version Number    ${child_id}
+    Should Be Equal As Numbers    ${version_number}    1
+
+Attribute properties are copied across
+    [Documentation]    \
+    ...    Inserted Template contents have their attribute values copied across
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${template_doc_id}=    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate content version
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    itemType    Web Link
+
+Copied content has unpublished status
+    [Documentation]    \
+    ...    all template contents that were published elements should be added as unpublished
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${template_doc_id}=    Add Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Publish Record    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate content version
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    publishingState    Unpublished
+
+clears pinned status if requested
+    [Documentation]    \
+    ...    all template contents that were pinned can be unpinned on request
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${template_doc_id}=    Add pinned Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${True}    204
+    # validate content version
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    pinnedEntity    False
+
+keeps pinned status if requested
+    [Documentation]    \
+    ...    all template contents that were pinned can be left pinned on request
+    # create a template with some items
+    ${template_id}=    Create Template    ${project_id}    I have contents
+    Lock Entity    ${template_id}
+    ${template_doc_id}=    Add pinned Web Link Entity    ${template_id}    http://www.google.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # insert template contents
+    Insert Template Contents Into Record    ${experiment_id}    ${template_id}    ${False}    204
+    # validate content version
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    pinnedEntity    True
+
+*** Keywords ***
+Insert Template Contents Test Setup
+    [Documentation]    creates an experiment & obtains a lock on it, ready for the insertion of template content!
+    ${id}=    Create Experiment    ${project_id}    waiting for content
+    Set Test Variable    ${experiment_id}    ${id}
+    Lock Entity    ${experiment_id}
+
+Insert Template Contents Test Teardown
+    [Documentation]    ensures that any created experiment is unlocked prior to deletion of the parent group
+    Unlock Entity    ${experiment_id}
+
+User can only view templates
+    [Arguments]    ${user}
+    [Documentation]    ensures that, while the user can edit experiments, then can only view templates. \ This should be used in conjunction with _ITC Custom Security Test Teardown_ to ensure things are tidied up
+    ...
+    ...    *Arguments*
+    ...
+    ...    _user_ the user to restrict
+    ...
+    ...    *Example*
+    ...
+    ...    | User can only view templates | john
+    # these suite variables are tidied up in the ITC Custom security test teardown
+    ${unique_id}=    Get Time    epoch
+    Set Suite Variable    ${user group name}    ${unique_id}_ITC_AUTO
+    Create User Group    ${user group name}    automated testing group
+    Add User Group Member    ${user group name}    ${user}
+    Set Suite Variable    ${role name}    ${unique_id}_ITC_AUTO
+    Create Role    ${role name}    ITC auto test role    used for automated testing of SAPI inserting template contents    false
+    Add Role Permission    ${role name}    VIEW_TEMPLATE
+    Add Role Permission    ${role name}    EDIT_EXPERIMENT
+    Add Role Permission    ${role name}    OPEN_EXPERIMENT
+    Assign User Group Entity Role    ${user group name}    ${role name}    ${project_id}
+
+ITC Custom Security Test Teardown
+    [Documentation]    ensures that any created experiment is unlocked prior to deletion of the parent group
+    Unlock Entity    ${experiment_id}
+    # these names are set as suite variables
+    Delete User Group Entity Role    ${user group name}    ${role name}    ${project_id}
+    Delete Role    ${role name}    tidying up
+    Delete User Group    ${user group name}
+
+ITC Use Reviewed Template Setting Test Teardown
+    [Documentation]    ensures that the system setting to use reviewed templates is restored to Off regardless of the test outcom
+    Unlock Entity    ${experiment_id}
+    Replace System Setting    Templates/Templates_Show_Reviewed    false    BOOLEAN
+
+create spreadsheet document child entity
+    [Arguments]    ${document_id}    ${sheet_type}    ${name}
+    [Documentation]    Creates a spreadsheet document (biobook) child entity
+    HTTP Header Setup
+    Set Request Body    {"entityType":"${sheet_type}","entityName":"${name}","attributes":{"attribute":[{"name":"name","values":{"value":["${name}"]}}]}}
+    POST    ${CACHE ENTITY SERVICE ENDPOINT}/${document_id}/children
+    Response Status Code Should Equal    200
+    ${new_child_id}=    Get Response Body
+    Set Cache Entity Data Text    ${new_child_id}    dataType    .test    a test    madeup    dummmy
+
+Add Pinned Web Link Entity
+    [Arguments]    ${parent_entity_id}    ${url}
+    [Documentation]    Used to add a pinned web link
+    ...
+    ...    *Arguments*
+    ...
+    ...    $(parent_entity_id) The parent (record) entity id.
+    ...    $(url) The link URL
+    ...
+    ...    *Return value*
+    ...    The entity id for the created web link
+    ...
+    ...    *Precondition*
+    ...    Parent entity must be locked.
+    ${entity_name}=    Set Variable    Web Link
+    ${link_type}=    set Variable    WEB_LINK
+    XML HTTP Header Setup
+    ${request_body}=    Set Variable    <?xml version="1.0" encoding="UTF-8"?> <entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>DOCUMENT</entityType><entityName>${entity_name} </entityName><attributes><attribute><name>registeredids</name><values/></attribute><attribute><name>allowedDataType</name><values/></attribute><attribute><name>link</name><values/></attribute><attribute><name>itemType</name><values><value>Web Link</value></values></attribute><attribute><name>hasDataExchangeTables</name><values/></attribute><attribute><name>sequentialEdit</name><values/></attribute><attribute><name>publishingState</name><values><value>Unpublished</value></values></attribute><attribute><name>caption</name><values/></attribute><attribute><name>copiedFrom</name><values/></attribute><attribute><name>hasLinkedDataFields</name><values/></attribute><attribute><name>allowDropUpdate</name><values><value>false</value></values></attribute><attribute><name>preregisteredids</name><values/></attribute><attribute><name>annotations</name><values/></attribute><attribute><name>allowedFileType</name><values/></attribute><attribute><name>pinnedEntity</name><values><value>True</value></values></attribute></attributes><data><data><dataText>${url}</dataText></data><dataInfo mimeType="application/x-url" fileType=".url" dataType="${link_type}"/></data></entityDefinition>
+    Set Request Body    ${request_body}
+    POST    ${CACHE ENTITY SERVICE ENDPOINT}/${parent_entity_id}/children
+    Response Status Code Should Equal    200
+    ${entity_id}=    Get Response Body
+    [Return]    ${entity_id}    # The id of the created entity

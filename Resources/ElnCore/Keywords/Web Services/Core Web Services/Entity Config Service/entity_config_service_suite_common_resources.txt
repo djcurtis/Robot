@@ -1,0 +1,155 @@
+*** Settings ***
+Library           Collections
+Library           String
+Library           IDBSSwingLibrary
+Library           RobotRemoteAgent
+Library           TimingLibrary
+Library           TestDataGenerationLibrary
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_non_record_entity_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_record_entity_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_document_entity_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_printing_publishing_options_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_workflow_actions_resource.txt
+Resource          ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_spreadsheet_actions_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           OperatingSystem
+
+*** Keywords ***
+EntiyConfig Suite Setup
+    [Documentation]    Creates a basic hierarchy for the two tests that require header icon checks
+    ${HexGUID}=    Create Hex GUID
+    Set Global Variable    ${unique_id}    ${HexGUID}
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    #create hierarchy
+    Set Suite Variable    ${group_name}    EntityConfig_${unique_id}
+    Set Suite Variable    ${project_name}    HeaderIcons_${unique_id}
+    ${group_id}=    EntityAPILibrary.Create Group    1    ${group_name}
+    ${project_id}=    EntityAPILibrary.Create Project    ${group_id}    ${project_name}
+    ${exp_id}=    Set Variable    GHI-S001_${unique_id}
+    ${valid_icon_experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${exp_id}
+    ${valid_icon_experiment_path}=    Set Variable    Root/${group_name}/${project_name}/${exp_id}
+    ${icon_path}=    Set Variable    ${CURDIR}..\\..\\..\\..\\Test Data\\Core Web Services\\Entity Config Service\\Experiment.png
+    ${exp_id}=    Set Variable    GHI-S003_${unique_id}
+    ${invalid_icon_experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${exp_id}
+    ${invalid_icon_experiment_path}=    Set Variable    Root/${group_name}/${project_name}/${exp_id}
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Set Header Icon    ${valid_icon_experiment_path}    ${icon_path}
+    Create Default Entity Configuration    ${invalid_icon_experiment_path}
+    Close E-WorkBook
+    Set Suite Variable    ${valid_icon_experiment_id}
+    Set Suite Variable    ${invalid_icon_experiment_id}
+    Set Suite Variable    ${group_id}
+
+Open header footer dialog
+    [Arguments]    ${experiment_path}
+    [Documentation]    Opens the Configure/Header & Footer dialog (from the right click context menu on the hierarchy)
+    ...
+    ...    *Arguments*
+    ...
+    ...    _experiment_path_ the path to the entity that the header & footer will be applied
+    ...
+    ...    *Return value*
+    ...
+    ...    None
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    Select E-WorkBook Main Window
+    ${pipe_separated_path}=    Replace String    ${experiment_path}    /    |
+    Select From Tree Node Popup Menu    class=WorkbenchNavigatorTree    ${pipe_separated_path}    Configure|Header.* \
+    Select Dialog    regexp=Header & Footer.*
+
+Close header footer dialog
+    [Documentation]    Closes the Configure/Header& Footer dialog
+    Select Dialog    regexp=Header & Footer.*
+    Push Button    OK
+    Select E-WorkBook Main Window
+
+Get Config Id from Icon Url
+    [Arguments]    ${config_url}
+    [Documentation]    Extracts a configuration id from an icon url
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _config_url_ the header icon url
+    ...
+    ...    *Return value*
+    ...
+    ...    _config_id_ \ the configuration id of the header icon
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    ${values}=    Split String    ${config_url}    /
+    ${config_id}=    Get From List    ${values}    5
+    [Return]    ${config_id}
+
+Set Header Icon
+    [Arguments]    ${experiment_path}    ${icon_path}
+    [Documentation]    Sets the header icon for a given entity
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _experiment_path_ the path to the entity that the header & footer will be applied
+    ...
+    ...    _icon_path the path to the custom header icon
+    ...
+    ...    *Return value*
+    ...
+    ...    None
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    Open header footer dialog    ${experiment_path}
+    Select Dialog    regexp=Header.*
+    Check Check Box    text=Use Custom Icon
+    Push Button    text=...
+    ${import_file}=    Normalize Path    ${icon_path}
+    Choose From File Chooser    ${import_file}
+    Close header footer dialog
+
+Create Default Entity Configuration
+    [Arguments]    ${experiment_path}
+    [Documentation]    Creates a default entity configuration for a given entity
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _experiment_path_ the path to the entity that the configuration is to be set for
+    ...
+    ...    *Return value*
+    ...
+    ...    None
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    Open header footer dialog    ${experiment_path}
+    Select Dialog    regexp=Header.*
+    Comment    Check Box Should Be Checked    text=Use Custom Icon
+    Uncheck Check Box    text=Use Custom Icon
+    Check Box Should Be Unchecked    text=Use Custom Icon
+    Check Check Box    text=Use Custom Icon
+    Check Box Should Be Checked    text=Use Custom Icon
+    Close header footer dialog
+
+EntityConfig Suite Teardown
+    [Documentation]    Tidy up - delete the test group
+    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${group_id}    As Intended    Test Suite Completed

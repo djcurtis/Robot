@@ -1,0 +1,56 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that have boolean filters conditions. \ \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+
+*** Keywords ***
+Run Boolean Datatype Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have a boolean filter condition. \ \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.\n
+    # select boolean property
+    Execute Data Query and Verify Values    SELECT ${booleanColumn} FROM ${term path}    T    F    F    T    F
+    ...    ${null value}    ${null value}
+    # = 'T' operator
+    Execute Data Query and Verify Values    SELECT ${timestampColumn},${stringColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = 'T'    1340357649000,Mixed Case String    ${null value},string with 'quotes'
+    # != 'F' operator
+    Execute Data Query and Verify Values    SELECT ${timestampColumn},${stringColumn} FROM ${term path} AS t WHERE t.${booleanColumn} != 'F'    1340357649000,Mixed Case String    ${null value},string with 'quotes'
+    # = 'F' operator
+    Execute Data Query and Verify Values    SELECT ${integerColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = 'F'    ${null value},F    321,F    0,F
+    # != 'T' operator
+    Execute Data Query and Verify Values    SELECT ${integerColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${booleanColumn} != 'T'    ${null value},F    321,F    0,F
+    # ORDER BY operator
+    Execute Data Query and Verify Values    SELECT ${booleanColumn}, ${floatColumn},${stringColumn} FROM ${term path} ORDER BY ${booleanColumn},${floatColumn}    F,-219.2,Mixed Case String    F,-0.001,${null value}    F,0,${null value}    T,0.1,string with 'quotes'    T,${null value},Mixed Case String
+    ...    ${null value},0.1,${null value}    ${null value},3.001,string with %
+    # OR operator
+    Execute Data Query and Verify Values    SELECT ${integerColumn},${floatColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = 'F' OR t.${booleanColumn} = 'T'    8,${null value}    ${null value},-219.2    321,-0.001    -1,0.1    0,0
+    # COUNT() and DISTINCT() functions
+    Execute Data Query and Verify Values    SELECT COUNT(*), COUNT( ${booleanColumn}), COUNT(DISTINCT \ ${booleanColumn}) FROM ${term path}    7,5,2
+
+Run Boolean Datatype Parameterised Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have a boolean filter condition. \ \n\nAll queries will be executed in parameterised form. \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.\n
+    # select boolean property
+    @{parameterised query 1}=    Create List    SELECT ${booleanColumn} FROM ${term path}    java.lang.String,p,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 1}    T    F    F    T    F
+    ...    ${null value}    ${null value}
+    # ='T' operator
+    @{parameterised query 2}=    Create List    SELECT ${timestampColumn},${stringColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = :p    java.lang.String,p,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 2}    1340357649000,Mixed Case String    ${null value},string with 'quotes'
+    # !='F' operator
+    @{parameterised query 3}=    Create List    SELECT ${timestampColumn},${stringColumn} FROM ${term path} AS t WHERE t.${booleanColumn} != :p    java.lang.String,p,F
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 3}    1340357649000,Mixed Case String    ${null value},string with 'quotes'
+    # ='F' operator
+    @{parameterised query 4}=    Create List    SELECT ${integerColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = :p    java.lang.String,p,F
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 4}    ${null value},F    321,F    0,F
+    # !='T' operator
+    @{parameterised query 5}=    Create List    SELECT ${integerColumn},${booleanColumn} FROM ${term path} AS t WHERE t.${booleanColumn} != :p    java.lang.String,p,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 5}    ${null value},F    321,F    0,F
+    # ORDER BY operator
+    @{parameterised query 6}=    Create List    SELECT ${booleanColumn}, ${floatColumn},${stringColumn} FROM ${term path} ORDER BY ${booleanColumn},${floatColumn}    java.lang.String,p,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 6}    F,-219.2,Mixed Case String    F,-0.001,${null value}    F,0,${null value}    T,0.1,string with 'quotes'    T,${null value},Mixed Case String
+    ...    ${null value},0.1,${null value}    ${null value},3.001,string with %
+    # OR operator
+    @{parameterised query 7}=    Create List    SELECT ${integerColumn},${floatColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = :p OR t.${booleanColumn} = :q    java.lang.String,p,F    java.lang.String,q,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 7}    8,${null value}    ${null value},-219.2    321,-0.001    -1,0.1    0,0
+    # COUNT() and DISTINCT() function
+    @{parameterised query 8}=    Create List    SELECT COUNT(*), COUNT(${booleanColumn}), COUNT(DISTINCT ${booleanColumn}) FROM ${term path}    java.lang.String,p,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 8}    7,5,2

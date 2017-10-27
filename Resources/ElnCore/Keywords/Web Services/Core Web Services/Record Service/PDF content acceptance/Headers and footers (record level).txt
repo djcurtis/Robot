@@ -1,0 +1,60 @@
+*** Settings ***
+Documentation     Covers Header and footers generation at the record level
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup standard test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ..\\..\\..\\..\\Libraries\\common_resource.txt
+Resource          ..\\..\\..\\..\\Libraries\\Core Web Services\\Record Service\\rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Library           OperatingSystem
+
+*** Variables ***
+
+*** Test Cases ***
+Headers and footers - properties no icon
+    [Documentation]    Test ensures that
+    ...    - PDFs generated on the server honour the header and footer properties defined in the desktop client
+    ...    - PDFs generated on the server honour the icon inclusion setting defined in the desktop client
+    ...    - The generated PDF contents are correct
+    [Tags]    EWB-WEB-PI002-W009-01
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties no icon.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - properties with icon
+    [Documentation]    Test ensures that
+    ...    - PDFs generated on the server honour the header and footer properties defined in the desktop client
+    ...    - PDFs generated on the server honour the icon inclusion setting defined in the desktop client
+    ...    - The generated PDF contents are correct
+    [Tags]    EWB-WEB-PI002-W009-02
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - many properties with icon.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - no properties with icon
+    [Documentation]    Test ensures that
+    ...    - PDFs generated on the server honour the header and footer properties defined in the desktop client
+    ...    - PDFs generated on the server honour the icon inclusion setting defined in the desktop client
+    ...    - The generated PDF contents are correct
+    [Tags]    EWB-WEB-PI002-W009-03
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - no properties with icon.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Headers and footers - no properties no icon
+    [Documentation]    Test ensures that
+    ...    - PDFs generated on the server honour the header and footer properties defined in the desktop client
+    ...    - PDFs generated on the server honour the icon inclusion setting defined in the desktop client
+    ...    - The generated PDF contents are correct
+    [Tags]    EWB-WEB-PI002-W009-04
+    Comment    default config settings here
+    ${print_conf_xml}=    Get File    ${input_folder}\\Headers and footers - no properties no icon.xml
+    Replace Entity Config    ${experiment_id}    HEADERFOOTER    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***

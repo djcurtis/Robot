@@ -1,0 +1,42 @@
+*** Settings ***
+Resource          ../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/quantrix_web_resource.txt
+Resource          ../../../../Libraries/IDBS Spreadsheet/searching/embedded_search_keywords.txt
+Library           IDBSHttpLibrary
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Library           EntityAPILibrary
+Library           SecurityAPILibrary
+Library           JSONLibrary
+
+*** Keywords ***
+Search By Group Name And Filter By Creator
+    [Arguments]    ${groupName}    ${creator}
+    [Documentation]    This keyword constructs a search with an advanced term Group Name = {groupName}, and a filter by Creator = {creator} in place.
+    ${requestBody}    set variable    {"filter":[{"@deep":{"/Flexible%20Hierarchy/Solutions/Group#name":"${groupName}"}},{"/Flexible%20Hierarchy/Core/Entity#creator":["/Flexible%20Hierarchy/Security/User?name=${creator}"]}],"limit":26,"start":0,"order":"/Flexible%20Hierarchy/Core/Entity#timestamp desc","select":{"@id":"@id","/System/Tuple#text":"/System/Tuple#text","/System/Tuple#type":"/System/Tuple#type","/IDBS-Applications/Core/Basic/With%20Name#name":"/IDBS-Applications/Core/Basic/With%20Name#name","/Flexible%20Hierarchy/Core/Entity#lastUpdater /Flexible%20Hierarchy/Security/User#name":"/Flexible%20Hierarchy/Core/Entity#lastUpdater /Flexible%20Hierarchy/Security/User#name","/Flexible%20Hierarchy/Core/Entity#path":"/Flexible%20Hierarchy/Core/Entity#path","/Flexible%20Hierarchy/Core/Entity#timestamp":"/Flexible%20Hierarchy/Core/Entity#timestamp","/Flexible%20Hierarchy/Core/Entity#uri":"/Flexible%20Hierarchy/Core/Entity#uri"}}
+    create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set request header    accept    application/json, text/javascript, */*; q=0.01
+    set request header    content-type    application/json
+    set request body    ${requestBody}
+    log    ${requestBody}
+    POST    /ewb/services/1.0/data/jsonld
+    ${status}    Get Response Status
+    ${responseBody}    Get Response Body
+    log    ${responseBody}
+    Should Be Equal As Strings    ${status}    200 OK
+    [Return]    ${responseBody}
+
+Verify Search Result By Title
+    [Arguments]    ${responceBody}    @{titles}
+    [Documentation]    This keyword takes the response Json returned from a search, formats it into a processable form, and verifies it contains the correct title string passed in as argument
+    log    ${responceBody}
+    ${responceBody}    Replace String    ${responceBody}    /    ${EMPTY}
+    ${responceBody}    Replace String    ${responceBody}    %20    ${EMPTY}
+    ${responceBody}    String.Get Substring    ${responceBody}    1
+    ${responceBody}    String.Get Substring    ${responceBody}    \    -1
+    IDBSHttpLibrary.Json Value Should Equal    ${responceBody}    /IDBS-ApplicationsCoreBasicWithName#name    "${titles[0]}"
+
+Verify Empty Search Result
+    [Arguments]    ${responceBody}
+    [Documentation]    This keyword checks the response Json is empty
+    Should Be Equal As Strings    ${responceBody}    []

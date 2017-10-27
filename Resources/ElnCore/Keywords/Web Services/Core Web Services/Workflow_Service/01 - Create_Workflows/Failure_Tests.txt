@@ -1,0 +1,85 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows* endpoint
+...
+...               *NOTE* Due to the nature of the way workflow configuration validation is performed on the server there is *NO* way of determining why a configuration couldn't be applied to an entity via the REST interface, thus some of these tests could be failing for the *WRONG* reason ! This makes these tests inherently fragile, however this is mitigated by the fact that we do have a fairly comprehensive set of unit tests that are performing virtually the same tests as these. Hopefully the two sets of tests will be enough to ensure good code/API coverage.
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+POST Workflow - No Task Configuration
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration without a task configuration specified.
+    [Tags]       EWB-WEB-ICM-PI004-W003-01    
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow - No Task    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Invalid Entity Type For Configuration
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with entity types specified where the associated entity isn’t on the entity types list
+    [Tags]       EWB-WEB-ICM-PI004-W003-15    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    1    WF WS Workflow - Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF For Non Record Type
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ selected where the associated entity is a non record type entity
+    [Tags]       EWB-WEB-ICM-PI004-W003-19    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_project}    WF WS Workflow - Generate PDF    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF For Draft Saved Record
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ selected where the associated entity is a record type entity that is draft saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-20    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_3}    WF WS Workflow - Generate PDF    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF For Cache Saved Record
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ selected where the associated entity is a record type entity that is draft saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-21    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_9}    WF WS Workflow - Generate PDF    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF And Publish For Cache Saved Non Record
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ and Publish selected where the associated entity is a non record type entity that is cache saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-22    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_9_item_1}    WF WS Workflow - Generate PDF And Publish All    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    403
+
+POST Workflow - Generate PDF And Publish For Draft Saved Record
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ and Publish selected where the associated entity is a record type entity that is draft saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-23    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_3}    WF WS Workflow - Generate PDF And Publish All    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF And Publish For Cache Saved Record
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ and Publish selected where the associated entity is a record type entity that is cache saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-24    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_9}    WF WS Workflow - Generate PDF And Publish All    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF And Publish For Record With No Children
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ and Publish selected where the associated entity is a record type entity that is version saved with no children
+    [Tags]       EWB-WEB-ICM-PI004-W003-25    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_8}    WF WS Workflow - Generate PDF And Publish All    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF And Publish For Record With All Children Published
+    [Documentation]    A 400 error is returned on attempting to create a workflow with a workflow configuration with ‘Generate PDF’ and Publish selected where the associated entity is a record type entity that is version saved with children where all children are published
+    [Tags]       EWB-WEB-ICM-PI004-W003-26    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_experiment_6}    WF WS Workflow - Generate PDF And Publish All    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400
+
+POST Workflow - Generate PDF And Publish For Non Record
+    [Documentation]    Try to create a workflow using a configuration that has ‘Generate PDF and publish’ selected on an entity that can’t have a PDF created and confirm a 400 is returned and nothing is created
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_project}    WF WS Workflow - Generate PDF And Publish All    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}    400

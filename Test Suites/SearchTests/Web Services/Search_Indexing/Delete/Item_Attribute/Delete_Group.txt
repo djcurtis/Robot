@@ -1,0 +1,44 @@
+*** Settings ***
+Documentation     Created for story SH-1301
+Test Setup        setup test
+Library           ../../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../../Libraries/common_resource.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Document - Draft - Delete Group
+    [Documentation]    Record - Add Document - Draft - Delete Group
+    ...    - verify that record is not searchable by item's attribute text after group deletion
+    Draft Save    ${experimentId}
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As Intended    As Intended
+    Sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Group|name|is|"${groupName}"
+
+Record - Add Document - Version - Delete Group
+    [Documentation]    Record - Add Document - Version - Delete Group
+    ...    - verify that record is not searchable by item's attribute text after group deletion
+    Version Save    ${experimentId}    Data Added
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As Intended    As Intended
+    Sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Group|name|is|"${groupName}"
+
+*** Keywords ***
+setup test
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    ${experimentName}=    Set Variable    Experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentId}
+    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty

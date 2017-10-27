@@ -1,0 +1,275 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains tagging functionality specific keywords using for testing this area of functionality.
+...               *Version: E-WorkBook Web Client 9.1.0*
+Resource          general_resource.txt
+Library           CheckLibrary
+
+*** Variables ***
+${INPUT TAG}      //input[starts-with(@id, 'suggestionBox')]
+${SUGGESTIONS FIELD ID}    //div[@class='gwt-SuggestBoxPopup']    # to be entered
+${TAG SEARCH FIELD}    xpath=//div[text()="Tag:"]/../../td[2]/input    # ${TAG SEARCH FIELD} ewb-tag-suggestion-textbox
+${ewb-follow-tag}    ewb-tag-following-button
+${addTagsButton}    addTagsButton
+
+*** Keywords ***
+Open Document Tag Editor
+    [Arguments]    ${document number}    ${number_of_retries}=5
+    [Documentation]    Opens the tag editor for the document specified using *${document number}*
+    ...
+    ...    *${document number}* = an index count of the documents in the record. The first document in the record should be referenced as *0*, the second as *1* the fifth as *4* etc. E.g.: if the record only contains one item it should be referenced as *0*.
+    ${prev_kw}=    Register Keyword To Run On Failure    Nothing
+    ${number_of_retries}=    Evaluate    ${number_of_retries}-1
+    ${tag button} =    Evaluate    'document-header-${document number}-tagsButton'
+    Wait Until Keyword Succeeds    30s    1s    Robust Click    ${tag button}
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Element Is Visible    tagsPanel    5s
+    Run Keyword If    '${status}'=='FAIL' and ${number_of_retries}>=0    Open Document Tag Editor    ${document number}    ${number_of_retries}
+    Run Keyword If    '${status}'=='FAIL' and ${number_of_retries}<0    Capture Page Screenshot
+    Run Keyword If    '${status}'=='FAIL' and ${number_of_retries}<0    Fail    Failed to open document level tag panel
+    [Teardown]    Register Keyword To Run On Failure    ${prev_kw}
+
+Close Document Tag Editor
+    [Arguments]    ${document number}
+    [Documentation]    Closes the tag editor for the document specified using ${document number}
+    ${document header} =    Evaluate    'document-header-${document number}-editableTitleTable'
+    Click Element    ${document header}
+
+Open Record Tag Editor
+    [Documentation]    Opens the tag editor for the record
+    Robust Click    ewb-record-action-bar-tags
+
+Close Record Tag Editor
+    [Documentation]    Closes the tag editor for the record
+    Click Element    xpath=//table[contains(@class,'ewb-record-actions-header')]/../../../div[1]
+
+Add Tag
+    [Arguments]    ${input tag text}
+    [Documentation]    Adds a tag to the currently opened tag editor
+    ...    ${input tag text} is the text to be added as a tag (will be appended with the current time to ensure uniqueness between test runs).
+    ${current time} =    Get Time
+    ${tag text} =    Evaluate    '${input tag text}${current time}'
+    ${tag text check} =    Evaluate    "${tag text}"[:255]    # makes sure the check doesn't look for > max char tags
+    log    ${tag text}
+    Sleep    1s    #Required to increment ${current time} between multiple usages of "Add New Tag"
+    Input Text And Press Enter    ${INPUT TAG}    ${tag text}
+    Simulate    ${INPUT TAG}    blur
+    Wait Until Page Contains Element    xpath=//div[@class='ewb-label ewb-tag-text']/a[text()="${tag text check}"]    15s    Could not find new tag
+    [Return]    ${tag text}    # Returns the text of the added tag
+
+Add New Tag
+    [Arguments]    ${input tag text}
+    [Documentation]    *DEPRECATED*
+    ...
+    ...    Adds a tag to the currently opened tag editor
+    ...    ${input tag text} is the text to be added as a tag (will be appended with the current time to ensure uniqueness between test runs).
+    ${current time} =    Get Time
+    ${tag text} =    Evaluate    '${input tag text}${current time}'
+    Sleep    1s    #Required to increment ${current time} between multiple usages of "Add New Tag"
+    Input Text    ${INPUT TAG}    ${tag text}
+    Robust Click    ${addTagsButton}
+    [Return]    ${tag text}    # Returns the text of the added tag
+
+Enter Tag Value
+    [Arguments]    ${input tag text}    ${retry_count}=0
+    [Documentation]    Enters the text given by ${input tag text} into the edit tags field. The text is not submitted.
+    ...
+    ...    *Arguments*
+    ...    - _input_tag_text_ - the text to type into the field
+    ...
+    ...    *Return Value*
+    ...
+    ...    None
+    ...
+    ...    *Precondition*
+    ...
+    ...    An open edit tag box must be open
+    Wait Until Page Contains Element    ${INPUT TAG}
+    Input Text    ${INPUT TAG}    ${EMPTY}    #clear the field first
+    ${string_length}=    Evaluate    len(str('${input tag text}'))
+    : FOR    ${index}    IN RANGE    0    ${string_length}
+    \    ${input_char}=    Evaluate    str('${input tag text}')[${index}]
+    \    Input Text No Clear    ${INPUT TAG}    ${input_char}
+    \    Sleep    0.1s
+    ${field_value}=    IDBSSelenium2Library.Get Value    ${INPUT TAG}
+    ${status}    ${value}=    Run Keyword And Ignore Error    Should Be Equal As Strings    ${field_value}    ${input tag text}
+    ${retry_count}=    Evaluate    int(${retry_count})+1
+    Run Keyword If    '${status}'=='FAIL' and int(${retry_count})<5    Enter Tag Value    ${input tag text}    ${retry_count}
+
+Check Tag Present In Editor
+    [Arguments]    ${tag text}
+    [Documentation]    Checks whether the tag given by ${tag text} is present in the tag editor
+    ${previous_failure_keyword}=    Register Keyword To Run On Failure    Nothing
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    xpath=//div[@class="ewb-label ewb-tag-text"]/a[text()="${tag text}"]    10s
+    Register Keyword To Run On Failure    ${previous_failure_keyword}
+    Run Keyword If    '${status}'=='FAIL'    Capture Page Screenshot
+    Run Keyword If    '${status}'=='FAIL'    Fail    Failed to locate tag with the value - "${tag text}"
+    [Teardown]
+
+Check Tag Present In Properties
+    [Arguments]    ${tag text}
+    [Documentation]    Checks whether the tag given by ${tag text} is present in the properties panel.
+    Wait Until Page Contains Element    xpath=//div[@class="gwt-Hyperlink ewb-anchor"]/a[text()="${tag text}"]    30s
+
+Check Tag Not Present In Editor
+    [Arguments]    ${tag text}
+    [Documentation]    Checks that the tag specified by ${tag text} is not present in the tag editor
+    Wait Until Page Does Not Contain Element    xpath=//div[@class="ewb-label ewb-tag-text"]/a[text()="${tag text}"]    30s
+
+Delete Tag
+    [Arguments]    ${tag text}
+    [Documentation]    Deletes a tag from the currently opened tag editor
+    ...    ${tag text} specifies the tag to be deleted
+    ${tag panel id} =    IDBSSelenium2Library.Get Element Attribute    xpath=//div[@class='ewb-label ewb-tag-text']/a[text()="${tag text}"]/..@id
+    ${tag id} =    Get Substring    ${tag panel id}    8
+    ${delete tag id} =    Evaluate    'deleteTag${tag id}'
+    Robust Click    ${delete tag id}
+    Wait Until Page Does Not Contain Element    xpath=//div[@class='ewb-label ewb-tag-text']/a[text()="${tag text}"]    20s
+
+Check Delete Tag Not Present
+    [Arguments]    ${tag text}
+    [Documentation]    Checks that the delete tag icon is not present for the tag specified by ${tag text}.
+    ${tag panel id} =    IDBSSelenium2Library.Get Element Attribute    xpath=//div[@class='ewb-label ewb-tag-text']/a[text()="${tag text}"]/..@id
+    ${tag id} =    Get Substring    ${tag panel id}    8
+    ${delete tag id} =    Evaluate    'deleteTag${tag id}'
+    Element Should Not Be Visible    ${delete tag id}
+
+Check Tag Suggestions Field Present
+    [Documentation]    Checks that the tags suggestions field is present in the UI.
+    ${previous_failure_keyword}=    Register Keyword To Run On Failure    Nothing
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    ${SUGGESTIONS FIELD ID}    10s
+    Register Keyword To Run On Failure    ${previous_failure_keyword}
+    Run Keyword If    '${status}'=='FAIL'    Capture Page Screenshot
+    Run Keyword If    '${status}'=='FAIL'    Fail    Failed to locate tag suggestions list
+
+Check Tag Suggestions Field Contains
+    [Arguments]    ${suggestion value}
+    [Documentation]    Checks that the tags suggestions field contains the suggestion given by ${suggestion value}.
+    ${previous_failure_keyword}=    Register Keyword To Run On Failure    Nothing
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    xpath=//td[text()="${suggestion value}"]    10s
+    Register Keyword To Run On Failure    ${previous_failure_keyword}
+    Run Keyword If    '${status}'=='FAIL'    Capture Page Screenshot
+    Run Keyword If    '${status}'=='FAIL'    Fail    Failed to locate tag suggestion - "${suggestion value}"
+
+Check Tag Suggestions Doesnt Contain
+    [Arguments]    ${suggestion value}
+    [Documentation]    Checks that the tags suggestions field contains the suggestion given by ${suggestion value}.
+    ${previous_failure_keyword}=    Register Keyword To Run On Failure    Nothing
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Does Not Contain Element    xpath=//td[text()="${suggestion value}"]    10s
+    Register Keyword To Run On Failure    ${previous_failure_keyword}
+    Run Keyword If    '${status}'=='FAIL'    Capture Page Screenshot
+    Run Keyword If    '${status}'=='FAIL'    Fail    Tag suggestion list should not have contained - "${suggestion value}"
+
+Select Tag Suggestion
+    [Arguments]    ${suggestion value}
+    [Documentation]    Selects a tag suggestion as given by ${suggestion value}.
+    ${previous_failure_keyword}=    Register Keyword To Run On Failure    Nothing
+    Robust Click    xpath=//td[text()="${suggestion value}"]
+    Check Tag Present In Editor    ${suggestion value}
+    [Teardown]    Register Keyword To Run On Failure    ${previous_failure_keyword}
+
+Tagging Search Result Verification
+    [Arguments]    ${document caption}    ${full path}    ${record name}    ${data type}
+    [Documentation]    Verifies that the tags search page contains the a record "tile" with the correct information as given by the required arguments:
+    ...    *${document caption}* should be the document caption (excluding item type)
+    ...    *${full path}* should be the full path to the document including root and the document caption. e.g. Root\Testing\Project\Experiment 1\Document 1
+    ...    *${record name}* is the parent record name.
+    ...    *${data type}* the data type of the document. e.g. CHEMISTRY
+    ${tile identifier}    Set Variable    xpath=//table[@title="${full path}"]
+    # Check the tile is present first...
+    Wait Until Page Contains Element    ${tile identifier}    30s
+    # Check the icon is correct...
+    Page Should Contain Element    ${tile identifier}//img[contains(@src, '${data type}')]
+    # Check the tile header is correct...
+    Element Should Contain    entity-panel-1-header    ${document caption}
+    # Check the record name is correct...
+    Page Should Contain Element    ${tile identifier}//div[contains(text(), 'Record: ${record name}')]
+    # Check the data type is correct...
+    Page Should Contain Element    ${tile identifier}//div[contains(text(), 'Data Type: ${data type}')]
+
+Enter Tag Search Text
+    [Arguments]    ${tag search text}
+    [Documentation]    Enters ${tag search text} into the tag search field
+    Input Text    ${TAG SEARCH FIELD}    ${tag search text}
+    Focus    ${TAG SEARCH FIELD}
+    Sleep    2s
+    ${status}    ${value}=    Run Keyword And Ignore Error    Page Should Contain Element    xpath=//td[text()="${tag search text}"]
+    Run Keyword If    '${status}'=='PASS'    Robust Click    xpath=//td[text()="${tag search text}"]
+    Focus    xpath=//div[text()="Tag:"]
+
+Add New Tag No Timestamp
+    [Arguments]    ${input tag text}
+    [Documentation]    Adds a tag to an open "edit tags" field
+    ...    ${tag number} should be unique for every use of this keyword within a test and the variable ${TAG ${tag number)} should exist within the scope of the test case.
+    ...    ${input tag text} is the text to be added as a tag (will be appended with the current time to ensure uniqueness between test runs).
+    Input Text And Press Enter    ${INPUT TAG}    ${input tag text}
+    Simulate    ${INPUT TAG}    blur
+    [Return]    ${input tag text}
+
+Add New Tag No Check
+    [Arguments]    ${document number}    ${input tag text}
+    [Documentation]    Adds a tag
+    ...    ${document number} the document to add the tag to
+    ...    ${input tag text} is the text to be added as a tag (will be appended with the current time to ensure uniqueness between test runs).
+    ${current time} =    Get Time
+    ${tag button} =    Evaluate    'document-header-${document number}-tagsButton'
+    ${document header} =    Evaluate    'document-header-${document number}-itemTypeLabel'
+    ${tag button version id}=    Get Entity Version ID    ${tag button}
+    Add Tag    ${tag button}    ${tag button version id}    ${input tag text}
+    Wait Five Seconds
+
+Check Tag Tooltip
+    [Arguments]    ${VALID USER}    ${date}    ${tag text}
+    [Documentation]    Checks whether the tag tooltip is from ${user} on the ${date}, for the tag ${tag text}, is present.
+    ...
+    ...    Note: Element contains is used, date should not inlcude time for timing reasons
+    Wait Until Page Contains Element    xpath=//div[contains(@title,"Added by ${VALID USER} on ${date}")]/a[text()="${tag text}"]    5s
+
+Tag Position Should Contain
+    [Arguments]    ${tag position}    ${tag text}
+    [Documentation]    Tag position ${tag position} should contain the text ${tag text}
+    element should contain    xpath=//div[@class="ewb-tag-item-panel"][${tag position}]//div[contains(@id, 'tagPanel')]/a    ${tag text}
+
+Tag Position Should Not Contain
+    [Arguments]    ${tag position}    ${tag text}
+    [Documentation]    Tag position ${tag position} should not contain the text ${tag text}
+    page should not contain    xpath=//div[contains(@id,"tagsPanel")]/table/tbody/tr/td[4]/div/div[${tag position}]/descendant::a[text()="$tag text}"]    ${tag text}
+
+Tag Entry Not Present
+    [Documentation]    Checks that the tag entryfield is not present
+    Element Should Not Be Visible    ${INPUT TAG}
+
+Get Record Tag Count
+    [Documentation]    Returns the record tag count
+    ${string tag count}    Get Text    ewb-record-action-bar-tags-count
+    ${tag count}    Convert To Integer    ${string tag count}
+    [Return]    ${tag count}    # Returns the record tag count
+
+Get Document Tag Count
+    [Arguments]    ${document number}
+    [Documentation]    Returns the tag count for the specified document
+    ${string tag count}    Get Text    document-header-${document number}-tags-count
+    ${tag count}    Convert To Integer    ${string tag count}
+    [Return]    ${tag count}    # Returns the tag count for the specified document
+
+Follow Tag
+    [Documentation]    Clicks the 'Follow' tag button to follow a tag(only if the tag is unfollowed)
+    ${FollowButtonText}    Get Text    ${ewb-follow-tag}
+    Run Keyword If    '${FollowButtonText}'=='Click to follow this tag'    Robust Click    ${ewb-follow-tag}
+    Wait Until Element Text Is    ${ewb-follow-tag}    You are following this tag    10s
+
+Unfollow Tag
+    [Documentation]    Clicks the 'Following' tag button to unfollow a tag(only if the tag is followed)
+    ${FollowButtonText}    Get Text    ${ewb-follow-tag}
+    Run Keyword Unless    '${FollowButtonText}'=='Click to follow this tag'    Click Element    ${ewb-follow-tag}
+    Wait Until Element Text Is    ${ewb-follow-tag}    Click to follow this tag    10s
+
+Document Tag Count Should Be
+    [Arguments]    ${document number}    ${expected tag count}
+    [Documentation]    Checks that the document tag count matches the given value
+    ${tag count}    Get Document Tag Count    ${document number}
+    Should Be Equal As Integers    ${expected tag count}    ${tag count}
+
+Record Tag Count Should Be
+    [Arguments]    ${expected tag count}
+    [Documentation]    Checks that the record tag count matches the given value
+    ${tag count}    Get Record Tag Count
+    Should Be Equal As Integers    ${expected tag count}    ${tag count}

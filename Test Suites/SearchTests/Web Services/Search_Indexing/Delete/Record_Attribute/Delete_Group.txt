@@ -1,0 +1,49 @@
+*** Settings ***
+Documentation     Created for story SH-1302
+Test Setup        setup test
+Library           ../../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../../Libraries/common_resource.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Keyword - Draft - Delete Group
+    [Documentation]    Record - Add Keyword - Draft - Delete Group
+    ...    - verify that record is not searchable by attribute text after group deletion
+    Edit Entity KeyWord    ${experimentId}    qwerty    ${experimentName}    Started
+    Draft Save    ${experimentId}
+    Unlock Entity    ${experimentId}
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${groupId}    As Intended    As Intended
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Keyword - Version - Delete Group
+    [Documentation]    Record - Add Keyword - Version - Delete Group
+    ...    - verify that record is not searchable by attribute text after group deletion
+    Edit Entity KeyWord    ${experimentId}    qwerty    ${experimentName}    Started
+    Version Save    ${experimentId}    Data Added
+    Unlock Entity    ${experimentId}
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${groupId}    As Intended    As Intended
+    Sleep    ${wait}
+    Execute Search And Verify No Result    qwerty    all    Experiment|title|is|"${experimentName}"
+
+*** Keywords ***
+setup test
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+    ${experimentName}=    Set Variable    Experiment ${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentId}

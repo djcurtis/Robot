@@ -1,0 +1,131 @@
+*** Settings ***
+Documentation     Ensures that changes to the way property formats are stored in RHINO are correct and that when GET requests sent they return the data in the correct format and structure.
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../Libraries/common_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+001 - Properties GET NUMBER whole number format
+    [Documentation]    POSTS a property to a term with a number format of whole number and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    NUMBERwholenumberformat    NUMBERwholenumberformat    true    {"property":[{"name":"Whole Number","type":"NUMBER","format":"NUMBER_WHOLE!#0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "NUMBER_WHOLE!#0"
+    Delete Element    ${new element id}
+
+002 - Properties GET NUMBER floating point format
+    [Documentation]    POSTS a property to a term with a number format of floating point and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    NUMBERfloatingpointformat    NUMBERfloatingpointformat    true    {"property":[{"name":"Floating Number","type":"NUMBER","format":"NUMBER_FLOATING!#0.0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "NUMBER_FLOATING!#0.0"
+    Delete Element    ${new element id}
+
+003 - Properties GET NUMBER scientific format
+    [Documentation]    POSTS a property to a term with a number format of scientific and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    NUMBERscientificformat    NUMBERscientificformat    true    {"property":[{"name":"Scientific","type":"NUMBER","format":"NUMBER_SCIENTIFIC!0.00E0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "NUMBER_SCIENTIFIC!0.00E0"
+    Delete Element    ${new element id}
+
+004 - Properties GET NUMBER percentage format
+    [Documentation]    POSTS a property to a term with a number format of percentage and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    NUMBERpercentageformat    NUMBERpercentageformat    true    {"property":[{"name":"Percentage","type":"NUMBER","format":"NUMBER_PERCENTAGE!#0.00%","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "NUMBER_PERCENTAGE!#0.00%"
+    Delete Element    ${new element id}
+
+005 - Properties GET NUMBER currency format
+    [Documentation]    POSTS a property to a term with a number format of currency and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    NUMBERcurrencyformat    NUMBERcurrencyformat    true    {"property":[{"name":"Currency","type":"NUMBER","format":"NUMBER_CURRENCY!$#,##0.00","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "NUMBER_CURRENCY!$#,##0.00"
+    Delete Element    ${new element id}
+
+006 - Properties GET NUMBER engineering format
+    [Documentation]    POSTS a property to a term with a number format of engineering and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    NUMBERengineeringformat    NUMBERengineeringformat    true    {"property":[{"name":"Engineering","type":"NUMBER","format":"NUMBER_ENGINEERING!##0.000E0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "NUMBER_ENGINEERING!##0.000E0"
+    Delete Element    ${new element id}
+
+007 - Properties GET TIMESTAMP european short date format
+    [Documentation]    POSTS a property to a term with a TIMESTAMP format of european short date and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    TIMESTAMPeushort    TIMESTAMPeushort    true    {"property":[{"name":"EU Short","type":"TIMESTAMP","format":"DATE_EURO_SHORT!dd/MM/yy!NONE!NONE","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "DATE_EURO_SHORT!dd/MM/yy!NONE!NONE"
+    Delete Element    ${new element id}
+
+008 - Properties GET TIMESTAMP us short date format
+    [Documentation]    POSTS a property to a term with a TIMESTAMP format of us short date and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    TIMESTAMPusshort    TIMESTAMPusshort    true    {"property":[{"name":"US Short","type":"TIMESTAMP","format":"DATE_US_SHORT!MM/dd/yy!NONE!NONE","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "DATE_US_SHORT!MM/dd/yy!NONE!NONE"
+    Delete Element    ${new element id}
+
+009 - Properties GET TIMESTAMP medium date format
+    [Documentation]    POSTS a property to a term with a TIMESTAMP format of medium date and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    TIMESTAMPmedium    TIMESTAMPmedium    true    {"property":[{"name":"Medium","type":"TIMESTAMP","format":"DATE_MEDIUM!dd-MMM-yyyy!NONE!NONE","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "DATE_MEDIUM!dd-MMM-yyyy!NONE!NONE"
+    Delete Element    ${new element id}
+
+010 - Properties GET TIMESTAMP long date format
+    [Documentation]    POSTS a property to a term with a TIMESTAMP format of long date and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    TIMESTAMPlong    TIMESTAMPlong    true    {"property":[{"name":"Long","type":"TIMESTAMP","format":"DATE_LONG!dd MMMMM yyyy!NONE!NONE","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format}    "DATE_LONG!dd MMMMM yyyy!NONE!NONE"
+    Delete Element    ${new element id}
+
+011 - Properties GET AUTO_ID custom 1 format
+    [Documentation]    POSTS a property to a term with a custom AUTO_ID format and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    AUTO_IDcustom1    AUTO_IDcustom1    true    {"property":[{"name":"Custom ID 1","type":"AUTO_ID","format":"AUTO_ID_FORMAT_!UNIQUE !TIMESTAMP_SEPARATOR_SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!LETTER!6!false!A!NONE!AUTO_ID_FORMAT_43!1","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Contain    ${format}    "AUTO_ID_FORMAT_!UNIQUE !TIMESTAMP_SEPARATOR_SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!LETTER!6!false!A!NONE!AUTO_ID_FORMAT_
+    Delete Element    ${new element id}
+
+012 - Properties GET AUTO_ID custom 2 format
+    [Documentation]    POSTS a property to a term with a custom AUTO_ID format and runs a GET request, then checks that the output is in the correct format
+    ${new element id}=    Create Root Element    TERM    AUTO_IDcustom2    AUTO_IDcustom2    true    {"property":[{"name":"Custom ID 2","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_44!1","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${format}=    Get Json value    ${new term properties}    /term/properties/property/0/format
+    Should Contain    ${format}    "AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_
+    Delete Element    ${new element id}
+
+013 - Properties GET property name
+    [Documentation]    POSTS a property to a term GET request, then checks that the output has the correct name
+    ${new element id}=    Create Root Element    TERM    STRINGname    STRINGname    true    {"property":[{"name":"Name Test","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}
+    ${name}=    Get Json value    ${new term properties}    /term/properties/property/0/name
+    Should Be Equal As Strings    ${name}    "Name Test"
+    Delete Element    ${new element id}
+
+014 - Properties GET after changing property format
+    [Documentation]    Ensures that a property GET request returns the expected data after changing the format of a catalog property.
+    ${new element id1}=    Create Root Element    TERM    NUMBEReditformat    NUMBEReditformat    true    {"property":[{"name":"Whole Number","type":"NUMBER","format":"NUMBER_WHOLE!#0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new element id2}=    Create Root Element    TERM    TIMESTAMPeditformat    TIMESTAMPeditformat    true    {"property":[{"name":"EU Short","type":"TIMESTAMP","format":"DATE_EURO_SHORT!dd/MM/yy!NONE!NONE","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new element id3}=    Create Root Element    TERM    AUTO_IDeditformat    AUTO_IDeditformat    true    {"property":[{"name":"Custom ID 1","type":"AUTO_ID","format":"AUTO_ID_FORMAT_!UNIQUE !TIMESTAMP_SEPARATOR_SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!true!MINUS!LETTER!6!false!A!NONE!AUTO_ID_FORMAT_43!1","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Update Element    ${new element id1}    TERM    NUMBEReditformat    NUMBEReditformat    true    {"property":[{"name":"Floating Number","type":"NUMBER","format":"NUMBER_FLOATING!#0.0","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Update Element    ${new element id2}    TERM    TIMESTAMPeditformat    TIMESTAMPeditformat    true    {"property":[{"name":"US Short","type":"TIMESTAMP","format":"DATE_US_SHORT!MM/dd/yy!NONE!NONE","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Update Element    ${new element id3}    TERM    AUTO_IDeditformat    AUTO_IDeditformat    true    {"property":[{"name":"Custom ID 2","type":"AUTO_ID","format":"AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_44!1","description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties1}=    Get Term Properties    ${new element id1}
+    ${format1}=    Get Json value    ${new term properties1}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format1}    "NUMBER_FLOATING!#0.0"
+    ${new term properties2}=    Get Term Properties    ${new element id2}
+    ${format2}=    Get Json value    ${new term properties2}    /term/properties/property/0/format
+    Should Be Equal As Strings    ${format2}    "DATE_US_SHORT!MM/dd/yy!NONE!NONE"
+    ${new term properties3}=    Get Term Properties    ${new element id3}
+    ${format3}=    Get Json value    ${new term properties3}    /term/properties/property/0/format
+    Should Contain    ${format3}    "AUTO_ID_FORMAT_! !SEQUENCE!DATE_EURO_SHORT!DISPLAY_24_HR!dd MMM yyyy HH:mm:ss!false!MINUS!NUMBER!6!false!1!AT_START!AUTO_ID_FORMAT_
+    Delete Element    ${new element id1}
+    Delete Element    ${new element id2}
+    Delete Element    ${new element id3}

@@ -1,0 +1,209 @@
+*** Settings ***
+Documentation     Created for story SH-1296
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Document - Version - Edit Text - Version
+    [Documentation]    Record - Add Document - Version - Edit Text - Version
+    ...    - verify record is searchable by document text by new document version
+    ...    - vesify record is not searchable by document text \ by old document version
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Document - Version - Edit Text - Draft
+    [Documentation]    Record - Add Document - Version - Edit Text - Draft
+    ...    - verfiry draft record is not searchable by document text \ by last version document
+    ...    - verift record searchable if it is draft
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Document - Version - Edit Text - Not Save
+    [Documentation]    Record - Add Document - Version - Edit Text - Not Save
+    ...    - verify not saved record is not searchable by document text
+    ...    - verify not saved record is searchable by document text by last saved version
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Document - Draft - Edit Text - Version
+    [Documentation]    Record - Add Document - Draft - Edit Text - Version
+    ...    - verify record is not searchable by document text \ by previously saved draft
+    ...    - verify record is searchable by last version saved document
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Document - Draft - Edit Text - Draft
+    [Documentation]    Record - Add Document - Draft - Edit Text - Draft
+    ...    - verify document is not searchable by document text by previusly saved draft
+    ...    - versify document is searchable by last saved draft
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Document - Draft - Edit Text - Not Save
+    [Documentation]    Record - Add Document - Draft - Edit Text - Not Save
+    ...    - verify record is searchble by document text by last saved draft
+    ...    - verify record is not searchble by documentb text without saving
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Text1 & Text2 - Version - Edit Text1 - Not Save
+    [Documentation]    Record - Add Text1 and Text2 documents - Version Save - Edit Text1 document - Not Save
+    ...    - verify record is searchble by original document text1 and text2 content by last saved Version
+    ...    - verify record is not searchble by edited document text1 without saving
+    ${documentId1}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 1
+    ${documentId2}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 2
+    Edit Text document And Do Not save    ${experimentId}    ${documentId1}    ${uniqueSearchText}
+    Edit Text Document And Version Save    ${experimentId}    ${documentId2}    ${uniqueSearchText}B
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId1}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}B    1    ${experimentName}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+
+Record - Add Text1 & Text2 - Version - Edit Text1 - Draft
+    [Documentation]    Record - Add Text1 and Text2 documents - Version Save - Edit Text1 document - Draft
+    ...    - verify record is searchble by original document text2 content by last saved Version
+    ...    - verify record not searchble by original document text1 content by last saved Version
+    ...    - verify record searchble by edited document text1 content after Draft save
+    ${documentId1}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 1
+    ${documentId2}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 2
+    Edit Text document And Do Not save    ${experimentId}    ${documentId1}    ${uniqueSearchText}
+    Edit Text Document And Version Save    ${experimentId}    ${documentId2}    ${uniqueSearchText}B
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId1}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}B    1    ${experimentName}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Text1 & Text2 - Version - Edit Text1 - Version
+    [Documentation]    Record - Add Text1 and Text2 documents - Version Save - Edit Text1 document - Version
+    ...    - verify record is searchble by original document text2 content by last saved Version
+    ...    - verify record not searchble by original document text1 content by last saved Version
+    ...    - verify record searchble by edited document text1 content after Version save
+    ${documentId1}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 1
+    ${documentId2}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 2
+    Edit Text document And Do Not save    ${experimentId}    ${documentId1}    ${uniqueSearchText}
+    Edit Text Document And Version Save    ${experimentId}    ${documentId2}    ${uniqueSearchText}B
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId1}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}B    1    ${experimentName}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Text1 & Text2 - Draft - Edit Text1 - Not Save
+    [Documentation]    Record - Add Text1 and Text2 documents - Draft Save - Edit Text1 document - Not Save
+    ...    - verify record is searchble by original document text1 and text2 content by last saved Draft
+    ...    - verify record is not searchble by edited document text1 without saving
+    ${documentId1}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 1
+    ${documentId2}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 2
+    Edit Text document And Do Not save    ${experimentId}    ${documentId1}    ${uniqueSearchText}
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId2}    ${uniqueSearchText}B
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId1}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}B    1    ${experimentName}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+
+Record - Add Text1 & Text2 - Draft - Edit Text1 - Draft
+    [Documentation]    Record - Add Text1 and Text2 documents - Draft Save - Edit Text1 document - Draft
+    ...    - verify record is searchble by original document text2 content by last saved Draft
+    ...    - verify record not searchble by original document text1 content by last saved Draft
+    ...    - verify record searchble by edited document text1 content after Draft save
+    ${documentId1}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 1
+    ${documentId2}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 2
+    Edit Text document And Do Not save    ${experimentId}    ${documentId1}    ${uniqueSearchText}
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId2}    ${uniqueSearchText}B
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId1}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}B    1    ${experimentName}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Text1 & Text2 - Draft - Edit Text1 - Version
+    [Documentation]    Record - Add Text1 and Text2 documents - Draft Save - Edit Text1 document - Version
+    ...    - verify record is searchble by original document text2 content by last saved Draft
+    ...    - verify record not searchble by original document text1 content by last saved Draft
+    ...    - verify record searchble by edited document text1 content after Version save
+    ${documentId1}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 1
+    ${documentId2}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name 2
+    Edit Text document And Do Not save    ${experimentId}    ${documentId1}    ${uniqueSearchText}
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId2}    ${uniqueSearchText}B
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId1}    ${uniqueSearchText2}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}B    1    ${experimentName}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${testCaseTime}=    Get Current Date
+    Set Suite Variable    ${testCaseTime}
+    ${experimentName}=    Set Variable    Experiment ${testCaseTime}
+    ${experimentId}=    Set Variable    ${EMPTY}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentName}
+    Set Suite Variable    ${experimentId}
+    ${uniqueSearchText}=    Generate Random String    10    [NUMBERS]abcdef    # generates a 10 char "hex" string
+    Set Suite Variable    ${uniqueSearchText}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

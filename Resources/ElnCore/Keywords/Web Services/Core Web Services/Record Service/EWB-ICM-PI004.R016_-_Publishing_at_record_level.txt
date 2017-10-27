@@ -1,0 +1,92 @@
+*** Settings ***
+Resource          ../../../Libraries/common_resource.txt    # Common variables
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ./PDF content acceptance/test utilities.txt
+
+*** Test Cases ***
+001 - Publish locked record
+    [Documentation]    Test ensures that
+    ...    - A locked record (that has been version saved) can be published with the web services
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Add Web Link Entity    ${experiment_id}    www.google.com
+    Commit Versioned Entity    ${experiment_id}
+    ${expectedHttpStatus}=    Set Variable    200
+    ${pdf_entity_id}=    Publish Record    ${experiment_id}    ${expectedHttpStatus}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}
+
+002 - Publish unlocked record
+    [Documentation]    Test ensures that
+    ...    - An unlocked record (that has been version saved) cannot be published by the web services
+    ...    - Attempting to do so returns the correct (403) error
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Add Web Link Entity    ${experiment_id}    www.google.com
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${expectedHttpStatus}=    Set Variable    403
+    ${pdf_entity_id}=    Publish Record    ${experiment_id}    ${expectedHttpStatus}
+    Delete Entity    ${group_id}
+
+003 - Publish unexisting record
+    [Documentation]    Test ensures that
+    ...    - A non-existent record cannot be published by the web services
+    ...    - Attempting to do so returns the correct (404) error
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Add Web Link Entity    ${experiment_id}    www.google.com
+    Commit Versioned Entity    ${experiment_id}
+    ${expectedHttpStatus}=    Set Variable    404
+    ${pdf_entity_id}=    Publish Record    wrong id    ${expectedHttpStatus}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}
+
+004 - Publish empty record
+    [Documentation]    Test ensures that
+    ...    - An empty record cannot be published by the web services
+    ...    - Attempting to do so returns the correct (403) error
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Commit Versioned Entity    ${experiment_id}
+    ${expectedHttpStatus}=    Set Variable    403
+    ${pdf_entity_id}=    Publish Record    ${experiment_id}    ${expectedHttpStatus}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}
+
+005 - Check publishable record
+    [Documentation]    Test ensures that
+    ...    - The web service has the ability to check whether a record can be published by the web services
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Add Web Link Entity    ${experiment_id}    www.google.com
+    Commit Versioned Entity    ${experiment_id}
+    ${is_publishable}=    Is Record Publishable    ${experiment_id}
+    Should Be Equal As Strings    ${is_publishable}    {"value":true}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}
+
+006 - Check unpublishable record
+    [Documentation]    Test ensures that
+    ...    - The web service has the ability to check whether a record cannot be published by the web services
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Commit Versioned Entity    ${experiment_id}
+    ${is_publishable}=    Is Record Publishable    ${experiment_id}
+    Should Be Equal As Strings    ${is_publishable}    {"value":false}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}

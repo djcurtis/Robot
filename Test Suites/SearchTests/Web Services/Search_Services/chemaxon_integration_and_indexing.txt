@@ -1,0 +1,200 @@
+*** Settings ***
+Default Tags      SRCH-CHEM
+Library           IDBSHttpLibrary
+Library           JSONLibrary
+Resource          ../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Library           EntityAPILibrary
+Library           SecurityAPILibrary
+
+*** Variables ***
+${chemistrysearch_API_endpoint}    /ewb/services/1.0/chemistry/data/search
+
+*** Test Cases ***
+SH-478 Ensure CHEM search queries can be sent & results received
+    [Documentation]    Ensure chemistry search queries can be sent & results received    # single molecule: result counts= 1    # chemistry simple reaction SH-478: result counts= 1
+    ...
+    ...    Test queries entity attributes containing
+    ...    - single molecule SH-478: result counts= 1
+    ...    - chemistry simple reaction SH-478: result counts= 1
+    [Tags]    SH-478    CHEM search    BUILD_ACCEPTANCE
+    [Setup]    Setup for SH-478
+    # see test setup: test queries entity attributes containing single molecule SH-478: result counts= 1
+    Chemistry setup
+    set request body    {"searchOptions": {"queryStructure": "C1CCC(CC1)c1ccccc1","searchType": "EXACT"},"paging": {"offset": 0,"limit": 10}}
+    POST    ${chemistrysearch_API_endpoint}
+    chemistry response count    1    /molecule/total
+    #see test setup, test queries entity attributes containing chemistry simple reaction SH-478: result counts= 1
+    Chemistry setup
+    set request body    {"searchOptions": {"queryStructure": "[CH2:10]1[CH2:9][CH2:8][CH:7]([CH2:12][CH2:11]1)[c:6]1[cH:1][cH:2][cH:3][cH:4][cH:5]1.[CH4:13]>>[CH3:13][CH:8]1[CH2:9][CH2:10][CH2:11][CH2:12][CH:7]1[c:6]1[cH:1][cH:2][cH:3][cH:4][cH:5]1","searchType": "EXACT"},"paging": {"offset": 0,"limit": 10}}
+    POST    ${chemistrysearch_API_endpoint}
+    chemistry response count    1    /reaction/total
+    [Teardown]    chemistrygroup_Teardown
+
+SH-520 CHEM: Join Chemistry Search results with EWB Permission model
+    [Documentation]    Join Chemistry Search results with EWB Permission model
+    ...
+    ...    Navigate to the webapp URL: https://vqa-srch-101app.idbs.co.uk/EWorkBookWebApp/#Search/Search
+    ...    Login as "TestUser3" and perform a chemistry search for the structures present on the following:
+    ...    - In experiment / template / report to which the user have permission to view it
+    ...    - In experiment / template / report to which the user does not have permission to view it
+    [Tags]    SH-520    Permission    ignore    BUILD_ACCEPTANCE
+    [Setup]    Setup for SH-520
+    # Test queries substructure search for naphthalene; 1 molecule and 2 reactions are returned
+    Comment    Chemistry setup
+    Test - User with limited access
+    set request body    {"searchOptions": {"queryStructure": "C1=CC2=C(C=C1)C=CC=C2","searchType": "SUBSTRUCTURE"},"paging": {"offset": 0,"limit": 20}}
+    POST    ${chemistrysearch_API_endpoint}
+    molecule & reaction_count    1    2
+    # Provide access to view experiment, template and report @ Group level under which all 3 projects are present. Test queries substructure search for naphthalene; then all 3 molecules and 3 reactions are returned
+    SecurityAPILibrary.Create User    TestUser3    Test user    Test3
+    Assign User Entity Role    TestUser3    Experiment User    ${group_id}
+    Assign User Entity Role    TestUser3    Report User    ${group_id}
+    Assign User Entity Role    TestUser3    Template User    ${group_id}
+    Test - User with limited access
+    set request body    {"searchOptions": {"queryStructure": "C1=CC2=C(C=C1)C=CC=C2","searchType": "SUBSTRUCTURE"},"paging": {"offset": 0,"limit": 20}}
+    POST    ${chemistrysearch_API_endpoint}
+    molecule & reaction_count    3    3
+    [Teardown]    chemistrygroup_Teardown
+
+*** Keywords ***
+Setup for SH-478
+    [Documentation]    test data setup    # verify document caption    # insert keywords as entity attributes    # insert keywords
+    ...    - to create ewb entitities> group 1 and project 1 has 2 records: 1 experiment contains benzen+cyclobenzene as a molecule; 1 report contains a simple reaction
+    #test data setup - to create ewb entitities> group 1 and project 1 has 2 records: 1 experiment contains benzen+cyclobenzene as a single molecule; 1 report contains a simple reaction
+    ${group_id}    EntityAPILibrary.Create Group    1    Chem SH-478
+    Set suite Variable    ${group_id}
+    ${project_id}    EntityAPILibrary.Create Project    ${group_id}    Test Project
+    ${experiment_name}=    set variable    Exp SH-478
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment_name}
+    ${item_id}=    EntityAPILibrary.Create Chemistry Item    ${experiment_id}
+    ${chemistry_data}    Get File    ${CURDIR}/Test_Data/benzenes (SH-478).txt
+    EntityAPILibrary.Edit Chemistry Item    ${item_id}    ${experiment_id}    ${chemistry_data}
+    EntityAPILibrary.Version Save    ${experiment_id}    Data Added
+    ${report_name}=    set variable    Rep SH-478
+    ${report_id}=    EntityAPILibrary.Create Report    ${project_id}    ${report_name}
+    Set suite Variable    ${report_id}
+    ${item2_id}=    EntityAPILibrary.Create Chemistry Item    ${report_id}
+    ${chemistry2_data}    Get File    ${CURDIR}/Test_Data/benzenes reaction (SH-478).txt
+    EntityAPILibrary.Edit Chemistry Item    ${item2_id}    ${report_id}    ${chemistry2_data}
+    EntityAPILibrary.Version Save    ${report_id}    Data Added
+
+Chemistry setup
+    create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set request header    accept    application/json, text/javascript, */*; q=0.01
+    set request header    content-type    application/json
+
+Chemistry response count
+    [Arguments]    ${verify_count}    ${json_path}
+    [Documentation]    request body of a post request keyword    # verify document caption    # insert keywords as entity attributes    # insert keywords
+    ...
+    ...    AND
+    ${response_body}=    Get response body
+    ${status}=    Get response status
+    should start with    ${status}    200
+    ${reponse_body}=    Get response body
+    ${result_count}=    Get Json Number Value    ${response_body}    ${json_path}
+    Should Be Equal As Integers    ${result_count}    ${verify_count}
+
+Setup for SH-520
+    [Documentation]    Test setup
+    ...    - Project 1 contains an Experiment and a Template > Insert naphlthalene and naphthalene reaction in each ewb entity > version save
+    ...    - Project 2 contains an Experiment and a report > Insert fluronaphlthalene and chloronaphthalene reaction in each ewb entity > version save
+    ...    - Project 3 contains a Template and a report > Insert bromonaphlthalene reaction and naphthoic acid in each ewb entity > version save
+    ...
+    ...    Assign Entity role for 'Testuser1' as follows:
+    ...    - 'Experiment Viewer' for Project 1
+    ...    - 'Report Viewer' for Project 2
+    ...    - 'Template Viewer' for Project 3
+    # test setup. Project 1 contains an Experiment and a Template > Insert naphlthalene and naphthalene reaction in each ewb entity > version save
+    SecurityAPILibrary.Create User    TestUser3    TestUser3    Test3
+    ${group_id}=    EntityAPILibrary.Create Group    1    Test SH-520
+    Set suite Variable    ${group_id}
+    ${project1_id}=    EntityAPILibrary.Create Project    ${group_id}    Project 1
+    ${experiment1_name}=    set variable    Experiment SH-520
+    ${experiment1_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${experiment1_name}
+    Set Suite Variable    ${experiment1_id}
+    ${Chem1_id}=    EntityAPILibrary.Create Chemistry item    ${experiment1_id}
+    Set suite Variable    ${Chem1_id}
+    ${Chemistry1_data}=    Get File    ${CURDIR}/Test_Data/Methylnaphthalene (SH-520).txt
+    EntityAPILibrary.Edit Chemistry Item    ${Chem1_id}    ${experiment1_id}    ${Chemistry1_data}
+    EntityAPILibrary.Version Save    ${experiment1_id}    Data Added
+    ${Template1_name}=    set variable    Template SH-520
+    ${Template1_id}=    EntityAPILibrary.Create Template    ${project1_id}    ${Template1_name}
+    Set Suite Variable    ${Template1_id}
+    ${Chem2_id}=    EntityAPILibrary.Create Chemistry item    ${Template1_id}
+    Set suite Variable    ${Chem2_id}
+    ${Chemistry2_data}=    Get File    ${CURDIR}/Test_Data/Iodonaphthalene reaction (SH-520).txt
+    EntityAPILibrary.Edit Chemistry Item    ${Chem2_id}    ${Template1_id}    ${Chemistry2_data}
+    EntityAPILibrary.Version Save    ${Template1_id}    Data Added
+    # test setup. Project 2 contains an Experiment and a report > Insert fluronaphlthalene and chloronaphthalene reaction in each ewb entity > version save
+    ${project2_id}=    EntityAPILibrary.Create Project    ${group_id}    Project 2
+    ${Experiment2_name}=    set variable    Experiment without access
+    ${Experiment2_id}=    EntityAPILibrary.Create Experiment    ${project2_id}    ${Experiment2_name}
+    Set suite Variable    ${Experiment2_id}
+    ${Chem3_id}=    EntityAPILibrary.Create Chemistry item    ${Experiment2_id}
+    Set suite Variable    ${Chem3_id}
+    ${chemistry3_data}=    Get File    ${CURDIR}/Test_Data/Fluronaphthalene (SH-520).txt
+    EntityAPILibrary.Edit Chemistry Item    ${Chem3_id}    ${Experiment2_id}    ${chemistry3_data}
+    EntityAPILibrary.Version Save    ${Experiment2_id}    Data Added
+    ${Report1_name}=    set variable    Report SH-520
+    ${Report1_id}=    EntityAPILibrary.Create Report    ${project2_id}    ${Report1_name}
+    Set suite Variable    ${Report1_id}
+    ${Chem4_id}=    EntityAPILibrary.Create Chemistry item    ${Report1_id}
+    Set suite Variable    ${Chem4_id}
+    ${chemistry4_data}=    Get File    ${CURDIR}/Test_Data/Chloronaphthalene reaction (SH-520).txt
+    EntityAPILibrary.Edit Chemistry Item    ${Chem4_id}    ${Report1_id}    ${chemistry4_data}
+    EntityAPILibrary.Version Save    ${Report1_id}    Data Added
+    # test setup. Project 3 contains a Template and a report > Insert bromonaphlthalene reaction and naphthoic acid in each ewb entity > version save
+    ${project3_id}=    EntityAPILibrary.Create Project    ${group_id}    Project 3
+    ${Template2_name}=    set variable    Template with access
+    ${Template2_id}=    EntityAPILibrary.Create Template    ${project3_id}    ${Template2_name}
+    Set suite Variable    ${Template2_id}
+    ${Chem5_id}=    EntityAPILibrary.Create Chemistry item    ${Template2_id}
+    Set suite Variable    ${Chem5_id}
+    ${chemistry5_data}=    Get File    ${CURDIR}/Test_Data/Bromonaphthalene reaction (SH-520).txt
+    EntityAPILibrary.Edit Chemistry Item    ${Chem5_id}    ${Template2_id}    ${chemistry5_data}
+    EntityAPILibrary.Version Save    ${Template2_id}    Data Added
+    ${Report2_name}=    set variable    Report without access
+    ${Report2_id}=    EntityAPILibrary.Create Report    ${project3_id}    ${Report2_name}
+    Set suite Variable    ${Report2_id}
+    ${Chem6_id}=    EntityAPILibrary.Create Chemistry item    ${Report2_id}
+    Set suite Variable    ${Chem6_id}
+    ${chemistry6_data}=    Get File    ${CURDIR}/Test_Data/Naphthoic acid (SH-520).txt
+    EntityAPILibrary.Edit Chemistry Item    ${Chem6_id}    ${Report2_id}    ${chemistry6_data}
+    EntityAPILibrary.Version Save    ${Report2_id}    Data Added
+    # Assign Entity role for 'Testuser1' as follows: 'Experiment Viewer' for Project 1, 'Report Viewer' for Project 2, 'Template Viewer' for Project 3
+    SecurityAPILibrary.Assign Entity Role To User    TestUser3    Experiment Viewer    ${project1_id}
+    SecurityAPILibrary.Assign Entity Role To User    TestUser3    Report Viewer    ${project2_id}
+    SecurityAPILibrary.Assign Entity Role To User    TestUser3    Template Viewer    ${project3_id}
+
+Test - User with limited access
+    create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    TestUser3    Test3
+    Set request header    accept    application/json, text/javascript, */*; q=0.01
+    set request header    content-type    application/json
+
+chemistrygroup_Teardown
+    EntityAPILibrary.Delete Entity    ${group_id}    As intended    As intended
+
+Chemistry response count - Reaction
+    [Arguments]    ${verify1_count}
+    ${response_body}=    Get Response Body
+    ${status}=    Get Response Status
+    Should Start With    ${status}    200
+    ${result_count}=    Get Json Number Value    ${response_body}    /reaction/total
+    Should Be Equal As Integers    ${result_count}    ${verify1_count}
+
+Chemistry response count - Molecule
+    [Arguments]    ${verify1_count}
+    ${response_body}=    Get Response Body
+    ${status}=    Get Response Status
+    Should Start With    ${status}    200
+    ${result_count}=    Get Json Number Value    ${response_body}    /molecule/total
+    Should Be Equal As Integers    ${result_count}    ${verify1_count}
+
+molecule & reaction_count
+    [Arguments]    ${molecule_response_count}    ${reaction_response_count}
+    Chemistry response count - Molecule    ${molecule_response_count}
+    Chemistry response count - Reaction    ${reaction_response_count}

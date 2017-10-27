@@ -1,0 +1,597 @@
+*** Settings ***
+Library           IDBSSelenium2Library
+Library           String
+Library           OracleLibrary
+Resource          record_resource.txt
+Resource          ../../Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+
+*** Variables ***
+${Edit Image}     xpath=//a[@class="ewb-document-header-button-primary"]
+${Save Image}     saveImage
+${Delete Image Element}    image-editor-delete
+${Duplicate Image Element}    image-editor-duplicate
+${Adjust Image Margins}    image-editor-margins
+${Image Zoom Out}    image-editor-zoom-out
+${Image Zoom In}    image-editor-zoom-in
+${Image Editor Zoom Menu}    image-editor-zoom-menu
+${Image Editor Zoom Popup}    zoomMenu
+${Insert New Line Element}    image-editor-new-line
+${Stop Image Edit}    closeImageEditor
+${SVG Canvas}     svg-element-0    # The SVG canvas layer
+${Background Image}    svg-element-1    # The background image within the image editor
+${Image Editor Top Margin}    image-editor-top-margin
+${Image Editor Left Margin}    image-editor-left-margin
+${Image Editor Right Margin}    image-editor-right-margin
+${Image Editor Lock Margins}    xpath=//span[@id="image-editor-lock-margin-values"]/input
+${Image Editor Bottom Margin}    image-editor-bottom-margin
+${stroke-width}    stroke-width
+${stroke-style}    stroke-dasharray
+${font-size}      font-size
+${font-family}    font-family
+${Image Editor Stroke Width Value}    image-editor-stroke-width-picker
+${Image Editor Stroke Style Value}    image-editor-stroke-style-picker
+${Image Editor Stroke Colour Value}    image-editor-stroke-colour-picker
+${OkButton}       okButton
+${stroke-colour}    stroke
+${fill-colour}    fill
+${Image Editor Fill Colour Value}    image-editor-fill-colour-picker
+${Colour Picker More Colours}    colour-picker-more-colours
+${Colour Picker Dialog}    colour-picker-dialog
+${Image Name}     WebClientImageAnnotationsTestImage.jpg
+${Image Replacement IVG File}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Web Client${/}Image Annotations${/}WebClientImageAnnotationsTestImage.ivg
+${Image Editor Arrow Head Style Value}    image-editor-arrow-style-picker
+${arrow-head-start}    marker-start
+${arrow-head-end}    marker-end
+${Image Editor Font Size Value}    image-editor-font-size-picker
+${Image Editor Font Family Value}    image-editor-font-family-picker
+${Image Editor Depth Menu}    image-editor-element-depth-menu
+${Bring Forward}    elementDepthChange-UP
+${Send Backward}    elementDepthChange-DOWN
+${Bring To Front}    elementDepthChange-TOP
+${Send To Back}    elementDepthChange-BOTTOM
+${Cursor Key Up}    \38
+${Cursor Key Down}    \40
+${Cursor Key Left}    \37
+${Cursor Key Right}    \39
+${View Menu Option}    ewb-image-renderer-view
+${Image Editor Selector}    xpath=//*[@class='ewb-image-editor-selector']
+
+*** Keywords ***
+Add New Line
+    [Arguments]    ${first coordinate}
+    ${number of elements}=    Check Number of SVG Elements
+    ${number of elements}=    Evaluate    ${number of elements}+1
+    Robust Click    image-editor-add
+    Robust Click    image-editor-new-line
+    Wait Five Seconds
+    Call Selenium Api    mouseDownAt    ${SVG Canvas}    ${first coordinate}
+    Call Selenium Api    mouseUpAt    ${SVG Canvas}    ${first coordinate}
+    Wait Five Seconds
+    ${new number of elements}=    Check Number of SVG Elements
+    Should Be Equal As Numbers    ${number of elements}    ${new number of elements}
+
+Check Arrow Head Style
+    [Arguments]    ${ElementId}    ${ExpectedStartArrowHead}    ${ExpectedEndArrowHead}    # ElementId specifies the line element to check, ExpectedStartArrowHead and ExpectedEndArrowHead are booleans that indicate whether or not the arror heads should appear
+    ${StartArrowHead}    Get Element Style Attribute    ${ElementId}    ${arrow-head-start}
+    ${EndArrowHead}    Get Element Style Attribute    ${ElementId}    ${arrow-head-end}
+    Run Keyword If    '${ExpectedStartArrowHead}' == 'TRUE'    Should Start With    ${StartArrowHead}    url(
+    Run Keyword If    '${ExpectedEndArrowHead}' == 'TRUE'    Should Start With    ${EndArrowHead}    url(
+    Run Keyword If    '${ExpectedStartArrowHead}' == 'FALSE'    Should Be Empty    ${StartArrowHead}
+    Run Keyword If    '${ExpectedEndArrowHead}' == 'FALSE'    Should Be Empty    ${EndArrowHead}
+
+Check Background Image
+    [Arguments]    ${expected image}
+    [Documentation]    *Description*
+    ...    Checks the background image within the image edit session
+    ...
+    ...    *Arguments*
+    ...
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The image must be opened for editing
+    ...
+    ...    *Example*
+    ...    | Lock Record For Editting |
+    ...    | Start Image Editing | 1 |
+    ...    | Check Background Image | image_source |
+    ${edit image URL}=    Get Image Edit URL
+    Go To    https://${server}:${WEB_CLIENT_PORT}${edit image URL}
+    Capture Page Screenshot    actual_screen.png
+    Compare Images    actual_screen.png    ${expected image}    differences_image.png
+
+Check Canvas Zoom
+    [Arguments]    ${ZoomNumber}
+    Wait Until Page Contains Element    svg-root-element
+    ${Transform}    IDBSSelenium2Library.Get Element Attribute    svg-root-element@transform
+    Should Contain    ${Transform}    ${ZoomNumber}
+
+Check Fill Colour
+    [Arguments]    ${ElementId}    ${ExpectedFillColour}    # The element id and the expected fill colour formatted as an rgb value, ie. rgb(255, 255, 255)
+    ${FillColour}    Get Element Style Attribute    ${ElementId}    ${fill-colour}
+    Check Colours Match    Fill colour values    ${FillColour}    ${ExpectedFillColour}
+
+Check Number of SVG Elements
+    ${number of elements}=    Get Matching Xpath Count    //*[contains(@id, 'svg-element')]
+    [Return]    ${number of elements}
+
+Check Stroke Colour
+    [Arguments]    ${ElementId}    ${ExpectedStrokeColour}    # The element id and the expected stroke colour formatted as an rgb value, ie. rgb(255, 255, 255)
+    ${StrokeColour}    Get Element Style Attribute    ${ElementId}    ${stroke-colour}
+    Check Colours Match    Stroke colour values    ${StrokeColour}    ${ExpectedStrokeColour}
+
+Check Stroke Style
+    [Arguments]    ${ElementId}    ${ExpectedStrokeStyle}
+    Sleep    1s
+    ${StrokeStyle}    Get Element Style Attribute    ${ElementId}    ${stroke-style}
+    ${NoSpaceStrokeStyle_temp}=    Run Keyword Unless    '${ExpectedStrokeStyle}'=='${EMPTY}'    Evaluate    "${StrokeStyle}".replace(" ","")    #replace whitespace since certain browsers display the style with spaces between values
+    ${NoSpaceExpectedStrokeStyle_temp}=    Run Keyword Unless    '${ExpectedStrokeStyle}'=='${EMPTY}'    Evaluate    "${ExpectedStrokeStyle}".replace(" ","")    #replace whitespace from expected value as well to ensure the values can be compared
+    ${NoSpaceStrokeStyle}=    Run Keyword Unless    '${ExpectedStrokeStyle}'=='${EMPTY}'    Evaluate    "${NoSpaceStrokeStyle_temp}".replace("px","")    #replace the "px" with nothing since not all browsers will display the style as "10px" just "10"
+    ${NoSpaceExpectedStrokeStyle}=    Run Keyword Unless    '${ExpectedStrokeStyle}'=='${EMPTY}'    Evaluate    "${NoSpaceExpectedStrokeStyle_temp}".replace("px","")    #replace the "px" with nothing since not all browsers will display the style as "10px" just "10"
+    ${StrokeStyle}=    Set Variable If    '${ExpectedStrokeStyle}'=='${EMPTY}'    ${StrokeStyle}    ${NoSpaceStrokeStyle}
+    ${ExpectedStrokeStyle}=    Set Variable If    '${ExpectedStrokeStyle}'=='${EMPTY}'    ${ExpectedStrokeStyle}    ${NoSpaceExpectedStrokeStyle}
+    Should Be Equal    ${StrokeStyle}    ${ExpectedStrokeStyle}    Actual stroke style does not equal the expected stroke style
+
+Check Stroke Width
+    [Arguments]    ${ElementId}    ${ExpectedStrokeWidth}
+    ${StrokeWidth}    Get Element Style Attribute    ${ElementId}    ${stroke-width}
+    ${StrokeWidth}    Run Keyword Unless    '${StrokeWidth}'=='${EMPTY}'    Evaluate    "${StrokeWidth}".replace("px","")    #replace the "px" with nothing since not all browsers will display the style as "10px" just "10"
+    ${ExpectedStrokeWidth}    Run Keyword Unless    '${ExpectedStrokeWidth}'=='${EMPTY}'    Evaluate    "${ExpectedStrokeWidth}".replace("px","")    #replace the "px" with nothing since not all browsers will display the style as "10px" just "10"
+    Should Be Equal    ${StrokeWidth}    ${ExpectedStrokeWidth}
+
+Check Text
+    [Arguments]    ${ElementId}    ${ExpectedText}    # The element id and the expected text
+    Comment    FOR SOME REASON THE FOLLOWING XPATH FAILS TO MATCH, NO IDEA WHY !!!!
+    Element Text Should Be    xpath=//text[@id="${ElementId}"]/tspan    ${ExpectedText}
+
+Check Font Size
+    [Arguments]    ${ElementId}    ${ExpectedFontSize}
+    ${FontSize}    Get Element Style Attribute    ${ElementId}    ${font-size}
+    Should Start With    ${FontSize}    ${ExpectedFontSize}
+
+Set And Check Font Size
+    [Arguments]    ${ElementId}    ${FontSize}    ${ExpectedFontSize}
+    Robust Click    ${Image Editor Font Size Value}
+    Wait Until Page Contains Element    ewb-popup-menu
+    Robust Click    ${FontSize}
+    Check Font Size    ${ElementId}    ${ExpectedFontSize}
+
+Check Font Family
+    [Arguments]    ${ElementId}    ${ExpectedFontFontFamily}=none
+    ${FontFamily}    Get Element Style Attribute    ${ElementId}    ${font-family}
+    Run Keyword If    '${ExpectedFontFontFamily}'=='none'    Should Be Empty    ${FontFamily}
+    Run Keyword If    '${ExpectedFontFontFamily}'!='none'    Should Start With    ${FontFamily}    ${ExpectedFontFamily}
+
+Set And Check Font Family
+    [Arguments]    ${ElementId}    ${FontFamily}    ${ExpectedFontFamily}
+    Robust Click    ${Image Editor Font Family Value}
+    Wait Until Page Contains Element    ewb-popup-menu
+    Robust Click    ${FontFamily}
+    Wait Until Keyword Succeeds    30s    5s    Check Font Family    ${ElementId}    ${ExpectedFontFamily}
+
+Click Image Button
+    [Arguments]    ${buttonId}
+    Robust Click    xpath=//*[@id="${buttonId}"]/img
+
+Delete Element
+    [Arguments]    ${element id}
+    Sleep    2s
+    # Get svg element count
+    ${number of elements}=    Check Number of SVG Elements
+    ${number of elements}=    Evaluate    ${number of elements}-1
+    Select Element    ${element id}
+    Click Image    xpath=//*[@id="${Delete Image Element}"]/img
+    # Validate that svg element count is -1 of the previous
+    ${new number of elements}=    Check Number of SVG Elements
+    Should Be Equal As Numbers    ${number of elements}    ${new number of elements}
+
+Get Element Style Attribute
+    [Arguments]    ${ElementId}    ${Attribute}
+    Wait Until Page Contains Element    ${ElementId}
+    ${Style}    IDBSSelenium2Library.Get Element Attribute    ${ElementId}@style
+    ${Style}    Replace String    ${Style}    "    '
+    ${Result}    Evaluate    re.findall("${Attribute}:\\s*([A-Za-z0-9_, ()'#-\.]*);", "${Style}")[0] if "${Style}".find("${Attribute}:") >= 0 else ""    re
+    [Return]    ${Result}
+
+Get Image Edit URL
+    Wait Until Page Contains Element    ${Background Image}
+    ${image URL}=    IDBSSelenium2Library.Get Element Attribute    ${Background Image}@href
+    [Return]    ${image URL}
+
+Get Image Non-Edit URL
+    [Arguments]    ${document number}
+    ${image URL}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[@id="document-body-${document number}-panel"]/table/tbody/tr/td/div/img@src
+    [Return]    ${image URL}
+
+Get Non Edit Image
+    [Arguments]    ${source URL}    ${output file location}
+    Go To    https://${server}:${WEB_CLIENT_PORT}/EWorkbookWebApp/${source URL}
+    Capture Page Screenshot    ${output file location}.png
+    Go Back
+    ${check status}    ${value} =    Run Keyword And Ignore Error    Page Should Contain    You already have a lock on this entity.
+    Run Keyword If    '${check status}'=='PASS'    Override Lock    yes
+
+Save Image
+    [Documentation]    *Description*
+    ...    Saves the image currently in the image editor
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The image must be opened for editing
+    ...
+    ...    *Example*
+    ...    | Lock Record For Editting |
+    ...    | Start Image Editing | 1 |
+    ...    | Save Image |
+    Robust Click    ${save image}
+    Dialog Should Not Be Present    Image Editor
+
+Select Element
+    [Arguments]    ${element id}
+    Wait Until Page Contains Element    ${element id}
+    _JS_mouseDown    ${element id}
+    _JS_mouseUp    ${element id}
+
+Set Advanced Colour
+    [Arguments]    ${ColourTypeButtonId}    ${HexColour}    # The colour formatted as a html hex colour ie. ffffff
+    Robust Click    ${ColourTypeButtonId}
+    Robust Click    ${Colour Picker More Colours}
+    Wait Until Page Contains Element    ${Colour Picker Dialog}
+    Wait Until Page Contains Element    xpath=//*[@id="colour-picker"]/tbody/tr/td[3]/table/tbody/tr[8]/td[2]/input
+    Wait Until Element Is Visible    xpath=//*[@id="colour-picker"]/tbody/tr/td[3]/table/tbody/tr[8]/td[2]/input    10s
+    Run Keyword Unless    '${OPERATING_SYSTEM}'=='OSX'    Input Text    xpath=//*[@id="colour-picker"]/tbody/tr/td[3]/table/tbody/tr[8]/td[2]/input    ${HexColour}
+    Run Keyword If    '${OPERATING_SYSTEM}'=='OSX'    Input Text Using Javascript    xpath=//*[@id="colour-picker"]/tbody/tr/td[3]/table/tbody/tr[8]/td[2]/input    ${HexColour}    #workaround for focus issues in OSX for gwt-Textboxes
+    Robust Click    ${OkButton}
+
+Set Arrow Head Style
+    [Arguments]    ${ArrowHeadStyle}
+    Robust Click    ${Image Editor Arrow Head Style Value}
+    Wait Until Page Contains Element    ewb-popup-menu
+    Robust Click    ${ArrowHeadStyle}
+
+Set Canvas Margins
+    [Arguments]    ${top margin}    ${bottom margin}    ${left margin}    ${right margin}    ${lock margins}=yes
+    Select Element    svg-element-1
+    Click Image    xpath=//*[@id="${Adjust Image Margins}"]/img
+    Dialog Should Be Present    Image Margins
+    # Adjust values
+    Run Keyword If    '${lock margins}'=='yes'    Select Checkbox    ${Image Editor Lock Margins}
+    Run Keyword If    '${lock margins}'=='no'    Unselect Checkbox    ${Image Editor Lock Margins}
+    Input Text    ${Image Editor Top Margin}    ${top margin}
+    Simulate    ${Image Editor Top Margin}    change
+    Input Text    ${Image Editor Bottom Margin}    ${bottom margin}
+    Simulate    ${Image Editor Bottom Margin}    change
+    Input Text    ${Image Editor Left Margin}    ${left margin}
+    Simulate    ${Image Editor Left Margin}    change
+    Input Text    ${Image Editor Right Margin}    ${right margin}
+    Simulate    ${Image Editor Right Margin}    change
+    Focus    okButton
+    # Validate values
+    Run Keyword If    '${lock margins}'=='yes'    Textfield Should Contain    ${Image Editor Top Margin}    ${right margin}
+    Run Keyword If    '${lock margins}'=='yes'    Textfield Should Contain    ${Image Editor Bottom Margin}    ${right margin}
+    Run Keyword If    '${lock margins}'=='yes'    Textfield Should Contain    ${Image Editor Left Margin}    ${right margin}
+    Run Keyword If    '${lock margins}'=='yes'    Textfield Should Contain    ${Image Editor Right Margin}    ${right margin}
+    Run Keyword If    '${lock margins}'=='no'    Textfield Should Contain    ${Image Editor Top Margin}    ${top margin}
+    Run Keyword If    '${lock margins}'=='no'    Textfield Should Contain    ${Image Editor Bottom Margin}    ${bottom margin}
+    Run Keyword If    '${lock margins}'=='no'    Textfield Should Contain    ${Image Editor Left Margin}    ${left margin}
+    Run Keyword If    '${lock margins}'=='no'    Textfield Should Contain    ${Image Editor Right Margin}    ${right margin}
+    Run Keyword If    '${lock margins}'=='yes'    Checkbox Should Be Selected    ${Image Editor Lock Margins}
+    Run Keyword If    '${lock margins}'=='no'    Checkbox Should Not Be Selected    ${Image Editor Lock Margins}
+    Click OK
+
+Set Colour
+    [Arguments]    ${ColourTypeButtonId}    ${ColourButtonId}
+    Robust Click    ${ColourTypeButtonId}
+    Robust Click    ${ColourButtonId}
+
+Set Opacity
+    [Arguments]    ${ColourTypeButtonId}    ${Direction}
+    Robust Click    ${ColourTypeButtonId}
+    Focus    opacity-slider
+    Run Keyword If    '${Direction}'=='decrease'    Press Left Arrow
+    Run Keyword If    '${Direction}'=='increase'    Press Right Arrow
+
+Set And Check Opacity
+    [Arguments]    ${ColourTypeButtonId}    ${ElementId}    ${Direction}    ${StyleAttribute}    ${ExpectedValue}
+    Set Opacity    ${ColourTypeButtonId}    ${Direction}
+    ${Opacity}    Get Element Style Attribute    ${ElementId}    ${StyleAttribute}
+    Should Be Equal    ${Opacity}    ${ExpectedValue}
+
+Set Stroke Style
+    [Arguments]    ${StrokeStyle}
+    Robust Click    ${Image Editor Stroke Style Value}
+    Wait Until Page Contains Element    ewb-popup-menu
+    Robust Click    ${StrokeStyle}
+
+Set Stroke Width
+    [Arguments]    ${StrokeWidth}
+    Input Text And Press Enter    ${Image Editor Stroke Width Value}    ${StrokeWidth}
+    Simulate    ${Image Editor Stroke Width Value}    change
+    Focus    ${Save Image}
+
+Set Zoom
+    [Arguments]    ${ZoomLevel}    # This should be either 50, 100 or 200
+    Robust Click    xpath=//*[@id="${Image Editor Zoom Menu}"]/img    type=image
+    Run Keyword If    '${ZoomLevel}'=='50'    Robust Click    zoomValue-V50
+    Run Keyword If    '${ZoomLevel}'=='100'    Robust Click    zoomValue-V100
+    Run Keyword If    '${ZoomLevel}'=='200'    Robust Click    zoomValue-V200
+
+Start Image Editing
+    [Arguments]    ${document number}
+    [Documentation]    *Description*
+    ...    Edits an existing image in an open record
+    ...
+    ...    *Arguments*
+    ...    ${document number} = The position of the document in the record, first document = 1
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The record must be opened for editing
+    ...
+    ...    *Example*
+    ...    | Lock Record For Editting |
+    ...    | Start Image Editing | 1 |
+    Select Document Header    ${document number}
+    Robust Click    ${Edit Image}
+    Dialog Should Be Present    Image Editor
+    Sleep    1s    # Short delay to allow the initial background image selection to finish, without this the tests can sometimes try and select something before the background image selection takes place
+
+Stop Image Editing
+    [Arguments]    ${save changes}=yes
+    [Documentation]    *Description*
+    ...    Stops an edit session on an image
+    ...
+    ...    *Arguments*
+    ...    ${save changes}=yes = Whether to save any changes on close (if unsaved changes exist), either "yes", "no" or "cancel"
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The image must be opened for editing
+    ...
+    ...    *Example*
+    ...    | Lock Record For Editting |
+    ...    | Start Image Editing | 1 |
+    ...    | Stop Image Editing | 1 |
+    Robust Click    ${Stop Image Edit}
+    ${check status}    ${value} =    Run Keyword And Ignore Error    Page Should Contain Element    xpath=//*[contains(text(), 'You have modified the image do you want to save the changes')]
+    Run Keyword If    '${check status}'=='PASS'    Run Keyword If    '${save changes}'=='yes'    Click OK
+    Run Keyword If    '${check status}'=='PASS'    Run Keyword If    '${save changes}'=='no'    Click Cancel
+    Run Keyword If    '${check status}'=='PASS'    Run Keyword If    '${save changes}'=='cancel'    Click Tertiary Button
+    Run Keyword If    '${save changes}'=='yes'    Dialog Should Not Be Present    Image Editor
+    Run Keyword If    '${save changes}' == 'no'    Dialog Should Not Be Present    Image Editor
+    Run Keyword If    '${save changes}' == 'cancel'    Dialog Should Be Present    Image Editor
+
+Zoom In
+    Robust Click    xpath=//*[@id="${Image Editor Zoom Menu}"]/img    type=image
+    Robust Click    zoomValue-IN
+    Sleep    1s
+
+Zoom out
+    Robust Click    xpath=//*[@id="${Image Editor Zoom Menu}"]/img    type=image
+    Robust Click    zoomValue-OUT
+    Sleep    1s
+
+Zoom In Keyboard
+    Select Element    svg-element-0
+    Press Add Key
+
+Zoom Out Keyboard
+    Select Element    svg-element-0
+    Press Subtract Key
+
+Change Annotation ZIndex
+    [Arguments]    ${ElementId}    ${Order}
+    Select Element    ${ElementId}
+    Robust Click    ${Image Editor Depth Menu}
+    Wait Until Page Contains Element    ewb-popup-menu
+    Robust Click    ${Order}
+
+Get Element Index
+    [Arguments]    ${Element Id}
+    Wait Until Page Contains Element    ${Element Id}
+    ${ElementIndex}=    IDBSSelenium2Library.Get Element Index    ${Element Id}
+    [Return]    ${ElementIndex}
+
+Change Annotation ZIndex And Check
+    [Arguments]    ${ElementId}    ${Order}    ${OldPosition}    ${NewPosition}
+    ${OldIndex}    Get Element Index    ${ElementId}
+    Should Be Equal As Integers    ${OldPosition}    ${OldIndex}
+    Change Annotation ZIndex    ${ElementId}    ${Order}
+    ${NewIndex}    Get Element Index    ${ElementId}
+    Should Be Equal As Integers    ${NewPosition}    ${NewIndex}
+
+Duplicate Element
+    [Arguments]    ${element id}    ${expected new element id}
+    # Get svg element count
+    ${number of elements}=    Check Number of SVG Elements
+    ${number of elements}=    Evaluate    ${number of elements}+1
+    Select Element    ${element id}
+    Robust Click    xpath=//*[@id="${Duplicate Image Element}"]/img    type=image
+    Sleep    1s
+    # Validate that svg element count is +1 of the previous
+    ${new number of elements}=    Check Number of SVG Elements
+    Should Be Equal As Numbers    ${number of elements}    ${new number of elements}
+    ${SourceStrokeColour}    Get Element Style Attribute    ${element id}    ${stroke-colour}
+    ${DuplicateStrokeColour}    Get Element Style Attribute    ${expected new element id}    ${stroke-colour}
+    Should Be Equal    ${SourceStrokeColour}    ${DuplicateStrokeColour}
+    ${SourceStrokeStyle}    Get Element Style Attribute    ${element id}    ${stroke-style}
+    ${DuplicateStrokeStyle}    Get Element Style Attribute    ${expected new element id}    ${stroke-style}
+    Should Be Equal    ${SourceStrokeStyle}    ${DuplicateStrokeStyle}
+    ${SourceStrokeWidth}    Get Element Style Attribute    ${element id}    ${stroke-width}
+    ${DuplicateStrokeWidth}    Get Element Style Attribute    ${expected new element id}    ${stroke-width}
+    Should Contain    ${SourceStrokeWidth}    ${DuplicateStrokeWidth}
+    ${SourceFillColour}    Get Element Style Attribute    ${element id}    ${fill-colour}
+    ${DuplicateFillColour}    Get Element Style Attribute    ${expected new element id}    ${fill-colour}
+    Should Be Equal    ${SourceFillColour}    ${DuplicateFillColour}
+    ${SourceX}    IDBSSelenium2Library.Get Element Attribute    ${element id}@x
+    ${DuplicateX}    IDBSSelenium2Library.Get Element Attribute    ${expected new element id}@x
+    Should Be Equal    ${SourceX}    ${DuplicateX}
+    ${SourceY}    IDBSSelenium2Library.Get Element Attribute    ${element id}@y
+    ${DuplicateY}    IDBSSelenium2Library.Get Element Attribute    ${expected new element id}@y
+    Should Be Equal    ${SourceY}    ${DuplicateY}
+    ${SourceWidth}    IDBSSelenium2Library.Get Element Attribute    ${element id}@width
+    ${DuplicateWidth}    IDBSSelenium2Library.Get Element Attribute    ${expected new element id}@width
+    Should Be Equal    ${SourceWidth}    ${DuplicateWidth}
+    ${SourceHeight}    IDBSSelenium2Library.Get Element Attribute    ${element id}@height
+    ${DuplicateHeight}    IDBSSelenium2Library.Get Element Attribute    ${expected new element id}@height
+    Should Be Equal    ${SourceHeight}    ${DuplicateHeight}
+    ${Translation}    IDBSSelenium2Library.Get Element Attribute    ${expected new element id}@transform
+    ${Translation}    Evaluate    "${Translation}".replace(",","")
+    Should Be Equal    matrix(1 0 0 1 10 10)    ${Translation}
+
+Keyboard Change Annotation ZIndex
+    [Arguments]    ${ElementId}    ${Order}
+    Select Element    ${ElementId}
+    Run Keyword If    '${Order}'=='${Send Backward}'    Press Control Shift And Key    DOWN
+    Run Keyword If    '${Order}'=='${Bring Forward}'    Press Control Shift And Key    UP
+    Run Keyword If    '${Order}'=='${Send To Back}'    Press Control Shift And Key    LEFT
+    Run Keyword If    '${Order}'=='${Bring To Front}'    Press Control Shift And Key    RIGHT
+
+Keyboard Change Annotation ZIndex And Check
+    [Arguments]    ${ElementId}    ${Order}    ${OldPosition}    ${NewPosition}
+    ${OldIndex}    Get Element Index    ${ElementId}
+    Should Be Equal As Integers    ${OldPosition}    ${OldIndex}
+    Keyboard Change Annotation ZIndex    ${ElementId}    ${Order}
+    ${NewIndex}    Get Element Index    ${ElementId}
+    Should Be Equal As Integers    ${NewPosition}    ${NewIndex}
+
+Keyboard Move Annotation
+    [Arguments]    ${ElementId}    ${Direction}    ${Speed}
+    Select Element    ${ElementId}
+    Run Keyword If    '${Direction}'=='Down' and '${Speed}'=='Slow'    Press Down Arrow
+    Run Keyword If    '${Direction}'=='Up' and '${Speed}'=='Slow'    Press Up Arrow
+    Run Keyword If    '${Direction}'=='Left' and '${Speed}'=='Slow'    Press Left Arrow
+    Run Keyword If    '${Direction}'=='Right' and '${Speed}'=='Slow'    Press Right Arrow
+    Run Keyword If    '${Direction}'=='Down' and '${Speed}'=='Fast'    Press Shift And Key    DOWN
+    Run Keyword If    '${Direction}'=='Up' and '${Speed}'=='Fast'    Press Shift And Key    UP
+    Run Keyword If    '${Direction}'=='Left' and '${Speed}'=='Fast'    Press Shift And Key    LEFT
+    Run Keyword If    '${Direction}'=='Right' and '${Speed}'=='Fast'    Press Shift And Key    RIGHT
+
+Keyboard Move Annotation And Check
+    [Arguments]    ${ElementId}    ${Direction}    ${Speed}    ${Expected Translation}
+    Wait Until Page Contains Element    ${ElementId}
+    Keyboard Move Annotation    ${ElementId}    ${Direction}    ${Speed}
+    Sleep    2s
+    ${Translation}    IDBSSelenium2Library.Get Element Attribute    ${ElementId}@transform
+    ${Translation}    Evaluate    "${Translation}".replace(",","")
+    ${Expected Translation}    Evaluate    "${Expected Translation}".replace(",","")
+    Should Be Equal    ${Expected Translation}    ${Translation}
+
+Press Key
+    [Arguments]    ${ElementId}    ${KeyCode}
+    Wait Until Page Contains Element    ${ElementId}
+    IDBSSelenium2Library.Press Key    ${ElementId}    ${KeyCode}
+    Comment    Call Selenium Api    ${ElementId}    ${KeyCode}
+
+Annotation Test Setup
+    Start Image Editing    1
+
+Annotation Test Teardown
+    Stop Image Editing    no
+    Unlock Record
+
+Annotation Sketch Test Setup
+    Kill Browsers
+    ${PATH}=    Normalize Path    ${Image Replacement IVG File}
+    Create Experiment Structure
+    Open Browser To Entity    ${suite-experiment-id}
+
+Get Image Annotation Experiment URL
+    Kill Browsers
+    Set Global Variable    ${image_annotations_exp_url}    ${EMPTY}
+    Open Browser To Login Page
+    Log In Via Login Dialog    ${VALID USER}    ${VALID PASSWD}
+    Click Navigate Header Link
+    Click Tile    Automated Test Data 1
+    Click Tile    Project 1b
+    Click Tile    Web Client Image Annotations
+    Wait Five Seconds
+    ${image_annotations_exp_url}=    Get Location
+    Set Global Variable    ${image_annotations_exp_url}
+    Close Browser
+
+_JS_mouseDown
+    [Arguments]    ${element_id}
+    ${string}=    Catenate    var elem = document.getElementById('${element_id}');    if( document.createEvent) {    var evObj = document.createEvent('MouseEvents');    evObj.initEvent( 'mousedown', true, false );    elem.dispatchEvent(evObj);
+    ...    } else if( document.createEventObject ) {    elem.fireEvent('onmousedown');    }
+    Log    ${string}
+    Wait Until Keyword Succeeds    5s    0.1s    Execute Javascript    ${string}
+
+_JS_mouseUp
+    [Arguments]    ${element_id}
+    ${string}=    Catenate    var elem = document.getElementById('${element_id}');    if( document.createEvent) {    var evObj = document.createEvent('MouseEvents');    evObj.initEvent( 'mouseup', true, false );    elem.dispatchEvent(evObj);
+    ...    } else if( document.createEventObject ) {    elem.fireEvent('onmouseup');    }
+    Log    ${string}
+    Wait Until Keyword Succeeds    5s    0.1s    Execute Javascript    ${string}
+
+Check Image Annotations Save Button Disabled
+    Wait Until Page Contains Element    ${Save Image}
+    ${ButtonClass}    IDBSSelenium2Library.Get Element Attribute    ${Save Image}@class
+    Should Contain    ${ButtonClass}    ewb-image-button-disabled
+
+Check Image Annotations Save Button Enabled
+    Wait Until Page Contains Element    ${Save Image}
+    ${ButtonClass}    IDBSSelenium2Library.Get Element Attribute    ${Save Image}@class
+    Should Not Contain    ${ButtonClass}    ewb-image-button-disabled
+
+Check Image Annotations Delete Button Disabled
+    Wait Until Page Contains Element    ${Delete Image Element}
+    ${ButtonClass}    IDBSSelenium2Library.Get Element Attribute    ${Delete Image Element}@class
+    Should Contain    ${ButtonClass}    ewb-image-button-disabled
+
+Check Image Annotations Delete Button Enabled
+    Wait Until Page Contains Element    ${Delete Image Element}
+    ${ButtonClass}    IDBSSelenium2Library.Get Element Attribute    ${Delete Image Element}@class
+    Should Not Contain    ${ButtonClass}    ewb-image-button-disabled
+
+Save Image Annotations
+    Robust Click    ${Save Image}
+
+Annotation Suite Setup
+    Kill Browsers
+    ${PATH}=    Normalize Path    ${Image Replacement IVG File}
+    Create Experiment Structure
+    Lock Entity    ${suite-experiment-id}
+    ${Image Id}    Add DOCUMENT With File Data    ${suite-experiment-id}    ${PATH}    application/x-idbs-ewbimage    SVG_IMAGE
+    Set Suite Variable    ${suite-annotation-image-entity-id}    ${Image Id}
+    Commit Versioned Entity    ${suite-experiment-id}
+    Unlock Entity    ${suite-experiment-id}
+    Open Browser To Entity    ${suite-experiment-id}
+
+Annotation Suite Teardown
+    Close All Browsers
+    Delete Experiment Structure
+
+Click View Image Menu Option
+    [Arguments]    ${documentIndex}=0
+    [Documentation]    Clicks the 'View' menu option in the document header menu
+    Open Document Header Tool Menu    ${documentIndex}
+    Robust Click    ${View Menu Option}
+
+Ensure Image Editor Is Open In View Mode
+    Wait Until Page Contains    Image Viewer    30s
+    Wait Until Page Contains Element    image-editor-zoom-menu    30s
+    Element Should Not Be Visible    ${Save Image}
+    Page Should Not Contain Element    image-editor-add
+    Page Should Not Contain Element    image-editor-margins
+    Page Should Not Contain Element    image-editor-duplicate
+    Page Should Not Contain Element    image-editor-delete
+
+Close Image Editor
+    Robust Click    ${Stop Image Edit}
+
+Confirm Selector Is Present
+    [Documentation]    Confirms that the annotation selector is present
+    Wait Until Page Contains Element    xpath=//*[local-name()='g'][@class="ewb-image-editor-selector"]

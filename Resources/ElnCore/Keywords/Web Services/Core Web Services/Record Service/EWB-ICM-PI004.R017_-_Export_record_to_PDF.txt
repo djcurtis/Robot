@@ -1,0 +1,35 @@
+*** Settings ***
+Resource          ../../../Libraries/common_resource.txt    # Common variables
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+
+*** Test Cases ***
+001 - Export PDF locked record
+    [Documentation]    Test ensures that
+    ...    - A locked record (that has been version saved) can be exported as a PDF
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Add Web Link Entity    ${experiment_id}    www.google.com
+    Commit Versioned Entity    ${experiment_id}
+    ${expectedHttpStatus}=    Set Variable    200
+    ${pdf_byte}=    Export Record To PDF    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}
+
+002 - Publish unexisting record
+    [Documentation]    Test ensures that
+    ...    - A non-existent record cannot be exported as a PDF
+    ...    - An attempt to do so will return the correct (404) error
+    ${group_id}=    Create Group    1    Test group
+    ${project_id}=    Create Project    ${group_id}    Test project
+    ${experiment_id}=    Create Experiment    ${project_id}    Test experiment
+    Lock Entity    ${experiment_id}
+    Add Web Link Entity    ${experiment_id}    www.google.com
+    Commit Versioned Entity    ${experiment_id}
+    ${expectedHttpStatus}=    Set Variable    404
+    ${pdf_byte}=    Export Record To PDF    wrong id    \    ${expectedHttpStatus}
+    Unlock Entity    ${experiment_id}
+    Delete Entity    ${group_id}

@@ -1,0 +1,34 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+09-01 - DELETE One Tuple
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesDelete1    RootTermTuplesDelete1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+    Delete All Tuples    ${new element id}
+
+09-02 - DELETE Two Tuples
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesDelete2    RootTermTuplesDelete2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+    Create Tuple    ${new element id}    example    value2    value2    true    false
+    Delete All Tuples    ${new element id}
+
+09-03 - DELETE Ten Tuples
+    ${new element id}=    Create Root Element    TERM    RootTermTuplesDelete3    RootTermTuplesDelete3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Tuple    ${new element id}    example    value1    value1    true    true
+    Create Tuple    ${new element id}    example    value2    value2    true    false
+    Create Tuple    ${new element id}    example    value3    value3    true    false
+    Create Tuple    ${new element id}    example    value4    value4    true    false
+    Create Tuple    ${new element id}    example    value5    value5    true    false
+    Create Tuple    ${new element id}    example    value6    value6    true    false
+    Create Tuple    ${new element id}    example    value7    value7    true    false
+    Create Tuple    ${new element id}    example    value8    value8    true    false
+    Create Tuple    ${new element id}    example    value9    value9    true    false
+    Create Tuple    ${new element id}    example    value10    value10    true    false
+    Delete All Tuples    ${new element id}
+
+09-04 - DELETE Tuples Invalid Term
+    Delete All Tuples And Expect Error    1000123

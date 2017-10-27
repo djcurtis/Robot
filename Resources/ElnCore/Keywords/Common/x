@@ -1,0 +1,27 @@
+Create Entity
+    [Arguments]    ${entity type}    ${entity name}    ${parent entity}    ${creation location}
+    [Documentation]    *Description*
+    ...    Basic creation of any entity type configured within the system. \ Only the display attribute is configured.
+    ...
+    ...    *Arguments*
+    ...    ${entity type} = Display type of the entity type being created. e.g. "Experiment"
+    ...    ${entity name} = The display name to be used for the new entity.
+    ...    ${parent entity} = The parent entity of the new entity.
+    ...    ${creation location} = Where to create the entity from. Either "CONTENT HEADER", "TILE", "NAVIGATOR" or "DIALOG"
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    If using ${creation location} = TILE, the parent entity tile must be displayed in the content panel
+    ...    If using ${creation location} = CONTENT HEADER, the content panel must be displaying the parent entity
+    ...    If using ${creation location} = NAVIGATOR, the parent entity must be visible in the navigator panel
+    ...    If using ${creation location} = DIALOG, the parent entity must be open the content panel
+    ...
+    ...    *Example*
+    ...    Log In Via Login Dialog | Username | Password
+    ...    Create Entity | Group | myGroup | Root | NAVIGATOR
+    Run Keyword If    '${creation location}' == 'CONTENT HEADER'    Dialog Create Entity    ${entity type}    ${entity name}
+    Run Keyword If    '${creation location}' == 'TILE'    Dialog Create Entity    ${entity type}    ${entity name}
+    Run Keyword If    '${creation location}' == 'NAVIGATOR'    Navigator Tree Create Entity    ${parent entity}    ${entity type}    ${entity name}
+    Run Keyword If    '${creation location}' == 'DIALOG'    Dialog Create Entity    ${entity type}    ${entity name}

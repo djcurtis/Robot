@@ -1,0 +1,270 @@
+*** Settings ***
+Documentation     Test Cases Covering Security Group Creation
+Test Setup        Security Groups Setup
+Resource          ../../../Libraries/common_resource.txt
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+
+*** Variables ***
+${user001}        USER001
+${user001password}    USER0011
+${user002}        USER002
+${user002password}    USER0021
+
+*** Test Cases ***
+0-0 - Invalid Group Name Request
+    Check User Group Not Present    invalid
+
+0-1 - Valid Group Name Request
+    Create User Group and Validate    0-1    0-1
+
+1-1 - Lower case group name
+    Create User Group and Validate    group    Group
+
+1-2 - Numeric group name
+    Create User Group and Validate    1234567890    Group
+
+1-3 - Upper case group name
+    Create User Group and Validate    GROUPA    Group
+
+1-5 - Mixed characters (upper, lower, numeric, special)
+    Create User Group and Validate    ABCdef123!    Group
+
+1-6 - Group name with a single space
+    Create User Group and Validate    1 !    Group
+
+1-7 - Group name with preceeding spaces
+    Create User Group    ${SPACE * 10}10 Spaces Prior    Group
+    Validate User Group Creation    10 Spaces Prior    Group
+
+1-8 - Group with trailing spaces
+    Create User Group    10 Spaces After${SPACE * 10}    Group
+    Validate User Group Creation    10 Spaces After    Group
+
+1-9 - Group name with single forward slash
+    Create User Group and Expect Error    /    Group    400
+    Should Be Equal    ${RESPONSE BODY}    Problem with request: Group Name cannot contain /
+
+1-10 - Group name with forward slashes in name
+    Create User Group and Expect Error    /Group1/    Group    400
+    Should Be Equal    ${RESPONSE BODY}    Problem with request: Group Name cannot contain /
+
+1-11 - Empty group name
+    Create User Group and Expect Error    ${EMPTY}    Group    400
+    Should Be Equal    ${RESPONSE BODY}    Problem with request: The following parameters were missing or empty: [Group name]
+
+1-12 - 100 non-spaced characters
+    Create User Group and Validate    AAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDEE100    Group
+
+1-13 - 101 non-spaced characters
+    Create User Group and Expect Error    AAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDAAAABBBBBCCCCCDDDDDEEE101    Group    400
+
+1-14 - lower case group description
+    Create User Group and Validate    Test14    test
+
+1-15 - upper case group description
+    Create User Group and Validate    Test15    TEST
+
+1-16 - numeric group description
+    Create User Group and Validate    Test16    1234567890
+
+1-17 - mixed characters in group description (upper, lower, numeric, special)
+    Create User Group and Validate    Test17    ABCdef123-+!
+
+1-18 - Group description with preceeding spaces
+    Create User Group    Test18    ${SPACE*10}10SpaceBuffer
+    Validate User Group Creation    Test18    10SpaceBuffer
+
+1-19 - Group description with trailing spaces
+    Create User Group    Test19    10SpaceAfter${SPACE*10}
+    Validate User Group Creation    Test19    10SpaceAfter
+
+1-20 - Spaces in group description
+    Create User Group and Validate    Test20    7h15 GROUP Descr1p710n c0n7a1n5 5pace5
+
+1-21 - 500 Characters in description
+    Create User Group and Validate    Test21    abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeab500
+
+1-22 - 501 Characters in description
+    Create User Group and Expect Error    Test21    abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeab5001    400
+
+1-23 - Single Group Administrator
+    Create User Group and Validate    Test23    Test23
+    Check User Admin of User Group    Test23    Administrator
+
+1-24 - Multiple Group Administrators
+    Create User Group and Validate    Test24    Test24
+    Check User Admin of User Group    Test23    Administrator
+    Add User Group Admin    Test24    ${user001}
+
+1-25 - Single Group Membership
+    Create User Group and Validate    Test25    Test25
+    Add User Group Member    Test25    ${user001}
+
+1-26 - Multiple Group Memberships
+    Create User Group and Validate    Test26    Test26
+    Add User Group Member    Test26    ${user001}
+    Add User Group Member    Test26    ${user002}
+
+1-27 - Simultaneous Group Administrator and Member
+    Create User Group and Validate    Test27    Test27
+    Check User Admin of User Group    Test27    Administrator
+    Add User Group Member    Test27    Administrator
+
+1-28 - Disabled User Group Membership
+    Create User Group and Validate    Test28    Test28
+    Disable User    ${user001}    Disabled
+    Add User Group Member    Test28    ${user001}
+    Enable User    ${user001}
+
+1-29 - Disabled User Group Admin
+    Create User Group and Validate    Test29    Test29
+    Disable User    ${user001}    Disabled
+    Add User Group Admin    Test29    ${user001}
+    Enable User    ${user001}
+
+1-30 - Multiple Disabled Users Group Memberships
+    Create User Group and Validate    Test30    Test30
+    Disable User    ${user001}    Disabled
+    Disable User    ${user002}    Disabled
+    Add User Group Member    Test30    ${user001}
+    Add User Group Member    Test30    ${user002}
+    Enable User    ${user001}
+    Enable User    ${user002}
+
+1-31 - Multiple Disabled Users Group Admins
+    Create User Group and Validate    Test31    Test31
+    Disable User    ${user001}    Disabled
+    Disable User    ${user002}    Disabled
+    Add User Group Admin    Test31    ${user001}
+    Add User Group Admin    Test31    ${user002}
+    Enable User    ${user001}
+    Enable User    ${user002}
+
+2-1 - Group Description Modification - Admin and Member
+    Create User Group and Validate    Test2-1    Test2-1
+    Check User Admin of User Group    Test2-1    Administrator
+    Add User Group Member    Test2-1    Administrator
+    Update User Group And Validate    Test2-1    Test2-1Updated
+
+2-2 - Group Description Modification - Member Only
+    Create User Group and Validate    Test2-2    Test2-2
+    Add User Group Member    Test2-2    ${SECOND USER}
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Update User Group And Expect Error    Test2-2    Test2-2Updated    403
+
+2-3 - Group Description Modification - Admin Only
+    Create User Group and Validate    Test2-3    Test2-3
+    Check User Admin of User Group    Test23    Administrator
+    Update User Group And Validate    Test2-3    Test2-3Updated
+
+2-4 - Group Description Modification - Not Admin or Member
+    Create User Group and Validate    Test2-4    Test2-4
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Update User Group And Expect Error    Test2-4    Test2-4Updated    403
+
+2-5 - Remove Group Members - Not Admin or Member
+    Create User Group and Validate    Test2-5    Test2-5
+    Add User Group Member    Test2-5    Stephen
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Remove User Group Member And Expect Error    Test2-5    Stephen    403
+
+2-6 - Remove Group Members - Group Member
+    Create User Group and Validate    Test2-6    Test2-6
+    Add User Group Member    Test2-6    ${SECOND USER}
+    Add User Group Member    Test2-6    Stephen
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Remove User Group Member And Expect Error    Test2-6    Stephen    403
+
+2-7 - Remove Group Members - Group Administrator
+    Create User Group and Validate    Test2-7    Test2-7
+    Check User Admin of User Group    Test2-7    Administrator
+    Add User Group Member    Test2-7    ${user001}
+    Remove User Group Member    Test2-7    ${user001}
+
+2-8 - Remove Group Members - Group Administrator and Member
+    Create User Group and Validate    Test2-8    Test2-8
+    Check User Admin of User Group    Test2-8    Administrator
+    Add User Group Member    Test2-8    Administrator
+    Add User Group Member    Test2-8    ${user001}
+    Remove User Group Member    Test2-8    ${user001}
+
+2-9 - Remove Group Admin - Not Admin or Member
+    Create User Group and Validate    Test2-9    Test2-9
+    Check User Admin of User Group    Test2-9    Administrator
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Remove User Group Admin And Expect Error    Test2-9    Administrator    403
+
+2-10 - Remove Group Admin - Group Member
+    Create User Group and Validate    Test2-10    Test2-10
+    Add User Group Member    Test2-10    ${SECOND USER}
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Remove User Group Admin And Expect Error    Test2-10    Administrator    403
+
+2-11 - Remove Group Admin - Group Administrator
+    Create User Group and Validate    Test2-11    Test2-11
+    Check User Admin of User Group    Test2-11    Administrator
+    Add User Group Admin    Test2-11    ${user001}
+    Remove User Group Admin    Test2-11    ${user001}
+
+2-12 - Remove Group Admin - Group Administrator and Member
+    Create User Group and Validate    Test2-12    Test2-12
+    Check User Admin of User Group    Test2-12    Administrator
+    Add User Group Member    Test2-12    Administrator
+    Add User Group Admin    Test2-12    ${user001}
+    Remove User Group Admin    Test2-12    ${user001}
+
+3-1 - Delete Group - Group Administrator
+    Create User Group and Validate    Test3-1    Test3-1
+    Check User Admin of User Group    Test3-1    Administrator
+    Delete User Group and Validate    Test3-1
+
+3-2 - Delete Group - Group Member
+    Create User Group and Validate    Test3-2    Test3-2
+    Add User Group Member    Test3-2    ${SECOND USER}
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Delete User Group And Expect Error    Test3-2    403
+
+3-3 - Delete Group - Group Administrator and Member
+    Create User Group and Validate    Test3-3    Test3-3
+    Check User Admin of User Group    Test3-3    Administrator
+    Add User Group Member    Test3-3    Administrator
+    Delete User Group and Validate    Test3-3
+
+3-4 - Delete Group - Not Group Administrator or Member
+    Create User Group and Validate    Test3-4    Test3-4
+    Set Test Variable    ${SERVICES USERNAME}    ${SECOND USER}
+    Set Test Variable    ${SERVICES PASSWORD}    ${SECOND PASSWD}
+    Delete User Group And Expect Error    Test3-4    403
+
+4-1 - Spaces in Path Parameters
+    Create User Group and Validate    Space Group    Group
+    Add User Group Member    Space Group    ${user001}
+
+*** Keywords ***
+Services Security Groups Setup
+    Run Keyword And Ignore Error    Create User    ${security_service_user1}    ${security_service_user1_password}    Auto Security Service User 1a    secservice1@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${security_service_user1}    All Entity Permissions    1
+    Run Keyword And Ignore Error    Create User    ${security_service_user2}    ${security_service_user2_password}    Auto Security Service User 2    secservice2@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${security_service_user2}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${security_service_user2}    All Entity Permissions    1
+
+Security Groups Setup
+    Run Keyword And Ignore Error    Create User    ${user001}    ${user001password}    User 1    user1@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${user001}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${user001}    All Entity Permissions    1
+    Run Keyword And Ignore Error    Create User    ${user002}    ${user002password}    User 2    user2@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${user002}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${user002}    All Entity Permissions    1

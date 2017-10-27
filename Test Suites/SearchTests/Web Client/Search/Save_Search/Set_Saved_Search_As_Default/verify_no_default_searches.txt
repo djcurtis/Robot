@@ -1,0 +1,95 @@
+*** Settings ***
+Documentation     Verify that User could have no default searches
+Suite Setup       Login To EWB
+Suite Teardown    Close Browser
+Test Setup        testsetup
+Test Teardown     Delete All Searches Via API
+Resource          ../../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Library           DateTime
+
+*** Test Cases ***
+Verify Newly Created Search Is Not Set As Default
+    [Documentation]    Verify Newly Created Search Is Not Set As Deafult
+    ...    - create 4 searches via API
+    ...    - verify no default searches
+    ...    - save one more search via API
+    ...    - verify no default searches
+    [Tags]    SRCH-SAV-DEFAULT
+    Open My Searches Dialog
+    Verfy Number Of Default Saved Searches    0
+    Close My Searches Dialog
+    Reload Page
+    Create Searches Via API    ${search5}
+    Open My Searches Dialog
+    Verfy Number Of Default Saved Searches    0
+
+Verify No Default Searches Initially
+    [Documentation]    Verify No Default Searches Initially
+    ...    - Create number of \ searchs via API
+    ...    - Navigate search screen, verify no default search
+    ...    - relogin, verify no default search
+    ...    - Navigate Navigator, bat to Search screen, verify no default search
+    [Tags]    SRCH-SAV-DEFAULT
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    0    0
+    Reload Page
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    0    0
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    0    0
+    Navigate Navigator Screen
+    Navigate Search Screen
+    Verify Search Text Field    ${EMPTY}
+    Verify Number Of Advanced Search Items    0    0
+
+Set Search As Not Default
+    [Documentation]    Set Search As Not Default
+    ...    - Set search as default
+    ...    - Set the search as not default
+    ...    - Verify no default searches
+    ...    - refresh/relogin
+    ...    - Verify no default searches
+    [Tags]    SRCH-SAV-DEFAULT
+    Open My Searches Dialog
+    Set Default Search    ${search3}
+    Reload Page
+    sleep    5s
+    Open My Searches Dialog
+    Verfy Number Of Default Saved Searches    1
+    Set Search Not Default    ${search3}
+    Reload Page
+    Open My Searches Dialog
+    Verfy Number Of Default Saved Searches    0
+    Reload Page
+    Verify Search Text Field    ${EMPTY}
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Verify Search Text Field    ${EMPTY}
+
+*** Keywords ***
+testteardown
+    Delete All Searches Via API
+    reload page
+
+testsetup
+    reload page
+    Navigate Search Screen
+    ${currentDate}=    Get Current Date
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    ${search2}=    Set Variable    Search 2 ${currentDate}
+    ${search3}=    Set Variable    Search 3 ${currentDate}
+    ${search4}=    Set Variable    Search 4 ${currentDate}
+    ${search5}=    Set Variable    Search 5 ${currentDate}
+    Set Suite Variable    ${search1}
+    Set Suite Variable    ${search2}
+    Set Suite Variable    ${search3}
+    Set Suite Variable    ${search4}
+    Set Suite Variable    ${search5}
+    Create Searches Via API    ${search1}    ${search2}    ${search3}    ${search4}    ${search5}

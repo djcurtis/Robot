@@ -1,0 +1,164 @@
+*** Settings ***
+Documentation     Save an entity as DRAFT or VERSION
+...
+...               *end point:* POST /services/1.0/cache/entities/{entityId}/commit
+...
+...               TODO:
+...               S005: If the client attempted a DRAFT commit without ALLOW_DRAFT_EXPERIMENTS permission, then the HTTP status code 403 is returned to the client
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Library           OperatingSystem
+
+*** Variables ***
+${experiment_id}    ${EMPTY}
+
+*** Test Cases ***
+Committing entity with succeeds with no dual credentials no witness
+    [Documentation]    \ Dual credential when optional is truly optional
+    ...
+    ...    If dual credential version save is set to optional, and no witness header is provided, the call is successful and returns the HTTP status 204.
+    [Tags]    exclusive_access
+    [Setup]    Dual Credentials Off Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity    ${experiment_id}
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with no author credentials returns error
+    [Documentation]    
+    ...
+    ...    If the request HTTP header does not contain the author credentials, then the HTTP status code 401 is returned to the client
+    [Setup]    Dual Credentials Off Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity No Author    ${experiment_id}    401
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with same author and witness credentials returns error
+    [Documentation]    
+    ...    If dual credential version save is set to mandatory or optional, and the witness user name matches that of the author then an HTTP status code of 400 is returned.
+    ...
+    ...    (Mandantory used here in this test)
+    [Setup]    Dual Credentials Mandatory Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity With Witness    ${experiment_id}    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    400
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with witness credentials when dual credentials active succeeds
+    [Documentation]    \ - Success case for dual configuration active
+    ...
+    ...    If dual credential version save is set to mandatory or optional and a witness header is provided, the call is successful and returns the HTTP status 204.
+    ...
+    ...    (Mandatory is used here for this test)
+    [Setup]    Dual Credentials Mandatory Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity With Witness    ${experiment_id}    ${SECOND USER}    ${SECOND PASSWD}
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with no witness credentials when dual creds mandatory returns error
+    [Documentation]     credential mandatory means witness is mandatory
+    ...
+    ...    If dual credential version save is set to mandatory, and witness credentials are missing, then the HTTP status code 400 is returned to the client
+    [Setup]    Dual Credentials Mandatory Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity    ${experiment_id}    400
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with author credentials not as per request credentials returns error
+    [Documentation]    
+    ...
+    ...    If the author credentials (the entire string, comprising both user id and password encoded) in the HTTP header does not match the main request credentials (Authorization header), then the HTTP status code 401 is returned to the client.
+    ...
+    ...    Case (a) Author credentials completely different from request headers
+    ...    Case (b) Author credentials have correct user but fail with wrong password
+    [Setup]    Dual Credentials Off Setup
+    Comment    Case (a), wrong user
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity    ${experiment_id}    401    ${SECOND USER}    ${SECOND PASSWD}
+    Comment    Case (b), wrong password
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity    ${experiment_id}    401    ${SERVICES USERNAME}    wrong_password
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with witness with wrong password returns error
+    [Documentation]     credentials fait authentication
+    ...
+    ...    If witness credentials are provided, and these fail authentication, then the HTTP status code 401 is returned to the client
+    [Setup]    Dual Credentials Mandatory Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity With Witness    ${experiment_id}    ${SECOND USER}    wrong_password    401
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with dual creds optional no witness succeeds
+    [Documentation]    \ Dual credential when optional is truly optional
+    ...
+    ...    If dual credential version save is set to optional, and no witness header is provided, the call is successful and returns the HTTP status 204.
+    [Setup]    Dual Credentials Optional Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity    ${experiment_id}
+    [Teardown]    Commit Entity Teardown
+
+Committing entity with missing dto returns error
+    [Documentation]    \ Dual credential when optional is truly optional
+    ...
+    ...    If dual credential version save is set to optional, and no witness header is provided, the call is successful and returns the HTTP status 204.
+    [Setup]    Dual Credentials Off Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity No Body    ${experiment_id}    400
+    [Teardown]    Commit Entity Teardown
+
+Committing entitythat does not exist returns error
+    [Documentation]    
+    ...
+    ...    If the request HTTP header does not contain the author credentials, then the HTTP status code 401 is returned to the client
+    [Setup]    Dual Credentials Off Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity No Author    non-existent-entity_id    404
+    [Teardown]    Commit Entity Teardown
+
+Committing unlocked entity returns error
+    [Documentation]    
+    ...
+    ...    If the container entity is not locked by the user identified in the request (in the Authorization header and author header), then the HTTP status code 403 is returned to the client
+    ...
+    ...    Test case for completely unlocked entity
+    [Setup]    Dual Credentials Off Setup
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Unlock Entity    ${experiment_id}
+    Commit Versioned Entity No Author    ${experiment_id}    403
+    [Teardown]    Commit Entity Teardown
+
+*** Keywords ***
+Dual Credentials Mandatory Setup
+    ${dual_cred_xml}=    Get File    ${CURDIR}/../../../Test Data/Core Web Services/Cache Entity Service/dual_credentials_save_mandatory.xml
+    Replace Entity Config    ${project_id}    VERSION_SAVE    ${dual_cred_xml}
+    Run Keyword And Ignore Error    Create User    ${SECOND USER}    ${SECOND PASSWD}    ${SECOND USER}    test@idbs.com    Testing
+    ${experiment_id}=    Create Experiment    ${project_id}    Commit test experiment
+    Lock Entity    ${experiment_id}
+    Set Suite Variable    ${experiment_id}
+
+Commit Entity Teardown
+    Unlock Entity    ${experiment_id}
+
+Dual Credentials Optional Setup
+    ${dual_cred_xml}=    Get File    ${CURDIR}/../../../Test Data/Core Web Services/Cache Entity Service/dual_credentials_save_optional.xml
+    Replace Entity Config    ${project_id}    VERSION_SAVE    ${dual_cred_xml}
+    Run Keyword And Ignore Error    Create User    ${SECOND USER}    ${SECOND PASSWD}    ${SECOND USER}    test@idbs.com    Testing
+    ${experiment_id}=    Create Experiment    ${project_id}    Commit test experiment
+    Lock Entity    ${experiment_id}
+    Set Suite Variable    ${experiment_id}
+
+Dual Credentials Off Setup
+    ${experiment_id}=    Create Experiment    ${project_id}    Commit test experiment
+    Run Keyword And Ignore Error    Create User    ${SECOND USER}    ${SECOND PASSWD}    ${SECOND USER}    test@idbs.com    Testing
+    Reset Entity Config    ${project_id}    VERSION_SAVE
+    Lock Entity    ${experiment_id}
+    Set Suite Variable    ${experiment_id}

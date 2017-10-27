@@ -1,0 +1,131 @@
+*** Settings ***
+Documentation     A test suite to verify a number of representative workflows in E-WorkBook.
+Suite Setup       Suite Setup
+Force Tags        Thick Client    DAILY    WEEKLY
+Default Tags
+Resource          ../../../../Resources/E-Workbook/Keywords/Thick Client/ewb_thick_client_general_actions_resource.txt
+Resource          ../../../../Resources/E-Workbook/Keywords/Common/common_resource.txt
+Resource          ../../../../Resources/E-Workbook/Keywords/Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../../../../Resources/E-Workbook/Keywords/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../Resources/E-Workbook/Keywords/Web Client/Selenium/general_resource.txt
+Resource          ../../../../Resources/E-Workbook/Keywords/Web Client/Selenium/hierarchy_resource.txt
+Resource          ../../../../Resources/E-Workbook/Keywords/Web Client/Selenium/properties_resource.txt
+# Library           EntityAPILibrary
+Library           IDBSSwingLibrary
+Library           IDBSSelenium2Library
+Resource          ../../../../Resources/E-Workbook/Keywords/Thick Client/ewb_thick_client_configuration_actions_resources.txt
+
+*** Test Cases ***
+Auto IDs
+    [Documentation]    This test ensures that auto-IDs are given sequentially, and that none are skipped by logging out and in again or by logging in as a different user. It also checks that none are skipped if an entity creation is cancelled.
+    [Tags]    requires_desktop
+    [Setup]    Test Setup
+    Open Browser To Login Page
+    : FOR    ${index}    IN RANGE    5
+    \    Log In Via Login Dialog    ${VALID USER}    ${VALID PASSWD}
+    \    Go To Entity    ${AutoID_Project_Id}
+    \    ${index}=    Evaluate    ${index}+1
+    \    Hierarchy_Resource.Create Entity    Experiment    Auto-ID Exp-${index}    ${AutoID_Project_Id}    TILE
+    \    Open Record Properties
+    \    Check Properties Value Equals    Auto ID    ${index}
+    \    Logout of Application
+    Login, click create new experiment, but cancel    ${VALID USER}    ${VALID PASSWD}    # this is to check that a cancelled experiment creation does not cause an Auto-ID to be lost
+    : FOR    ${index}    IN RANGE    5
+    \    Log In Via Login Dialog    ${SECOND USER}    ${SECOND PASSWD}
+    \    Go To Entity    ${AutoID_Project_Id}
+    \    ${index}=    Evaluate    ${index}+1
+    \    ${index2}=    Evaluate    ${index}+5
+    \    Hierarchy_Resource.Create Entity    Experiment    Auto-ID Exp-${index2}    ${AutoID_Project_Id}    TILE
+    \    Open Record Properties
+    \    Check Properties Value Equals    Auto ID    ${index2}    # a failure on the first loop here would indicate that the cancellation of the experiment creation 'used up' an auto-ID
+    \    Logout of Application
+    [Teardown]    Test Teardown
+
+*** Keywords ***
+Suite Setup
+    [Documentation]    Imports some catalog pieces and adds an auto-ID attribute to the experiment entity
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${VALID USER}    ${VALID PASSWD}
+    Open configuration dialog
+    Select Dialog    Configuration
+    Wait for glass pane to disappear
+    Import catalog    ${ROOT_DIR}/Test Data/Web Client/Entity Management/Auto-IDs/Auto-ID.xml
+    Comment    Import XML to Catalog via Web Service    ../../../Test Data/Web Client/Entity Management/Auto-IDs/Auto-ID.xml
+    Add new attribute to entity type    EXPERIMENT    Auto ID    Auto ID    DICTIONARY_AUTO_ID    dictionary=/Auto-ID/Auto-ID
+    Apply Configuration Changes
+    Close configuration dialog
+    Close E-WorkBook
+
+Add New Attribute To Entity Type
+    [Arguments]    ${entity_type}    ${name}    ${caption}    ${type}    ${description}=    ${dictionary}=
+    Select Dialog    Configuration
+    __Select Config dialog tab    Flexible Hierarchy
+    Select Tab As Context    Entity Types
+    ${typeRow}=    _Find Entity Type Row    ${entity_type}
+    Click On Table Cell    0    ${typeRow}    2
+    ${attributeRow}=    Find Table Row    1    ${name}
+    Run Keyword If    ${attributeRow}!=-1    Fail    Attriburte ${name} already exists for entity type ${entityType}. Can't create attribute.
+    Push Button    NewAttributeButton
+    Select Dialog    New Attribute
+    Insert Into Text Field    xpath=//*[contains(@class,'JStringField')]    ${name}
+    Insert Into Text Field    xpath=//*[contains(@class,'JTextField')]    ${caption}
+    Wait Until Keyword Succeeds    30s    3s    Select From Combo Box    0    ${type}    # This sometimes fails on the first attempt
+    Insert Into Text Field    xpath=//*[contains(@class,'JTextPane')]    ${description}
+    Run Keyword If    '${dictionary}'!=''    _Set New Entity Attribute Dictionary    ${dictionary}
+    Push Button    text=OK
+    Select Dialog    Configuration
+    Wait for glass pane to disappear
+
+Test Setup
+    [Documentation]    Adds a group and project
+    ${AutoID_Group_Id}=    rest_entity_service_resource.Create Group    1    Auto-ID Group
+    ${AutoID_Project_Id}=    rest_entity_service_resource.Create Project    ${AutoID_Group_Id}    Auto-ID Project
+    Set Suite Variable    ${AutoID_Group_Id}
+    Set Suite Variable    ${AutoID_Project_Id}
+
+Test Teardown
+    [Documentation]    Removes the whole structure and closes browsers.
+    ...
+    ...    *It does not remove the catalog or new attribute from the entity type*
+    Delete Attribute from Entity Type
+    Rest_Entity_Service_Resource.Delete Entity    ${AutoID_Group_Id}
+    Close All Browsers
+
+Check Properties Value Equals
+    [Arguments]    ${attribute name}    ${value}
+    Wait Until Element Is Visible    xpath=//div[contains(@class, 'ewb-property-name') and text()="${attribute name}"]/../../td[3]/div
+    ${actualtext}=    IDBSSelenium2Library.Get Text    xpath=//div[contains(@class, 'ewb-property-name') and text()="${attribute name}"]/../../td[3]/div
+    Should Be Equal As Strings    ${actualtext}    ${value}
+    ${actualtext2}=    IDBSSelenium2Library.Get Text    xpath=//div[text()="${attribute name}"]/../../td[3]/div
+    Should Be Equal As Strings    ${actualtext2}    ${value}
+
+Login, click create new experiment, but cancel
+    [Arguments]    ${username}    ${password}
+    Log In Via Login Dialog    ${username}    ${password}
+    Go To Entity    ${AutoID_Project_Id}
+    Robust Click    xpath=//*[contains(@class,"ewb-new-entity-panel")]
+    Wait Until Page Contains Element    xpath=//*[contains(@class,"ewb-new-entity-dialog")]
+    Robust Click    ewb-entity-command-new-EXPERIMENT
+    Robust Click    cancel-properties
+    Logout of Application
+
+Delete Attribute from Entity Type
+    [Documentation]    Removes the new attribute from the entity type
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${VALID USER}    ${VALID PASSWD}
+    Open configuration dialog
+    Select Dialog    Configuration
+    Wait for glass pane to disappear
+    Select Dialog    Configuration
+    __Select Config dialog tab    Flexible Hierarchy
+    Select Tab As Context    Entity Types
+    ${typeRow}=    _Find Entity Type Row    EXPERIMENT
+    Click On Table Cell    0    ${typeRow}    2
+    ${attributeRow}=    Find Table Row    1    Auto ID
+    Click On Table Cell    1    ${attributeRow}    1
+    Push Button    DeleteAttributeButton
+    Select Dialog    Confirm Attribute Delete
+    Push Button    text=Yes
+    Select Dialog    Configuration
+    Sleep    2S
+    Apply Configuration Changes
+    Close configuration dialog
+    Close E-WorkBook

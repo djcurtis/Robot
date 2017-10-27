@@ -1,0 +1,49 @@
+*** Settings ***
+Documentation     This test suite checks the EWB experiment creator data correctly preserved after being in draft state, edited, then saved.
+...
+...               SH-1043
+Test Setup        setup test
+Test Teardown     teardown test
+Library           DateTime
+Library           EntityAPILibrary
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Library           IDBSHttpLibrary
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../Resources/API/Search/search_requests.txt
+Resource          ../../../../Resources/API/User/user_permissions.txt
+
+*** Test Cases ***
+Verify Filtering After Editing Document
+    [Documentation]    This test case is an automated reproduction of the defect steps described in SH-1043.
+    [Tags]    SRCH-FLTR
+    Edit API User    ${ADMIN USER}    ${ADMIN PASSWD}
+    ${experimentId}    EntityAPILibrary.Create Experiment    ${projectId}    Experiment 1    Started
+    ${webLinkId}    EntityAPILibrary.Create Web Link Document    ${experimentId}    http://ewb.com
+    Draft Save    ${experimentId}
+    Edit API User    Claire    Claire1
+    EntityAPILibrary.Edit Web Link Document    ${experimentId}    ${webLinkId}    http://ewb2.com
+    Version Save    ${experimentId}    Data Added
+    Edit API User    ${ADMIN USER}    ${ADMIN PASSWD}
+    ${responseBody}    Search By Group Name And Filter By Creator    ${groupName}    ${ADMIN USER}
+    Verify Search Result By Title    ${responseBody}    Experiment 1
+    ${responseBody}    Search By Group Name And Filter By Creator    ${groupName}    Claire
+    Verify Empty Search Result    ${responseBody}
+
+*** Keywords ***
+teardown test
+    [Documentation]    Teardown for whole suite
+    Edit API User    ${ADMIN USER}    ${ADMIN PASSWD}
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    [Documentation]    Test data setup
+    ${currentDate}    Get Current Date
+    ${groupName}    Set Variable    Group ${currentDate}
+    ${groupId}    EntityAPILibrary.Create Group    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}

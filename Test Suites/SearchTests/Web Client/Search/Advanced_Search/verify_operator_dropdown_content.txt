@@ -1,0 +1,53 @@
+*** Settings ***
+Documentation     SH-469
+Suite Setup       Login To EWB
+Suite Teardown    close browser
+Test Setup        Navigate Search Screen
+Test Teardown     reload page
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/navigator.txt
+
+*** Test Cases ***
+Operators For String
+    [Documentation]    Operator For String
+    ...
+    ...    Created for story SH-469
+    ...
+    ...    Verify string property operators list on 'New Search term' dialog.
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Get New Navigator Advanced Search Ready To Populate    Any Record    Keywords
+    Verify Property PicklList Items    is    is not    starts with    ends with    contains
+
+Operators for Boolean
+    [Documentation]    Operator For Boolean
+    ...
+    ...    Created for story SH-469
+    ...
+    ...    Verify boolean property operators list on 'New Search term' dialog.
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Get New Navigator Advanced Search Ready To Populate    SHADOW_CUSTOM    Boolean
+    Verify Property PicklList Items    is
+
+Operators For Numbers
+    [Documentation]    Operator For Numbers
+    ...
+    ...    Created for story SH-469
+    ...
+    ...    Verify number property operators list on 'New Search term' dialog.
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Get New Navigator Advanced Search Ready To Populate    SHADOW_CUSTOM    Number
+    Verify Property PicklList Items    is    less than    less than or equal    greater than    greater than or equal    between
+
+Operators For Timestamp
+    [Documentation]    Operator For Timestamp
+    ...
+    ...    Created for story SH-469
+    ...
+    ...    Verify timestamp property operators list on 'New Search term' dialog.
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Get New Navigator Advanced Search Ready To Populate    Any Record    Last edited date
+    Verify Property PicklList Items    is    before    on or before    after    on or after    between

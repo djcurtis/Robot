@@ -1,0 +1,734 @@
+*** Settings ***
+Documentation     *Test Suite Coverage*
+...
+...               EWB Publishing Servcie Public API: Setting the publishing state of a record item (e.g expeeriment document) without causing the entty version to update.
+...
+...               *Endpoint*
+...               | Action | URL | Query Parameters | Optional |
+...               | PUT | ewb/services/1.0/entities/{entityId}/attributes | entityVersionId / publshingState | No/ No |
+Suite Setup       Suite Level Setup
+Suite Teardown    Suite Level Teardown
+Force Tags        requires_desktop    EWB-GKO-PI004-R004
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ../../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_document_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_non_record_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_printing_publishing_options_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_record_entity_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_spreadsheet_actions_resource.txt
+Resource          ../../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_workflow_actions_resource.txt
+Resource          ../../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Resource          ../../Record Service/PDF content acceptance/add_image_items_to_experiments.txt
+Resource          ../../Record Service/PDF content acceptance/add_items_to_experiments.txt
+Resource          ../../Record Service/PDF content acceptance/test utilities.txt
+# Library           EntityAPILibrary
+Library           CheckPDFLibrary    # Library to compare PDFs
+Library           IDBSSwingLibrary
+Library           RobotRemoteAgent
+Library           TestDataGenerationLibrary
+Resource          ../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Library           ImageLibrary
+
+*** Test Cases ***
+Change publishing state for multiple items
+    [Documentation]    Checks that
+    ...    - the publishing states of multiple items contained within a record can be updated
+    ...    - the record and items versions remain the same even though the publishing status has changed.
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S001
+    Create record with items and publish    Update Mulitple Items
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Archived    204    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item1_ID}    ${Item1_EVID}    Archived
+    Check Entity Version    ${Item1_ID}    1
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Decommissioned    204    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item2_ID}    ${Item2_EVID}    Decommissioned
+    Check Entity Version    ${Item2_ID}    1
+    Comment    Checks that the record version remains the same.
+    Check Entity Version    ${experiment_ID}    2
+
+Change item publishing state multiple times
+    [Documentation]    Checks that
+    ...    - the publishing states of multiple items contained within a record can be updated
+    ...    - the record and items versions remain the same even though the publishing status has changed.
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S001
+    Create record with items and publish    Update Multiple Item Times
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Archived    204    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item1_ID}    ${Item1_EVID}    Archived
+    Check Entity Version    ${Item1_ID}    1
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Decommissioned    204    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item1_ID}    ${Item1_EVID}    Decommissioned
+    Check Entity Version    ${Item1_ID}    1
+    Comment    Checks that the record version remains the same.
+    Check Entity Version    ${experiment_ID}    2
+
+Unpublished to Published
+    [Documentation]    Test that that an item with publishing state = unpublished can be updated to published.
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S001
+    ${experiment_ID}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    Unpublished_to_Published
+    Set Test Variable    ${experiment_ID}
+    Lock Entity    ${experiment_ID}
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Publishing State/Record Items/Country_1.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    Commit Versioned Entity    ${experiment_ID}
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Published    204    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item1_ID}    ${Item1_EVID}    Published
+    Check Entity Version    ${Item1_ID}    1
+
+Invalid Publishing State Value
+    [Documentation]    Tests if parameter ‘publishingState’ value is illegal, i.e. not defined in the catalog, then the HTTP status 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S002
+    Create record with items and publish    Invalid_State
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Rubbish    400    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item2_ID}    ${Item2_EVID}    Published
+    Check Entity Version    ${Item2_ID}    1
+
+Invalid Publishing State Case Sensitivity
+    [Documentation]    Tests if parameter ‘publishingState’ value is illegal, i.e. not defined in the catalog, then the HTTP status 400 is returned to the client: \ checks case sensitivity for value = *Published*
+    ...    - values PUBLISHED and published should not succeed.
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S002
+    Create record with items and publish    Invalid State Case
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    published    400    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item1_ID}    ${Item1_EVID}    Published
+    Check Entity Version    ${Item1_ID}    1
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    PUBLISHED    400    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item2_ID}    ${Item2_EVID}    Published
+    Check Entity Version    ${Item2_ID}    1
+
+Invalid EntityID
+    [Documentation]    Checks that a response of 404 is returned, if \ the request conditions are as follows:
+    ...    - entityID = INVALID
+    ...    - entityVersionID = VALID
+    ...
+    ...    where the entityID and entityVersionID are for the record item
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S004
+    Create record with items and publish    Invalid EntityID
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    RUBBISH    ${Item2_EVID}    Decommissioned    404    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+
+Invalid EntityVersionID
+    [Documentation]    Checks that a response of 404 is returned, if \ the request conditions are as follows:
+    ...    - entityID = VALID
+    ...    - entityVersionID = INVALID
+    ...
+    ...    where the entityID and entityVersionID are for the record item
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S004
+    Create record with items and publish    Invalid EntityVersionID
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    RUBBISH    Decommissioned    404    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+
+Invalid Entity Type
+    [Documentation]    Checks that a response of 400 is returned, if \ the request conditions are as follows:
+    ...    - entityID & entityVersionID = is NOT for a document type
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S005
+    Create record with items and publish    Invalid Entity Type
+    ${Experiment_EVID}=    Get Entity Version ID    ${experiment_ID}
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${experiment_ID}    ${Experiment_EVID}    Decommissioned    400    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+
+Record not locked
+    [Documentation]    Checks that if the record is NOT locked, the user can still update the publisihing state.
+    ...    Change in original behaviour where it had to be locked due to defect QC#19485
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S001
+    Create record with items and publish    Record Not Locked
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Archived    204    Administrator    Administrator
+
+Record locked by others
+    [Documentation]    Checks that if the record is locked by *another* user:
+    ...    - \ response of 403 is returned (confirmed by QC19485)
+    ...    - \ the version and status has not updated.
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S006
+    Create record with items and publish    Record locked by Others
+    Lock Entity Customer User    ${experiment_ID}    Diren    Diren1
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Archived    403    Lynda    Lynda1
+    Unlock Entity Customer User    ${experiment_ID}    Diren    Diren1
+    Comment    Checks Status & Version remains unchanged
+    Check Publishing Status    ${Item2_ID}    ${Item2_EVID}    Published
+    Check Entity Version    ${Item2_ID}    1
+
+Missing Publishing State Value
+    [Documentation]    Tests if parameter ‘publishingState’ value is missing. then the HTTP status 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S003
+    Create record with items and publish    Invalid_State
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    ${EMPTY}    400    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item2_ID}    ${Item2_EVID}    Published
+    Check Entity Version    ${Item2_ID}    1
+
+Missing EntityVersionID value
+    [Documentation]    Checks that a response of 400 is returned, if \ the request conditions are as follows:
+    ...    - entityID = VALID
+    ...    - entityVersionID = MISSING
+    ...
+    ...    where the entityID and entityVersionID are for the record item
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S004
+    Create record with items and publish    Invalid EntityVersionID
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    ${EMPTY}    Decommissioned    400    Administrator    Administrator
+    Unlock Entity    ${experiment_ID}
+
+Missing PublishingState parameter
+    [Documentation]    Tests if parameter *publishingState* is MISSING then the HTTP status 400 is returned to the client
+    ...
+    ...    e.g ${ENTITY SERVICE ENDPOINT}/${entity_id}/attributes?entityVersionId=${entity_version_id}
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S003
+    Create record with items and publish    Missing Parameter - publishingState
+    Lock Entity    ${experiment_ID}
+    ${entity_id}=    set variable    ${Item1_ID}
+    ${entity_version_id}=    set variable    ${Item1_EVID}
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${ENTITY SERVICE ENDPOINT}/${entity_id}/attributes?entityVersionId=${entity_version_id}
+    Response Status Code Should Equal    400
+
+Missing EntityVersionID parameter
+    [Documentation]    Tests if parameter *entityVersionId* is MISSING \ then the HTTP status 400 is returned to the client
+    ...
+    ...    e.g ${ENTITY SERVICE ENDPOINT}/${entity_id}/attributes?publishingState=Archived
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S004
+    Create record with items and publish    Missing Parameter - EntityVersionID
+    Lock Entity    ${experiment_ID}
+    ${entity_id}=    set variable    ${Item1_ID}
+    ${newPublishingState}=    set variable    Decommissioned
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${ENTITY SERVICE ENDPOINT}/${entity_id}/attributes?publishingState=${newPublishingState}
+    Response Status Code Should Equal    400
+
+Missing EntityID
+    [Documentation]    Tests if parameter *entityId* is MISSING form the endpoint then the HTTP status 400 is returned to the client
+    ...
+    ...    e.g ${ENTITY SERVICE ENDPOINT}/attributes?entityVersionId=${entity_version_id}&publishingState=Archived
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S004
+    Create record with items and publish    Missing EntityID
+    Lock Entity    ${experiment_ID}
+    ${newPublishingState}=    set variable    Decommissioned
+    ${entity_version_id}=    set variable    ${Item1_EVID}
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${ENTITY SERVICE ENDPOINT}/attributes?entityVersionId=${entity_version_id}&publishingState=Archived
+    Response Status Code Should Equal    400
+
+Deleted Record Item
+    [Documentation]    Tests if the record item has been deleted from the record then the HTTP status 204 is returned to the client
+    ...
+    ...    See defect QC#19475 for explanation why as this a acceptable
+    [Setup]    Setup: Delete Record Item
+    Lock Entity    ${experiment_ID}
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Published    204    Administrator    Administrator
+    Check Entity Version    ${experiment_ID}    3
+    Unlock Entity    ${experiment_ID}
+    Check Publishing Status    ${Item2_ID}    ${Item2_EVID}    Published
+
+Permissions
+    [Documentation]    Checks that the correct responses are returned, if \ the request conditions are as follows:
+    ...
+    ...    | Permissions | expected HTTP status |
+    ...    | User1 has EDIT permssions on the record | 204 |
+    ...    | User2 has EDIT permssions but not on the record to be updated | 403 |
+    ...    | User3 has NO \ EDIT permssions whatsoever | 403 |
+    ...
+    ...    Difference btwn 1,2: for user has been assigned an entity role that has EDIT permission
+    ...    - \ User1 this has been applied on the ROOT level so that they can edit all entitiies
+    ...    - \ User2 this has been applied only on specify entities/ levels
+    [Tags]    EWB-SAPI-SSP-ENT-SPS-S007
+    [Setup]    Setup: Permissions
+    Comment    User1 has ALL entity permission at root level
+    Lock Entity    ${experiment_ID1}
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Archived    204    Administrator    Administrator
+    Unlock Entity    ${experiment_ID1}
+    Comment    User2 has ALL entity permission, but only on record containing item to be updated
+    Lock Entity Customer User    ${experiment_ID1}    USER012    USER0121
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Decommissioned    204    USER012    USER0121
+    Unlock Entity Customer User    ${experiment_ID1}    USER012    USER0121
+    Comment    User2 has ALL entity permission, but not on record containing item to be updated
+    Lock Entity Customer User    ${experiment_ID1}    USER012    USER0121
+    Lock Entity    ${experiment_ID2}
+    Update Publishing State    ${Item2_ID}    ${Item2_EVID}    Decommissioned    403    USER012    USER0121
+    Unlock Entity Customer User    ${experiment_ID1}    USER012    USER0121
+    Comment    User3 has NO EDIT RECORD permissions at root level    This test may not be valid as you cannot lock record if you don't have edit rights.    If you can't lock, then you can't update.    You should not be able to update even if its locked by another user.
+    Comment    Lock Entity Customer User    ${experiment_ID1}    USER013    USER0131
+    Update Publishing State    ${Item1_ID}    ${Item1_EVID}    Decommissioned    403    USER013    USER0131
+    Comment    Unlock Entity Customer User    ${experiment_ID1}    USER013    USER0131
+
+*** Keywords ***
+Suite Level Setup
+    [Documentation]    Sets up Group and Projects for this Testsuite
+    ...    Adds additional Publishing State to the catalog
+    ${unique_id}=    Get Time    epoch
+    #Create Group, Project to be used for suite
+    ${Group_Name}=    set variable    Record Service Publishing States_${unique_id}
+    Set Suite Variable    ${Group_Name}
+    ${Project_Name}=    set variable    Project EARTH
+    ${Project_PATH}=    set variable    Root/${Group_Name}/${Project_Name}
+    Set Suite Variable    ${Project_PATH}
+    ${Group_id}=    Rest_Entity_Service_ Resource.Create Group    1    ${Group_Name}
+    Set Suite Variable    ${Group_id}
+    ${Project_id}=    Rest_Entity_Service_ Resource.Create Project    ${Group_id}    ${Project_Name}
+    Set Suite Variable    ${Project_id}
+    #Creates some additional publishing states for testing
+    Run Keyword And Ignore Error    Setup: Add Publishing States to Catalog
+
+Suite Level Teardown
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    rest_entity_service_resource.Delete Entity    ${Group_id}
+
+Setup: Add Publishing States to Catalog
+    [Documentation]    Adds additional publishing states to Experiment Dictionaries / Publishing Status Term \ (guid = 507)
+    Run Keyword And Ignore Error    Create Tuple    507    status    Archived    Archived    true
+    ...    false
+    Run Keyword And Ignore Error    Create Tuple    507    status    Decommissioned    Decommissioned    true
+    ...    false
+
+Setup: Delete Record Item
+    [Documentation]    *Data setup for test*: Deleted Record Item
+    ...
+    ...    - creates an experiment with 2 items
+    ...    - saves as Version= V2
+    ...    - publishes both items.
+    ...    - deletes item2
+    ...    - saves as Version= V3
+    ${Expt_Name}    set variable    Deleted Record Item
+    Create record with items and publish    ${Expt_Name}
+    #Login to EWB using the values stored in the common resource files    Delete one of the record items and save experiment as VERSION
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${ADMIN USER}    ${ADMIN PASSWD}
+    Open Experiment    ${Project_PATH}/${Expt_Name}
+    Select E-WorkBook Main Window
+    ewb_thick_client_document_entity_actions_resource.Delete Document Item    Uploaded Document:    Country_2.html
+    Save current record as version    ${ADMIN USER}    ${ADMIN PASSWD}    Break
+    Close E-WorkBook
+
+Setup: Permissions
+    [Documentation]    Setup for test = *Permissions*
+    ...
+    ...    Creates the following test entities
+    ...
+    ...    | Project | Experiment |
+    ...    | Have_Access | \ ASIA |
+    ...    | NO_Access \ | \ EUROPE \ |
+    ...
+    ...    All experiment records are published.
+    ...
+    ...    *Permissions setup*
+    ...    - Creates *NO RECORD EDIT* Entity Role
+    ...    - USER012 assigned *ALL_ENTITY_PERMISSIONS* on project = Have_Accessl
+    ...    - USER013 assigned *NO EDIT* Entity Role at root level
+    #Define Project name variables
+    ${Project_Name1}=    set variable    Have_Access
+    ${Project_Name2}=    set variable    NO_Access
+    #Define suite variable : entity paths to be used in tests
+    ${Project_PATH1}=    set variable    Root/${Group_Name}/${Project_Name1}
+    Set test variable    ${Project_PATH1}
+    ${Project_PATH2}=    set variable    Root/${Group_Name}/${Project_Name2}
+    Set test variable    ${Project_PATH2}
+    #Create 1st Project & Experiment    Project = Have Access
+    ${Project_ID1}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name1}
+    Set Suite Variable    ${Project_ID1}
+    ${experiment_ID1}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID1}    ASIA
+    Set test variable    ${experiment_ID1}
+    Lock Entity    ${experiment_ID1}
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID1}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Publishing State/Record Items/Country_3.html    text/html    HTML_TEXT
+    Set test variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    Commit Versioned Entity    ${experiment_ID1}
+    Publish Record    ${experiment_ID1}
+    Unlock Entity    ${experiment_ID1}
+    ${experiment_ID1_EV2}=    Get Entity Version ID    ${experiment_ID1}
+    Set test variable    ${experiment_ID1_EV2}
+    #Create 2nd Project & Experiment    Project = NO Access
+    ${Project_ID2}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name2}
+    Set test variable    ${Project_ID2}
+    ${experiment_ID2}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID2}    EUROPE
+    Set test variable    ${experiment_ID2}
+    Lock Entity    ${experiment_ID2}
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${experiment_ID2}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Publishing State/Record Items/Country_4.html    text/html    HTML_TEXT
+    Set test variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set test variable    ${Item2_EVID}
+    Commit Versioned Entity    ${experiment_ID2}
+    Publish Record    ${experiment_ID2}
+    Unlock Entity    ${experiment_ID2}
+    ${experiment_ID2_EV2}=    Get Entity Version ID    ${experiment_ID2}
+    Set test variable    ${experiment_ID2_EV2}
+    ${Status}    ${Value}=    Run Keyword And Ignore Error    Check Role Not Present    NO_RECORD_EDIT
+    Run Keyword If    '${Status}'=='PASS'    Create NO EDIT Entity Role
+    Assign User Entity Role    USER012    ALL_ENTITY_PERMISSIONS    ${Project_ID1}
+    Assign User Entity Role    USER013    NO_RECORD_EDIT    1
+
+Check Publishing Status
+    [Arguments]    ${entity_id}    ${entityVersionID}    ${expectedPublishingStatus}
+    [Documentation]    Gets Publishing Status attribute values and checks it against an expected value
+    ${Publishing Status}=    Get Attributes    ${entity_id}    ${entityVersionID}
+    Check Xml Element Value Equals    Gets Publishing Status attribute values and compares with expected    ${Publishing Status}    ${expectedPublishingStatus}    .//{http://entity.services.ewb.idbs.com}attribute[@name='publishingState']/{http://entity.services.ewb.idbs.com}values/{http://entity.services.ewb.idbs.com}value    elementNamespace=http://entity.services.ewb.idbs.com    xpath=True
+
+Check Entity Version
+    [Arguments]    ${EntityID}    ${expectedVersion}
+    [Documentation]    Gets Version No of a entity and checks it against the expected Version
+    ${EntityVersionNo}=    Get Entity Version Number    ${EntityID}
+    Should Be Equal    ${EntityVersionNo}    ${expectedVersion}
+
+Create record with items and publish
+    [Arguments]    ${Experiment_name}
+    [Documentation]    *For general setup of test entities in this suite*
+    ...    - Creates an experiment - with name as defined arguments passed in.
+    ...    - Inserts 2 documents.
+    ...    - Saves experiment as version and publishes so that published state = Published.
+    ${experiment_ID}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_id}    ${Experiment_name}
+    Set Test Variable    ${experiment_ID}
+    Lock Entity    ${experiment_ID}
+    ${Item1_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Publishing State/Record Items/Country_1.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item1_ID}
+    ${Item1_EVID}=    Get Entity Version ID    ${Item1_ID}
+    Set Test Variable    ${Item1_EVID}
+    ${Item2_ID}=    Add DOCUMENT With File Data    ${experiment_ID}    ${CURDIR}/../../../../Test Data/Core Web Services/Entity Service/Publishing State/Record Items/Country_2.html    text/html    HTML_TEXT
+    Set Test Variable    ${Item2_ID}
+    ${Item2_EVID}=    Get Entity Version ID    ${Item2_ID}
+    Set Test Variable    ${Item2_EVID}
+    Commit Versioned Entity    ${experiment_ID}
+    Publish Record    ${experiment_ID}
+    Unlock Entity    ${experiment_ID}
+
+Lock Entity Customer User
+    [Arguments]    ${entity_id}    ${CustomUser}    ${CustomUserPW}    ${expected_http_status}=200
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${CustomUser}    ${CustomUserPW}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    PUT    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/lock
+    Response Status Code Should Equal    ${expected_http_status}
+    ${lock}=    Get Response Body
+
+Unlock Entity Customer User
+    [Arguments]    ${entity_id}    ${CustomUser}    ${CustomUserPW}    ${expected_http_status}=204
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${CustomUser}    ${CustomUserPW}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    DELETE    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/lock
+    Response Status Code Should Equal    ${expected_http_status}
+    ${lock}=    Get Response Body
+
+Update Publishing State
+    [Arguments]    ${entity_id}    ${entity_version_id}    ${newPublishingState}    ${ExpectedStatusCode}    ${Username}    ${Password}
+    [Documentation]    Sets the publishing state attribute of a record item via:
+    ...    - PUT request
+    ...    - *Endpoint / services/ 1.0 /entities / {entityID} / attributes*
+    ...
+    ...    request paramaters = entityVersionID, publishingState
+    ...
+    ...    *Arguments*
+    ...
+    ...    - ${entity_id} = guid of the record item to update
+    ...    - ${entity_version_id} = entity version id
+    ...    - ${newPublishingState} = new publishing state value
+    ...    - ${ExpectedStatusCode} = expected response
+    ...    - ${Username} = logged in user to performance action
+    ...    - ${Password} = user password
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${Username}    ${Password}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Next Request May Not Succeed
+    PUT    ${ENTITY SERVICE ENDPOINT}/${entity_id}/attributes?entityVersionId=${entity_version_id}&publishingState=${newPublishingState}
+    Response Status Code Should Equal    ${ExpectedStatusCode}
+
+Create NO EDIT Entity Role
+    [Documentation]    Create an entity role without EDIT EXPERIMENT permissions.
+    ...
+    ...    Note: Entity Role has ALL other entity role permissions
+    ${EntityRoleName}=    set variable    NO_RECORD_EDIT
+    Create Role And Validate    ${EntityRoleName}    ${EntityRoleName}    Cannot edit experiments    false
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_EXPERIMENT
+    Comment    Ensure Role has Permission    ${EntityRoleName}    EDIT_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    ASSIGN_ROLES
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_FORM
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_FORM
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_FORM
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_FORM
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    BBSS_SET_BLINDING
+    Ensure Role has Permission    ${EntityRoleName}    BBSS_SET_DICTMAPPINGS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_TASK_TYPES
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_TASK
+    Ensure Role has Permission    ${EntityRoleName}    SIGNOFF_TASK
+    Ensure Role has Permission    ${EntityRoleName}    ALLOW_DRAFT_EXPERIMENTS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_HEADER_FOOTER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_PDF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_PDF
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_PDF
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_PDF
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_PDF
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_PDF
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_PUBLISHING_RULE
+    Ensure Role has Permission    ${EntityRoleName}    INITIATE_PUBLISHING
+    Ensure Role has Permission    ${EntityRoleName}    SET_SPREADSHEET_GLP
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_EXPERIMENT_FONTS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ANY_TASK
+    Ensure Role has Permission    ${EntityRoleName}    REASSIGN_ANY_TASK
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_TEST_REQUEST
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_TEST_REQUEST
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_DISPLAY_ITEM_PROPERTIES
+    Ensure Role has Permission    ${EntityRoleName}    USE_SPREADSHEET_DESIGNERS
+    Ensure Role has Permission    ${EntityRoleName}    USE_IMPORT_UTILITY
+    Ensure Role has Permission    ${EntityRoleName}    USE_DATA_READER
+    Ensure Role has Permission    ${EntityRoleName}    USE_RANDOMISATION
+    Ensure Role has Permission    ${EntityRoleName}    USE_TESTABLE_OBJECTS
+    Ensure Role has Permission    ${EntityRoleName}    USE_SPREADSHEET_AUDITING_TOOLS
+    Ensure Role has Permission    ${EntityRoleName}    INSERT_SPREADSHEET_COMPONENT
+    Ensure Role has Permission    ${EntityRoleName}    USE_KNOCKOUT
+    Ensure Role has Permission    ${EntityRoleName}    PDF_SIGNOFF
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_FORM
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_PDF
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    CBSS_SET_DICTMAPPINGS
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_FIT_AND_CHART_SETTINGS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    UPDATE_CATALOG_FROM_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_ANY_COMMENT
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_PRINT_LABELS_OPTION
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_DND_FILE_OPTIONS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_LANDING_PAGE
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_MENU_DISPLAY
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_LOOKUP_SOURCE
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    FILL_IN_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_SPREADSHEET_FORM
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_IS_RESOURCES
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    COPY_IS_FILE_RS
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    COPY_IS_BOOKMARK_RS
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_FILE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_FILE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_FILE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_FILE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_FILE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_FILE
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_VERSION_SAVE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_FORM
+    Ensure Role has Permission    ${EntityRoleName}    COPY_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    COPY_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    COPY_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    COPY_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    COPY_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    COPY_PDF
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    COPY_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    COPY_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    COPY_FILE
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_PRINT_PUBLISHING_OPTIONS
+    Ensure Role has Permission    ${EntityRoleName}    CONFIGURE_CREATION_OPTIONS
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    COPY_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    CREATE_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    MOVE_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    OPEN_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    COPY_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_MS_WORD_REPORT_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_ENTITY_ROLES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_ROOT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_DEVDEF
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_DEVDEF_FOLDER
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_PROJECT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_EXPERIMENT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_FORM
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_PDF
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SEARCH
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_SEARCH_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_SEARCHES
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_AREA
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_INBOX_CATEGORY
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_USER_INBOX
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_FILE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_MS_WORD_TEMPLATE
+    Ensure Role has Permission    ${EntityRoleName}    VIEW_HISTORY_MS_WORD_REPORT
+    Ensure Role has Permission    ${EntityRoleName}    DELETE_SIGNED_ITEM
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_SIGNED_ITEM
+    Ensure Role has Permission    ${EntityRoleName}    PREVENT_RECORD_EDIT
+    Ensure Role has Permission    ${EntityRoleName}    ALLOW_RECORD_EDIT
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_TAGS
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_ANY_TAG
+    Ensure Role has Permission    ${EntityRoleName}    EDIT_COMMENTS

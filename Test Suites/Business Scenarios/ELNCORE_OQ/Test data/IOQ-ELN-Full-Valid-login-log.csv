@@ -1,0 +1,3 @@
+USER_NAME,HISTORY_TYPE,MESSAGE
+*** USERNAME ***,LOGIN_SUCCEEDED,User '*** USERNAME ***' logged in successfully
+*** USERNAME ***,LOGOUT,User '*** USERNAME ***' logged out

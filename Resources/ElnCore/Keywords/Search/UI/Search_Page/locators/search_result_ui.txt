@@ -1,0 +1,15 @@
+*** Settings ***
+Documentation     Locators for search result table
+
+*** Variables ***
+${filterClearButton}    //*/button[@class="no-button cancel"]
+${applyFilterButton}    //*/button[@class="ewb-button ewb-button-primary ok enable"]
+${sortResultDropBox}    css=.sortbox .sortname
+${blankSearchResultLabel}    xpath=//div[@id='resultsError']//h2[text()='Your search returned no records']/../p[contains(text(),'Text searches may be refined using syntax for wildcards or an exact phrase. Click the yellow question mark icon to find out more.')]
+${totalSearchResultLabel}    css=#matches
+${searchResultList}    //div[@id='resultList']/div[contains(@class,'miniViewTuple')]
+${previewedResultItemPathLabel}    css=.main-display .path
+${searchResultTitleList}    xpath=//div[@class='experimenttitle']
+${blankChemistrySearchResultLabel}    xpath=//div[@id='resultsError']//h2[text()='Your chemistry search returned no records.']/../p[contains(text(),'Click the icon in the top panel to refine your structure.')]
+${nextButton}     css=#next > span
+${previuosButton}    css=#prev> span

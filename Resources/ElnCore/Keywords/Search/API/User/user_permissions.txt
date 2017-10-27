@@ -1,0 +1,16 @@
+*** Settings ***
+Library           SecurityAPILibrary
+
+*** Keywords ***
+Create User With Chemistry Permissions
+    [Arguments]    ${userName}
+    SecurityAPILibrary.Create User    ${userName}    ${userName}    ${userName}1
+    SecurityAPILibrary.Create System Role    Web Chemistry User    Permission to use Web Chemistry    EDIT_WEB_CHEMISTRY
+    Assign System Role To User    ${userName}    EWB_WEB_CLIENT_USER
+    Assign System Role To User    ${userName}    Web Chemistry User
+
+Edit API User
+    [Arguments]    ${user}    ${password}
+    [Documentation]    This changes the rest_api_user and rest_api_password variables that are used by the EntityAPILibrary
+    ${rest_api_user}    Set Variable    ${user}
+    ${rest_api_password}    Set Variable    ${password}

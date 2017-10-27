@@ -1,0 +1,142 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+...
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+06-01 - POST child dictionary
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild1    POSTChild1    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild1    /POSTChild1    true
+    Validate Root Element    ${new element id 2}    dictionary    ${new element id 2}    ChildDictionary1    /POSTChild1/ChildDictionary1    true
+
+06-02 - POST child term
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild2    POSTChild2    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    TERM    ChildTerm1    ChildTerm1    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild2    /POSTChild2    true
+    Validate Root Element    ${new element id 2}    term    ${new element id 2}    ChildTerm1    /POSTChild2/ChildTerm1    true
+
+06-03 - POST child dictionary of child
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild3    POSTChild3    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    ${new element id 3}=    Create Non-Root Element    ${new element id 2}    DICTIONARY    ChildDictionary2    ChildDictionary2    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild3    /POSTChild3    true
+    Validate Root Element    ${new element id 2}    dictionary    ${new element id 2}    ChildDictionary1    /POSTChild3/ChildDictionary1    true
+    Validate Root Element    ${new element id 3}    dictionary    ${new element id 3}    ChildDictionary2    /POSTChild3/ChildDictionary1/ChildDictionary2    true
+
+06-04 - POST child term of child
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild4    POSTChild4    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    ${new element id 3}=    Create Non-Root Element    ${new element id 2}    TERM    ChildTerm1    ChildTerm1    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild4    /POSTChild4    true
+    Validate Root Element    ${new element id 2}    dictionary    ${new element id 2}    ChildDictionary1    /POSTChild4/ChildDictionary1    true
+    Validate Root Element    ${new element id 3}    term    ${new element id 3}    ChildTerm1    /POSTChild4/ChildDictionary1/ChildTerm1    true
+
+06-05 - POST child dictionary invalid parent id
+    Create Non-Root Element And Expect Error    12300000123    DICTIONARY    404    ChildDictionary1    ChildDictionary1    true
+
+06-06 - POST child term invalid parent id
+    Create Non-Root Element And Expect Error    1230000123    TERM    404    ChildTerm1    ChildTerm1    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+
+06-07 - POST child dictionary duplicate
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild5    POSTChild5    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    Create Non-Root Element And Expect Error    ${new element id}    DICTIONARY    409    ChildDictionary1    ChildDictionary1    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild5    /POSTChild5    true
+    Validate Root Element    ${new element id 2}    dictionary    ${new element id 2}    ChildDictionary1    /POSTChild5/ChildDictionary1    true
+
+06-08 - POST child term duplicate
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild6    POSTChild6    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    TERM    ChildTerm1    ChildTerm1    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element And Expect Error    ${new element id}    TERM    409    ChildTerm1    ChildTerm1    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild6    /POSTChild6    true
+    Validate Root Element    ${new element id 2}    term    ${new element id 2}    ChildTerm1    /POSTChild6/ChildTerm1    true
+
+06-09 - POST child dictionary invalid dictionary - 256 Characters In Name
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild7    POSTChild7    true
+    Create Non-Root Element And Expect Error    ${new element id}    DICTIONARY    400    a22221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    256Name2    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild7    /POSTChild7    true
+
+06-10 - POST child dictionary invalid dictionary - 256 Characters In Description
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild8    POSTChild8    true
+    Create Non-Root Element And Expect Error    ${new element id}    DICTIONARY    400    256Description2    a22221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild8    /POSTChild8    true
+
+06-11 - POST child dictionary invalid dictionary - invalid state
+    [Documentation]    Deferred defect = QC13864
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild9    POSTChild9    true
+    Create Non-Root Element And Expect Error    ${new element id}    DICTIONARY    500     08-10    08-10    invalid
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild9    /POSTChild9    true
+
+06-12 - POST child term invalid term - 256 Characters In Name
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild10    POSTChild10    true
+    Create Non-Root Element And Expect Error    ${new element id}    TERM    400    a22221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    256Name2    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild10    /POSTChild10    true
+
+06-13 - POST child term invalid term - 256 Characters In Description
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild11    POSTChild11    true
+    Create Non-Root Element And Expect Error    ${new element id}    DICTIONARY    400    256Description2    a22221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild11    /POSTChild11    true
+
+06-14 - POST child term invalid term - invalid state
+    [Documentation]    Deferred defect = QC13864
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild12    POSTChild12    true
+    Create Non-Root Element And Expect Error    ${new element id}    DICTIONARY    500     08-10    08-10    invalid
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild12    /POSTChild12    true
+
+06-15 - POST child term invalid term - 33 Characters In Property Name
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild13    POSTChild13    true
+    Create Non-Root Element And Expect Error    ${new element id}    TERM    400    33CharNameProperty    33CharNameProperty    true
+    ...    {"property":[{"name":"111112222211111222221111122222121","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild13    /POSTChild13    true
+
+06-16 - POST child term invalid term - 256 Characters In Property Description
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild14    POSTChild14    true
+    Create Non-Root Element And Expect Error    ${new element id}    TERM    400    256CharPropertyDescription    256CharPropertyDescription    true
+    ...    {"property":[{"name":"name","type":"STRING","format":null,"description":"1111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild14    /POSTChild14    true
+
+06-17 - POST child term invalid term - No Key Property
+    ${new element id} =    Create Root Element    DICTIONARY    POSTChild15    POSTChild15    true
+    Create Non-Root Element And Expect Error    ${new element id}    TERM    400    NoKey    NoKey    true
+    ...    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    POSTChild15    /POSTChild15    true
+
+06-18 - POST child dictionary 2048 Character Path
+    ${new element id} =    Create Root Element    DICTIONARY    1aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    1aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    DICTIONARY    2aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    2aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 3}=    Create Non-Root Element    ${new element id 2}    DICTIONARY    3aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    3aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 4}=    Create Non-Root Element    ${new element id 3}    DICTIONARY    4aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    4aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 5}=    Create Non-Root Element    ${new element id 4}    DICTIONARY    5aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    5aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 6}=    Create Non-Root Element    ${new element id 5}    DICTIONARY    6aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    6aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 7}=    Create Non-Root Element    ${new element id 6}    DICTIONARY    7aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    7aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 8}=    Create Non-Root Element    ${new element id 7}    DICTIONARY    8aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    8aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 9}=    Create Non-Root Element    ${new element id 8}    DICTIONARY    9aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    9aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 10}=    Create Non-Root Element    ${new element id 9}    DICTIONARY    10aaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    10aaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 11}=    Create Non-Root Element    ${new element id 10}    DICTIONARY    2aaaabbbbbcccccdddddeeeeeaaaaabbbbb38    2aaaabbbbbcccccdddddeeeeeaaaaabbbbb38    true
+
+06-19 - POST child dictionary 2049 Character Path
+    [Documentation]    Deferred defect = QC13563
+    [Setup]
+    ${new element id} =    Create Root Element    DICTIONARY    1baaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    1baaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 2}=    Create Non-Root Element    ${new element id}    DICTIONARY    2aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    2aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 3}=    Create Non-Root Element    ${new element id 2}    DICTIONARY    3aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    3aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 4}=    Create Non-Root Element    ${new element id 3}    DICTIONARY    4aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    4aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 5}=    Create Non-Root Element    ${new element id 4}    DICTIONARY    5aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    5aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 6}=    Create Non-Root Element    ${new element id 5}    DICTIONARY    6aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    6aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 7}=    Create Non-Root Element    ${new element id 6}    DICTIONARY    7aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    7aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 8}=    Create Non-Root Element    ${new element id 7}    DICTIONARY    8aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    8aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 9}=    Create Non-Root Element    ${new element id 8}    DICTIONARY    9aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    9aaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 10}=    Create Non-Root Element    ${new element id 9}    DICTIONARY    10aaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    10aaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddeeeeeaaaaabbbbbcccccdddddee200    true
+    ${new element id 11}=    Create Non-Root Element And Expect Error    ${new element id 10}    DICTIONARY    400    2aaaabbbbbcccccdddddeeeeeaaaaabbbbbc39    2aaaabbbbbcccccdddddeeeeeaaaaabbbbbc39
+    ...    true

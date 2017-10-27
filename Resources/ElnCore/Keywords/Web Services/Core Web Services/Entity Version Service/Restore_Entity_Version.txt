@@ -1,0 +1,155 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint: /services/1.0/entities/{entityId}/versions
+Suite Setup       Entity Version Suite Setup
+Suite Teardown    Entity Version Suite Teardown
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Version Service/rest_entity_version_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          entity_version_suite_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           IDBSHttpLibrary
+Library           ../../../Libraries/Web Services/Python_Service_Libraries/EntityAPILibrary
+Library           XMLLibrary
+
+*** Test Cases ***
+Check Can Restore Entity Version
+    [Documentation]    A successful call returns the HTTP status 204 and the specified entities are restored
+    ${experiment_name}=    Set Variable    REV-S001
+    ${test_version_url}=    Set Variable    http://version1.com
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    ${test_version_url}
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${version_info}=    Can Restore Entity Version    ${experiment_id}    ${entity_version_id}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${restore_response}=    Restore Entity Version    ${experiment_id}    ${entity_version_id}    ${EMPTY}
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${children}=    Get Child Entities    ${experiment_id}
+    @{child_entity_id}=    Get Element Value    ${children}    http://entity.services.ewb.idbs.com    entityId
+    ${child_version_id}=    Get Entity Version ID    @{child_entity_id}[0]
+    ${value}=    Get Entity Data    @{child_entity_id}[0]    ${child_version_id}
+    Should Be Equal    ${test_version_url}    ${value}
+
+Check Restore Entity Version Fails with Missing Version Id
+    [Documentation]    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    REV-S002
+    ${experiment_id}=    Create Versioned Experiment    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${restore_response}=    Restore Entity Version    ${experiment_id}    ${EMPTY}    ${EMPTY}    400
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    Should Contain    ${restore_response}    The following parameters were missing or empty: [entityVersionId]
+
+Check Restore Entity Version Fails with Invalid Child
+    [Documentation]    If one or more of the child entity ids provided via the call parameter ‘childEntityIds’ is not an entity child, then the HTTP status code 400 is returned to the client
+    ${main_experiment_id}=    Create Versioned Experiment    REV-S003-Main
+    ${experiment_id}=    Create Experiment    ${project_id}    REV-S003
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    http://version1.com
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${main_experiment_id}
+    ${restore_response}=    Restore Entity Version    ${main_experiment_id}    ${entity_version_id}    ${link}    400
+    Should Contain    ${restore_response}    All children ids must belong to children entities.
+
+Check Restore Entity Version Fails with Bad Entity Id
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    REV-S001
+    ${test_version_url}=    Set Variable    http://version1.com
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    ${test_version_url}
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${restore_response}=    Restore Entity Version    ${experiment_name}    ${entity_version_id}    ${EMPTY}    404
+    Response Body Should Contain    Version [entityVersionId] of entity [entityId] does not exist
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Restore Entity Version Fails for Cache Version
+    [Documentation]    If the entity version is of type CACHE, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    REV-S005
+    ${test_version_url}=    Set Variable    http://version1.com
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    ${test_version_url}
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${version_type}=    Get Entity Version Type    ${experiment_id}
+    Should Be Equal As Strings    ${version_type}    CACHE
+    ${restore_response}=    Restore Entity Version    ${experiment_id}    ${entity_version_id}    ${EMPTY}
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${children}=    Get Child Entities    ${experiment_id}
+    @{child_entity_id}=    Get Element Value    ${children}    http://entity.services.ewb.idbs.com    entityId
+    ${child_version_id}=    Get Entity Version ID    @{child_entity_id}[0]
+    ${value}=    Get Entity Data    @{child_entity_id}[0]    ${child_version_id}
+    Should Be Equal    ${test_version_url}    ${value}
+
+Check Restore Entity Version Fails for Non-Record Types
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ${version_id}=    Get Entity Version ID    ${project_id}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${project_id}
+    ${restore_response}=    Restore Entity Version    ${project_id}    ${version_id}    ${EMPTY}    400
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${project_id}
+    Should Contain    ${restore_response}    Entity [entityId] is not the record type
+
+Check Restore Entity Version Fails Without EDIT_<ENTITY_TYPE> Permission
+    [Documentation]    A client requires the EDIT_< ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    REV-S007
+    ${experiment_id}=    Create Versioned Experiment    ${experiment_name}
+    ${lock_response}=    rest_entity_lock_service.Lock Entity    ${experiment_id}
+    ${name}=    Set Variable    CUSTOM_REV-S007
+    ${role_name}=    Create Custom EVS Role    ${name}
+    ${system_role_response}=    Assign User System Role    ${username}    ALL_SYSTEM_PERMISSIONS
+    ${entity_role_response}=    Assign User Entity Role    ${username}    ${role_name}    ${experiment_id}
+    ${remove_permission}=    Remove Role Permission    ${role_name}    OPEN_EXPERIMENT
+    ${remove_permission}=    Remove Role Permission    ${role_name}    EDIT_EXPERIMENT
+    Set Test Variable    ${SERVICES USERNAME}    ${username}
+    Set Test Variable    ${SERVICES PASSWORD}    ${password}
+    Log    Switching default user...    INFO
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Log    Restoring version...    INFO
+    ${restore_response}=    Restore Entity Version    ${experiment_id}    ${entity_version_id}    ${EMPTY}    403
+    Comment    Should Contain    ${restore_response}    Authorization failure: The user does not have required permissions for EXPERIMENT
+    Log    Re-add permissions...    INFO
+    ${response}=    Add Role Permission    ${role_name}    EDIT_EXPERIMENT
+    Log    Tidy up...    INFO
+    ${unlock_response}=    rest_entity_lock_service.Unlock Entity    ${experiment_id}
+    ${unassign_role}=    Delete User Entity Role    ${username}    ${role_name}    ${experiment_id}
+    ${tidy_up}=    Delete Custom EVS Role    ${role_name}
+
+Check Restore Entity Version Fails If Not Locked
+    [Documentation]    A successful call returns the HTTP status 204 and the specified entities are restored
+    ${experiment_name}=    Set Variable    REV-S008
+    ${experiment_id}=    Create Versioned Experiment    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${restore_response}=    Restore Entity Version    ${experiment_id}    ${entity_version_id}    ${EMPTY}    400
+    Should Contain    ${restore_response}    Entity [entityId] must be locked

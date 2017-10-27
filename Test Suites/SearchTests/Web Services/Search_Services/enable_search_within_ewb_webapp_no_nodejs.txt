@@ -1,0 +1,338 @@
+*** Settings ***
+Suite Setup       Close all browsers
+Default Tags      SRCH-FTXT
+Resource          ../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/quantrix_web_resource.txt
+Resource          ../../../../Libraries/IDBS Spreadsheet/searching/embedded_search_keywords.txt
+Library           IDBSHttpLibrary
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Library           EntityAPILibrary
+Library           SecurityAPILibrary
+Library           JSONLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+SH-480 Search within webapp (ENTITY ATTRIBUTES)
+    [Documentation]    EWB Server to fulfil a TEXT search (ENTITY ATTRIBUTES) from EWB webapp
+    ...
+    ...    - test queries entity attributes containing text "SH-480"; result counts= 5
+    [Tags]    SH-480    SRCH-FTXT    BUILD_ACCEPTANCE
+    [Setup]    Setup for SH-480
+    #see test setup, test queries entity attributes containing text SH-480: result counts= 5
+    Post & check count    5    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "SH-480" \ \ \ \ } \ \ }] }
+    [Teardown]    2groups_Teardown
+
+SH-490 Search within webapp (DOCUMENT CONTENT+ ATTRIBUTES)
+    [Documentation]    see test setup
+    ...    - test queries document content containing the following sentence "Report: The case is marked as 'SH-490": result counts= 3
+    ...    - test queries document attribute: keywords is "unique SH-490": result count = 1
+    [Tags]    SH-275    SRCH-FTXT    BUILD_ACCEPTANCE
+    [Setup]    Setup for SH-490
+    #see test setup, test queries document content containing the following sentence "Report: The case is marked as 'SH-490": result counts= 3
+    Post & check count    3    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "SH-490" \ \ \ \ } \ \ }] }
+    #test data setup - test queries document attribute: keywords is "unique SH-490": result count = 1
+    Post & check count    1    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "\\"unique SH-490\\"" \ \ \ \ } \ \ }] }
+    [Teardown]    1group_Teardown
+
+SH-430 Match All (AND) or Any (OR) Query Terms (criteria)
+    [Documentation]    Post request queries any entity containing
+    ...
+    ...    - Experiment title": "SH-430 experiment", Experiment keywords: "Match Any Query Terms" \ and Document caption: "Side Effects SH-430"; 3 results are returned
+    ...    - Experiment title": "SH-430 experiment", Experiment keywords: "Match All Query Terms" \ and Document caption: "Query Terms SH-430"; 1 result is returned
+    [Tags]    SH-430    SH-335
+    [Setup]    Setup for SH-430
+    # Post request queries any entity containing Experiment title": "SH-430 experiment", Experiment keywords: "Match Any Query Terms" \ and Document caption: "Side Effects SH-430"; 3 results are returned
+    Post & check count    3    { \ \ "select": ["@id"], \ \ "filter": [[{ \ \ \ \ \ "/Flexible%20Hierarchy/Solutions/Experiment#title": "SH-430 experiment" },{ \ \ \ \ \ "/Flexible%20Hierarchy/Solutions/Experiment#keywords": "Match Any Query Terms" \ \ },{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/Flexible%20Hierarchy/Solutions/Document#caption": "Side Effects SH-430" \ \ \ \ } \ \ }]] }
+    # Post request queries any entity containing Experiment title": "SH-430 experiment", Experiment keywords: "Match All Query Terms" \ and Document caption: "Query Terms SH-430"; 1 result is returned
+    Post & check count    1    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ \ "/Flexible%20Hierarchy/Solutions/Experiment#title": "SH-430 experiment" },{ \ \ \ \ \ "/Flexible%20Hierarchy/Solutions/Experiment#keywords": "Match All Query Terms" \ \ },{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/Flexible%20Hierarchy/Solutions/Document#caption": "Query Terms SH-430" \ \ \ \ } \ \ }] }
+    [Teardown]    1group_Teardown
+
+SH-488 Return Matches in Records and Document Comments
+    [Documentation]    see test setup
+    ...    - test queries free text search comment added to experiment 1 AND comment added to document in experiment 2 "SH-488": result counts= 2
+    ...    - test queries free text search comment added to report AND comment added to text document in template "search-488": result counts= 2
+    [Tags]    SH-488    SRCH-FTXT    BUILD_ACCEPTANCE
+    [Setup]    Setup for SH-488
+    #see test setup, test queries free text search comment added to experiment 1 AND comment added to document in experiment 2 "SH-488": result counts= 2
+    Post & check count    2    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "SH-488" \ \ \ \ } \ \ }] }
+    #see test setup, test queries free text search comment added to report AND comment added to text document in template "search-488": result counts= 2
+    Post & check count    2    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "Search-488" \ \ \ \ } \ \ }] }
+    [Teardown]    1group_Teardown
+
+SH-241 Perform 'Exact Phrase' searches
+    [Documentation]    Perform "Exact phrase" searches
+    ...
+    ...    - test queries free exact phrase (SET SUITE) search within the database: result counts= 5
+    ...    - test queries free exact phrase ("SET SUITE") search within the database: result counts= 2
+    [Tags]    SH-241    SRCH-FTXT
+    [Setup]    Setup for SH-241
+    #see test setup, test queries free exact phrase (SET SUITE) search within the database: result counts= 5
+    Post & check count    5    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "SH-241" \ \ \ \ } \ \ }] }
+    #see test setup, test queries free exact phrase ("SET SUITE") search within the database: result counts= 2
+    Post & check count    2    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "\\"set suite\\"" \ \ \ \ } \ \ }] }
+    [Teardown]    2groups_Teardown
+
+SH-243 Perform 'Wildcard-like' searches
+    [Documentation]    Text queries:
+    ...
+    ...    - perform a quick search to return exact match of the text "comic"; 1 result is returned
+    ...    - perform a quick search using wildcard symbol(*) placed after the text (e.g. comic*) to return matches with the -entered text in prefix (e.g. paracomic, photocomic; 3 result is returned
+    ...    - perform a quick search using wildcard symbol(*) placed preceding the text (e.g. *comic) to return matches with the entered text in suffix (e.g. Paracomic); 2 result is returned
+    ...    - perform a quick search using wildcard symbol(*) placed preceding and after the text (e.g. *comic*) to return matches where the entered text is contained within a word (e.g. Biocomical); 6 result is returned
+    [Tags]    SH-243    SRCH-FTXT
+    [Setup]    Setup for SH-243
+    # perform a quick search to return exact match of the text "comic"; 1 result is returned
+    Post & check count    1    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "comic" \ \ \ \ } \ \ }] }
+    # perform a quick search using wildcard symbol(*) placed after the text (e.g. comic*) to return matches with the entered text in prefix (e.g. paracomic, photocomic; 3 result is returned
+    Post & check count    2    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "comic*" \ \ \ \ } \ \ }] }
+    # perform a quick search using wildcard symbol(*) placed preceding the text (e.g. *comic) to return matches with the entered text in suffix (e.g. Paracomic); 2 result is returned
+    Post & check count    3    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "*comic" \ \ \ \ } \ \ }] }
+    # perform a quick search using wildcard symbol(*) placed preceding and after the text (e.g. *comic*) to return matches where the entered text is contained within a word (e.g. Biocomical); 6 result is returned
+    Post & check count    5    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "*comic*" \ \ \ \ } \ \ }] }
+    [Teardown]    1group_Teardown
+
+SH-489 Return Matches in Records and Document Tags
+    [Documentation]    Return matches in Records and Document Comments
+    ...
+    ...    - test queries free text search tag added to experiment 1 AND tag added to document in experiment 2 "SH-489": result counts= 2
+    ...    - test queries free text search tag added to report AND tag added to text document in template "search-489": result counts= 2
+    [Tags]    SH-489    SRCH-FTXT    BUILD_ACCEPTANCE
+    [Setup]    Setup for SH-489
+    #see test setup, test queries free text search tag added to experiment 1 AND tag added to document in experiment 2 "SH-489": result counts= 2
+    Post & check count    2    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "SH-489" \ \ \ \ } \ \ }] }
+    #see test setup, test queries free text search tag added to report AND tag added to text document in template "search-489": result counts= 2
+    Post & check count    2    { \ \ "select": ["@id"], \ \ "filter": [{ \ \ \ \ "@deep": { \ \ \ \ \ \ "/System/Tuple#text": "Search-489" \ \ \ \ } \ \ }] }
+    [Teardown]    1group_Teardown
+
+*** Keywords ***
+Setup for SH-490
+    [Documentation]    test data setup
+    ...
+    ...    To create ewb entitities> group 1 and project 1 has 2 records: 3 records:
+    ...    - SH-002 and SH-003: both contains an attached word document)
+    ...    - AND within SH-002 is the following sentence "SH-490"
+    ...    -document attribute insert a word document
+    #test data setup - to create ewb entitities> group 1 and project 1 has 2 records: 2 experiment (SH-002 and SH-003: both contains word document) AND within the document SH-002 is the following "SH-490"
+    ${group_id}    EntityAPILibrary.Create Group    1    Test Group
+    Set suite Variable    ${group_id}
+    ${project_id}    EntityAPILibrary.Create Project    ${group_id}    Test Project
+    ${experiment_name}=    set variable    SH-002
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment_name}
+    EntityAPILibrary.Create Word Document    ${experiment_id}    ${CURDIR}/Test_Data/Robot (SH-490).docx
+    EntityAPILibrary.Version Save    ${experiment_id}    Data Added
+    ${report_name}=    set variable    SH-003
+    ${report_status}=    set variable    Completed
+    ${report_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${report_name}    ${report_status}    keywords:::unique SH-490
+    EntityAPILibrary.Create Word Document    ${report_id}    ${CURDIR}/Test_Data/Robot 2 (SH-490).docx
+    EntityAPILibrary.Draft Save    ${report_id}
+    ${template_name}=    set variable    document Attributes
+    ${template_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${template_name}
+    EntityAPILibrary.Create Word Document    ${template_id}    ${CURDIR}/Test_Data/Test Approach (SH-490).docx
+    EntityAPILibrary.Version Save    ${template_id}    Data Changed    Data changed
+
+Setup for SH-480
+    [Documentation]    \# test data setup -to create ewb 5 entities in total
+    ...    - to create ewb entitities> group 1 and project 1 has 2 records: 1 experiment (title & reference: SH-480) AND 1 report (title: SH-480)
+    ...    - to create ewb entitities> group 2 and project 2 has 3 records: 1 template (title: SH-480), 1 experiment (reference: SH-480) AND 1 report (keyword: SH-480)
+    #test data setup - to create ewb entitities> group 1 and project 1 has 2 records: 1 experiment (title & reference: SH-480) AND 1 report (title: SH-480)
+    ${group1_id}    EntityAPILibrary.Create Group    1    Group for testing
+    Set suite Variable    ${group1_id}
+    ${project1_id}    EntityAPILibrary.Create Project    ${group1_id}    Projects to Verify
+    ${experiment1_name}=    set variable    SH-480
+    ${experiment1_status}=    set variable    Completed
+    ${experiment1_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${experiment1_name}    ${experiment1_status}    references:::SH-480
+    EntityAPILibrary.Create Web Link Document    ${experiment1_id}    www.idbs.com
+    EntityAPILibrary.Version Save    ${experiment1_id}    Data Added
+    ${Report_name}=    set variable    Report title: SH-480
+    ${Report_id}=    EntityAPILibrary.Create Report    ${project1_id}    ${Report_name}
+    EntityAPILibrary.Create Idbs Spreadsheet Document    ${Report_id}
+    EntityAPILibrary.Version Save    ${Report_id}    Data Added
+    #test data setup - to create ewb entitities> group 2 and project 2 has 3 records: 1 template (title: SH-480), 1 experiment (reference: SH-480) AND 1 report (keyword: SH-480)
+    ${group2_id}    EntityAPILibrary.Create Group    1    Testing Group
+    Set suite Variable    ${group2_id}
+    ${project2_id}    EntityAPILibrary.Create Project    ${group2_id}    Project 2
+    ${Template_name}=    set variable    SH-480
+    ${Template_id}=    EntityAPILibrary.Create Template    ${project2_id}    ${Template_name}
+    EntityAPILibrary.Create Text Document    ${Template_id}    Verifying the results that are displayed in search
+    EntityAPILibrary.Version Save    ${Template_id}    Data Added
+    ${experiment2_name}=    set variable    Molecular screening
+    ${experiment2_status}=    set variable    Started
+    ${experiment2_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${experiment2_name}    ${experiment2_status}    references:::SH-480
+    ${report2_name}=    set variable    Cell biology
+    ${report2_status}=    set variable    Completed
+    ${report2_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${report2_name}    ${report2_status}    keywords:::SH-480
+
+Setup for SH-430
+    [Documentation]    Setup is performed to create 3 different ewb entities with unique title and content;
+    ...
+    ...    - Experiment (title: SH-430 experiment) contains keyword (match all query terms) and document abstract (Query Terms SH-430)
+    ...    - Template (title: SH-430 template) contains keyword (match any query terms)
+    ...    - Report (title: SH-430 report) and document abstract (side effects SH-430)
+    # Setup is performed to create 3 different ewb entities with unique title and content; Experiment (title: SH-430 experiment) contains keyword (match all query terms) and document abstract (Query Terms SH-430); template (title: SH-430 template) contains keyword (match any query terms); report (tite: SH-430 report) and document abstract (side effects SH-430)
+    ${group_id}    EntityAPILibrary.Create Group    1    SH-430 group
+    Set suite Variable    ${group_id}
+    ${project_id}    EntityAPILibrary.Create Project    ${group_id}    SH-430 project
+    ${experiment_name}=    set variable    SH-430 experiment
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment_name}    Started    keywords:::Match All Query Terms
+    EntityAPILibrary.Create Text Document    ${experiment_id}    Abstract    Query Terms SH-430
+    EntityAPILibrary.Version Save    ${experiment_id}    Data Added
+    ${template_name}=    set variable    SH-430 template
+    ${template_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${template_name}    Completed    keywords:::Match Any Query Terms
+    EntityAPILibrary.Create Web Link Document    ${template_id}    www.google.com
+    EntityAPILibrary.Version Save    ${template_id}    Data Added
+    ${report_name}=    set variable    SH-430 report
+    ${report_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${report_name}    Completed
+    EntityAPILibrary.Create Text Document    ${report_id}    Abstract    Side Effects SH-430    Test the content in the document
+    EntityAPILibrary.Version Save    ${report_id}    Data Changed
+
+check response count
+    [Arguments]    ${verify_count}
+    [Documentation]    request body of a post request keyword    # verifies the status of the post: to satrt with 200 OK    # result_count
+    ...
+    ...    AND
+    ${response_body}=    Get response body
+    ${status}=    Get response status
+    should start with    ${status}    200
+    ${reponse_body}=    Get response body
+    ${result_count}=    Get json list length    ${response_body}    /
+    Should Be Equal As Integers    ${result_count}    ${verify_count}
+
+Setup for SH-488
+    [Documentation]    Test data setup
+    ...    - Add comment "SH-488" to an experiment
+    ...    - Add comment "search-488" to a report
+    ...    - Insert a document in another experiment and add a comment "SH-488"
+    ...    - create a text document in a template and add a comment "search-488"
+    # Test data setup- Add comment "SH-488" to an experiment
+    ${group_id}    EntityAPILibrary.Create Group    1    Level 1
+    Set suite Variable    ${group_id}
+    ${project_id}    EntityAPILibrary.Create Project    ${group_id}    Hierarchy
+    ${experiment_name}=    set variable    Search order
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment_name}
+    EntityAPILibrary.Add Comment    ${experiment_id}    SH-488
+    EntityAPILibrary.Version Save    ${experiment_id}    Data Added
+    # Test data setup- Add comment "search-488" to a report
+    ${Report_name}=    set variable    Report title: search order 2
+    ${Report_id}=    EntityAPILibrary.Create Report    ${project_id}    ${Report_name}
+    EntityAPILibrary.Add Comment    ${Report_id}    Search-488
+    EntityAPILibrary.Version Save    ${Report_id}    Data Added
+    # Test data setup- Insert a document in another experiment and add a comment "SH-488"
+    ${experiment2_name}=    set variable    Webapp search
+    ${experiment2_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment2_name}
+    ${item_id}=    EntityAPILibrary.Create Word Document    ${experiment2_id}    ${CURDIR}/Test_Data/Verification (SH-488).docx
+    EntityAPILibrary.Add Comment    ${item_id}    Comment- SH-488
+    EntityAPILibrary.Version Save    ${experiment2_id}    Data Added
+    # Test data setup- create a text document in a template and add a comment "search-488"
+    ${Template_name}=    set variable    webapp search 2
+    ${Template_id}=    EntityAPILibrary.Create Template    ${project_id}    ${Template_name}
+    ${item2_id}=    EntityAPILibrary.Create Text Document    ${Template_id}    Verifying the results that are displayed in search
+    EntityAPILibrary.Add Comment    ${item2_id}    Comment- Search-488
+    EntityAPILibrary.Version Save    ${Template_id}    Data Added
+
+2groups_Teardown
+    EntityAPILibrary.Unlock Entity And Children    ${group1_id}
+    EntityAPILibrary.Unlock Entity And Children    ${group2_id}
+    EntityAPILibrary.Delete Entity    ${group1_id}    Experiment Terminated    As intended
+    EntityAPILibrary.Delete Entity    ${group2_id}    Project Terminated    As intended
+
+Setup for SH-243
+    [Documentation]    \# Create entities of different types which contains the text 'graph' as a prefix / suffix / contained within a word
+    # Create entities of different types which contains the text 'graph' as a prefix / suffix / contained within a word
+    ${group_id}    EntityAPILibrary.Create Group    1    Wildcard like searches
+    Set suite Variable    ${group_id}
+    ${project_id}    EntityAPILibrary.Create Project    ${group_id}    Perform wildcard search
+    # Create experiments
+    ${experiment_name}=    set variable    Write a paracomic
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment_name}
+    ${experiment2_name}=    set variable    Image group
+    ${experiment2_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment2_name}    Started    references:::Image and photocomic
+    # Create Templates
+    ${template_name}=    set variable    Development
+    ${template_id}=    EntityAPILibrary.Create Template    ${project_id}    ${template_name}
+    ${item_id}=    EntityAPILibrary.Create Word Document    ${template_id}    ${CURDIR}/Test_Data/Testing (SH-243).docx
+    EntityAPILibrary.Version Save    ${template_id}    Data Added
+    EntityAPILibrary.Add Comment    ${item_id}    presentation of comic
+    ${template2_name}=    set variable    Standard form
+    ${template2_id}=    EntityAPILibrary.Create Template    ${project_id}    ${template2_name}
+    EntityAPILibrary.Create Word Document    ${template2_id}    ${CURDIR}/Test_Data/Matches with prefix (SH-243).docx
+    EntityAPILibrary.Version Save    ${template2_id}    Data Added
+    # Create Reports
+    ${report_name}=    set variable    General note
+    ${report_id}=    EntityAPILibrary.Create Report    ${project_id}    ${report_name}    Started    keywords:::auto biocomical
+    ${report2_name}=    set variable    comical representation
+    ${report2_id}=    EntityAPILibrary.Create Report    ${project_id}    ${report2_name}    Started
+
+1group_Teardown
+    EntityAPILibrary.Unlock Entity And Children    ${group_id}
+    EntityAPILibrary.Delete Entity    ${group_id}    As intended    As intended
+
+Setup for SH-489
+    [Documentation]    Test data setup
+    ...    - Add comment "SH-489" to an experiment
+    ...    - Add comment "search-489" to a report
+    ...    - Insert a document in another experiment and add a comment "SH-489"
+    ...    - create a text document in a template and add a comment "search-489"
+    # Test data setup- Add tag "SH-489" to an experiment
+    ${group_id}    EntityAPILibrary.Create Group    1    Level 1
+    Set suite Variable    ${group_id}
+    ${project_id}    EntityAPILibrary.Create Project    ${group_id}    Hierarchy
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    Search order
+    EntityAPILibrary.Add Tag    ${experiment_id}    SH-489
+    EntityAPILibrary.Version Save    ${experiment_id}    Data Added
+    # Test data setup- Add tag "search-489" to a report
+    ${Report_id}=    EntityAPILibrary.Create Report    ${project_id}    Report title: search order 2
+    EntityAPILibrary.Add Tag    ${Report_id}    Search-489
+    EntityAPILibrary.Version Save    ${Report_id}    Data Added
+    # Test data setup- Insert a document in another experiment and add a tag "SH-489"
+    ${experiment2_id}=    EntityAPILibrary.Create Experiment    ${project_id}    Webapp search
+    ${item_id}=    EntityAPILibrary.Create Word Document    ${experiment2_id}    ${CURDIR}/Test_Data/Verification (SH-489).docx
+    EntityAPILibrary.Version Save    ${experiment2_id}    Data Added
+    EntityAPILibrary.Add Tag    ${item_id}    Comment - SH-489
+    # Test data setup- create a text document in a template and add a tag "search-489"
+    ${Template_id}=    EntityAPILibrary.Create Template    ${project_id}    webapp search 2
+    ${item2_id}=    EntityAPILibrary.Create Text Document    ${Template_id}    Verifying the results that are displayed in search
+    EntityAPILibrary.Add Tag    ${item2_id}    Comment - Search-489
+    EntityAPILibrary.Version Save    ${Template_id}    Data Added
+
+Post & check count
+    [Arguments]    ${verify_count}    ${request_body}
+    create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set request header    accept    application/json, text/javascript, */*; q=0.01
+    set request header    content-type    application/json
+    set request body    ${request_body}
+    POST    /ewb/services/1.0/data/jsonld
+    check response count    ${verify_count}
+
+Setup for SH-241
+    [Documentation]    \# test data setup -to create ewb 5 entities in total
+    ...    - to create ewb entitities> group 1 and project 1 has 2 records: 1 experiment (set SH-241) AND 1 report (title: set suite SH-241)
+    ...    - to create ewb entitities> group 2 and project 2 has 3 records: 1 template (title: set suite variable SH-241), 1 experiment (title: set suite SH-241) AND 1 report (title: VARIABLE; keyword: set SH-241)
+    #test data setup - to create ewb entitities> group 1 and project 1 has 2 records: 1 experiment (set SH-241) AND 1 report (title: suite SH-241)
+    ${group1_id}    EntityAPILibrary.Create Group    1    Group for testing
+    Set suite Variable    ${group1_id}
+    ${project1_id}    EntityAPILibrary.Create Project    ${group1_id}    Projects to Verify
+    ${experiment1_name}=    set variable    set SH-241
+    ${experiment1_status}=    set variable    Completed
+    ${experiment1_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${experiment1_name}    ${experiment1_status}    references:::SH-241
+    EntityAPILibrary.Create Web Link Document    ${experiment1_id}    www.idbs.com
+    EntityAPILibrary.Version Save    ${experiment1_id}    Data Added
+    ${Report_name}=    set variable    Report title: suite SH-241
+    ${Report_id}=    EntityAPILibrary.Create Report    ${project1_id}    ${Report_name}
+    EntityAPILibrary.Create Idbs Spreadsheet Document    ${Report_id}
+    EntityAPILibrary.Version Save    ${Report_id}    Data Added
+    #test data setup - to create ewb entitities> group 2 and project 2 has 3 records: 1 template (title: SET SUITE VARIABLE SH-241), 1 experiment (title: SET SUITE) AND 1 report (title: VARIABLE; keyword: SET)
+    ${group2_id}    EntityAPILibrary.Create Group    1    Testing Group
+    Set suite Variable    ${group2_id}
+    ${project2_id}    EntityAPILibrary.Create Project    ${group2_id}    Project 2
+    ${Template_name}=    set variable    set suite variable SH-241
+    ${Template_id}=    EntityAPILibrary.Create Template    ${project2_id}    ${Template_name}
+    EntityAPILibrary.Create Text Document    ${Template_id}    Verifying the results that are displayed in search
+    EntityAPILibrary.Version Save    ${Template_id}    Data Added
+    ${experiment2_name}=    set variable    set suite SH-241
+    ${experiment2_status}=    set variable    Started
+    ${experiment2_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${experiment2_name}    ${experiment2_status}    references:::suite
+    ${report2_name}=    set variable    variable
+    ${report2_status}=    set variable    Completed
+    ${report2_id}=    EntityAPILibrary.Create Experiment    ${project1_id}    ${report2_name}    ${report2_status}    keywords:::set SH-241

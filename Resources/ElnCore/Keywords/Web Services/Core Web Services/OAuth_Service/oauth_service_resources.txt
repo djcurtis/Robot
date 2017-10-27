@@ -1,0 +1,42 @@
+*** Settings ***
+Library           JSONLibrary
+Resource          ../../../Libraries/Core Web Services/OAuth Service/rest_oauth_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           IDBSHttpLibrary
+Library           String
+
+*** Keywords ***
+Build Client Registration Request
+    [Arguments]    ${client_name}    ${redirect_uris}    ${token_endpoint_auth_method}=client_secret_basic
+    [Documentation]    Build the Json request to register a client to a OAth 2.0 provider
+    ...
+    ...    *Arguments*
+    ...    - _client_name_: The client name
+    ...    - _redirect_uri_: The redirect URI
+    ...    - _token_endpoint_auth_method_: The token endpoint auth method. Default is 'client_secret_basic'
+    ...
+    ...
+    ...    *Returns*
+    ...    - The Json request as string
+    ${json_dictionary}=    JSONLibrary.Create Json Dictionary    client_name=${client_name}    token_endpoint_auth_method=${token_endpoint_auth_method}
+    ${json_redirect_uris}=    JSONLibrary.Create Json List    ${redirect_uris}
+    ${json_dictionary}=    JSONLibrary.Add Name Value Pair    ${json_dictionary}    redirect_uris    ${json_redirect_uris}
+    ${json_request}=    JSONLibrary.Convert Json To String    ${json_dictionary}
+    [Return]    ${json_request}    # The Json request as a string
+
+OAuth Register Client And Return Client Id
+    [Arguments]    ${client_name}    ${redirect_uri}
+    [Documentation]    Register a client to a OAth 2.0 provider
+    ...
+    ...    *Arguments*
+    ...    - _client_name_: The client name
+    ...    - _redirect_uri_: The redirect URI
+    ...
+    ...    *Returns*
+    ...    - The client id
+    ${json_request}=    Build Client Registration Request    ${client_name}    ${redirect_uri}
+    OAuth Register Client    ${json_request}    201
+    ${json_response}=    Get Response Body
+    ${client_id}=    IDBSHttpLibrary.Get Json Value    ${json_response}    /client_id
+    ${client_id}=    String.Replace String    ${client_id}    "    ${EMPTY}
+    [Return]    ${client_id}    # The client id

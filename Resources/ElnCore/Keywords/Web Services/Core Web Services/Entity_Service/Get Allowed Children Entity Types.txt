@@ -1,0 +1,40 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-GAC    Get allowed children entity types
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Get allowed entity types
+    [Documentation]    EWB-SAPI-SSP-ENT-GAC-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityTypeNameSequence
+    [Tags]    EWB-SAPI-SSP-ENT-GAC-S001
+    ${experiment_name}=    Set Variable    GAC-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_type_names}=    Get Allowed Child Entity Types    ${experiment_id}
+    # Checking expectations
+    Check Xml Element Value Contains    check experiment id value    ${entity_type_names}    FILE    entityTypeName    elementNamespace=http://entity.services.ewb.idbs.com
+
+Get allowed entity types with not existing entity
+    [Documentation]    EWB-SAPI-SSP-ENT-GAC-S002
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GAC-S002
+    ${experiment_name}=    Set Variable    GAC-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    # wrong entity id
+    ${child_entities}=    Get Allowed Child Entity Types    WrongentityId    404
+    # missing entity id
+    ${child_entities}=    Get Allowed Child Entity Types    ${EMPTY}    404
+
+*** Keywords ***

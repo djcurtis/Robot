@@ -1,0 +1,127 @@
+*** Settings ***
+Documentation     contains suite level keywords
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+# Library           EntityAPILibrary
+
+*** Variables ***
+${username}       auto_ws_user    # common user name for web service testing
+${password}       password    # password for ws user
+${LOGIN URL}      https://localhost:8443/EWorkbookWebApp/EwbWeb.jsp
+${experiment_id}    ${EMPTY}
+
+*** Keywords ***
+Cache Entity Service Suite Setup
+    [Documentation]    Create a default group/project for the Cache Entity Service test cases to be run under
+    Run Keyword And Ignore Error    Create User    ${username}    ${password}    Test User    testing@idbs.com    Testing
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    Set Suite Variable    ${group_name}    Cache Entitiy Service Group
+    Set Suite Variable    ${project_name}    Cache Entity Service Project
+    ${id}=    Create Group    1    ${group_name}
+    Set Suite Variable    ${group_id}    ${id}
+    ${project}=    Create Project    ${group_id}    ${project_name}
+    Set Suite Variable    ${project_id}    ${project}
+
+Cache Entity Service Suite Teardown
+    [Documentation]    Tidy up by deleting the group
+    Run Keyword And Ignore Error    EntityAPILibrary.Unlock Entity    ${group_id}
+    ${delete_response}=    Run Keyword And Ignore Error    rest_entity_service_resource.Delete Entity    ${group_id}
+
+Create Experiment And Add Web Link
+    [Arguments]    ${experiment_name}
+    [Documentation]    Creates and experiment and add a web link item to it. The experiment and the web link version type \ is CACHE. The experiment is locked after the keyword returns.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _experiment_name_ - the experiment name. Default is 'TestExperiment'
+    ...
+    ...    *Return value*
+    ...
+    ...    The web link id. Also, the global variable ${experiment_id} is set.
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Example*
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    ${web_link_id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Set Global Variable    ${experiment_id}    ${experiment_id}
+    [Return]    ${web_link_id}
+
+Create Experiment And Add 4 Web Links
+    [Arguments]    ${experiment_name}
+    [Documentation]    Creates and experiment and add 4 web links item to it. The experiment and the web link version type \ is CACHE. The experiment is locked after the keyword returns.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _experiment_name_ - the experiment name. Default is 'TestExperiment'
+    ...
+    ...    *Return value*
+    ...
+    ...    The web link id array. Also, the global variable ${experiment_id} is set.
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Example*
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    ${web_link_1_id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com/1
+    ${web_link_2_id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com/2
+    ${web_link_3_id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com/3
+    ${web_link__4id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com/4
+    Set Global Variable    ${experiment_id}    ${experiment_id}
+    @{web_link_ids}=    Create List    ${web_link_1_id}    ${web_link_2_id}    ${web_link_3_id}    ${web_link__4id}
+    [Return]    @{web_link_ids}
+
+Use User With Permissions
+    [Arguments]    ${user_name}    ${password}    ${entity_id}    @{permissions}
+    [Documentation]    Creates a rule with no permissions to the given user, and then sets it as current user for the scope of the test. When the tests end, the previous current user is restored.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _user_nme_ - the user name
+    ...
+    ...    _password_ - the user password
+    ...
+    ...    _entity_id_ - the entity to assign user entity role to
+    ...
+    ...    _permissions_ - optional list of permissions to assign to the role, e.g. EDIT_EXPERIMENT, VIEW_FILE
+    ...
+    ...    *Return value*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    # Create role with no permissions
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    EWB-SAPI-SSP-ENT-${unique_id}
+    Create Role    ${role_name}    ${role_name}    Custom role    false    @{permissions}
+    Assign User Entity Role    ${user_name}    ${role_name}    ${entity_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${user_name}
+    Set Test Variable    ${SERVICES PASSWORD}    ${password}
+
+Use User Administrator
+    [Documentation]    Sets current user to Administrator
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+
+Enable Template Show Reviewed
+    [Documentation]    Enable system setting *Templates/Templates_Show_Reviewed* by setting it to true.
+    # Enabling this system property to enforce signing template
+    System_Setting_Resource.Replace System Setting    Templates/Templates_Show_Reviewed    true    BOOLEAN
+
+Disable Template Show Reviewed
+    [Documentation]    Disable system setting *Templates/Templates_Show_Reviewed* by setting it to false. This is EWB default value for this setting.
+    # Disabling this system property to avoid signing template
+    System_Setting_Resource.Replace System Setting    Templates/Templates_Show_Reviewed    false    BOOLEAN
+
+Enable Rule Max File Size 1KB
+    # Enabling this system property enforce max file size
+    System_Setting_Resource.Replace System Setting    File_Validation_Rules    <?xml version="1.0" encoding="UTF-8"?><RULES><RULE><PROPERTY><NAME>Extensions</NAME><VALUE>.jpg, .url</VALUE></PROPERTY><PROPERTY><NAME>MaxSizeUnits</NAME><VALUE>KB</VALUE></PROPERTY><PROPERTY><NAME>description</NAME><VALUE>Rule max file size 1KB</VALUE></PROPERTY><PROPERTY><NAME>name</NAME><VALUE>Allowed Files</VALUE></PROPERTY><PROPERTY><NAME>MaxSize</NAME><VALUE>1</VALUE></PROPERTY><PROPERTY><NAME>SetMaxSize</NAME><VALUE>true</VALUE></PROPERTY></RULE></RULES>    STRING
+
+Disable Rule Max File Size 1KB
+    # Disabling this system property to avoid max file size
+    System_Setting_Resource.Replace System Setting    File_Validation_Rules    <?xml version="1.0" encoding="UTF-8"?> <RULES />    STRING

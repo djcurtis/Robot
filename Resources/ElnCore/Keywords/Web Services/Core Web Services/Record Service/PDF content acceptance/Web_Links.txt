@@ -1,0 +1,37 @@
+*** Settings ***
+Documentation     This test suite is looking at PDFing Weblinks via the Webclient, in isolation to any other entity types.
+Suite Setup       Setup standard suite
+Resource          test utilities.txt
+Resource          add_items_to_experiments.txt
+
+*** Test Cases ***
+weblink added to experiment
+    [Documentation]    This test looks at using one simple http link
+    [Tags]    EWB-WEB-PI002-W020-01
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    http://www.google.co.uk/
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Long and Secure Weblink added to experiment
+    [Documentation]    This test is looking at inserting a secure HTTPS weblink into a PDF that is 238 characters
+    [Tags]    EWB-WEB-PI002-W020-02
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    https://maps.google.co.uk/maps?q=kensington+village&rlz=1C1CHFX_enGB508GB508&um=1&ie=UTF-8&hl=en&sa=N&tab=wl&authuser=0
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Many Web Links
+    [Documentation]    This test includes 4 weblinks into an experiment, all which have slightly different properties:
+    ...    - standard http link
+    ...    - https link
+    ...    - http without proceeding www.
+    ...    - simple http
+    [Tags]    EWB-WEB-PI002-W020-03
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    http://www.google.co.uk/
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    https://www.halifax-online.co.uk/personal/logon/login.jsp
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    http://ojp.nationalrail.co.uk/service/planjourney/search
+    Add Link    ${experiment_id}    Web Link    WEB_LINK    http://www.groundology.com/
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

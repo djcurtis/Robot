@@ -1,0 +1,15 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/entitytypes
+Suite Setup
+Force Tags        Entity Config Service
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+
+*** Test Cases ***
+Can get a list of entity types
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityTypeSequence
+    ${xml_response}=    Get Entity Types
+    Comment    xml passer not working with \xc2\xae or \xc2\xa9 characters
+    Comment    Check Xml Contains Element    check entityType element exists    ${xml_response}    entityType    elementNamespace=http://entitytypeconfig.services.ewb.idbs.com
+    Comment    Check Xml Element Values Contain Sublist    check entityTypes list contain values {EXPERIMENT}    ${xml_response}    EXPERIMENT    name    elementNamespace=http://entitytypeconfig.services.ewb.idbs.com

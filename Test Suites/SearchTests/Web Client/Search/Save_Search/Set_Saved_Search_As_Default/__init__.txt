@@ -1,0 +1,9 @@
+*** Settings ***
+Documentation     SH-810 jira Story
+Library           String
+Resource          ../../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+
+*** Keywords ***

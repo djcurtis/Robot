@@ -1,0 +1,64 @@
+*** Settings ***
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Variables ***
+${username}       auto_ws_user    # common user name for web service testing
+${password}       password    # password for ws user
+${LOGIN URL}      https://localhost:8443/EWorkbookWebApp/EwbWeb.jsp
+${signature_image}    ${CURDIR}/../../../Test Data/Core Web Services/Entity Service/Get Signature Image/idbs-logo.jpg    # The imaged used signature watermark
+
+*** Keywords ***
+Record Service Suite Setup
+    [Documentation]    Create a default group/project for the Record Service test cases to be run under
+    Run Keyword And Ignore Error    Create User    ${username}    ${password}    Test User    testing@idbs.com    Testing
+    ${response}=    Create Hierarchy For Experiments    EWB-SAPI-SSP-ENT
+
+Record Service Suite Teardown
+    [Documentation]    Tidy up test suite cases
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${group_id}    As Intended    Test Suite Completed
+
+Use User With Permissions
+    [Arguments]    ${user_name}    ${password}    ${entity_id}    @{permissions}
+    [Documentation]    Creates a rule with no permissions to the given user, and then sets it as current user for the scope of the test. When the tests end, the previous current user is restored.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _user_nme_ - the user name
+    ...
+    ...    _password_ - the user password
+    ...
+    ...    _entity_id_ - the entity to assign user entity role to
+    ...
+    ...    _permissions_ - optional list of permissions to assign to the role, e.g. EDIT_EXPERIMENT, VIEW_FILE
+    ...
+    ...    *Return value*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    # Create role with no permissions
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    EWB-SAPI-SSP-ENT-${unique_id}
+    Create Role    ${role_name}    ${role_name}    Custom role    false    @{permissions}
+    Assign User Entity Role    ${user_name}    ${role_name}    ${entity_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${user_name}
+    Set Test Variable    ${SERVICES PASSWORD}    ${password}
+
+Enable Template Show Reviewed
+    # Disabling this system property otherwise to avoid signing template
+    System_Setting_Resource.Replace System Setting    Templates/Templates_Show_Reviewed    true    BOOLEAN
+
+Disable Template Show Reviewed
+    # Enabling this system property
+    System_Setting_Resource.Replace System Setting    Templates/Templates_Show_Reviewed    false    BOOLEAN
+
+Add Signature Image
+    system_setting_resource.Insert System Digital Signature Image    ${signature_image}
+
+Remove Signature Image
+    system_setting_resource.Delete System Setting    Signature/digitalSignatureImage

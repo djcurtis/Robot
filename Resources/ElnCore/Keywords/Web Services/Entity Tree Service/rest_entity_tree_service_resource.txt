@@ -1,0 +1,75 @@
+*** Settings ***
+Library           IDBSHttpLibrary
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+
+*** Variables ***
+${ENTITY TREE SERVICE ENDPOINT}    /ewb/services/1.0/entitytree
+
+*** Keywords ***
+Get Root Entities
+    [Arguments]    ${include_type}=${EMPTY}    ${exclude_child}=${EMPTY}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entitytree
+    ...
+    ...    Returns the list of root entities.
+    ...    Optional filters can be specified to limit the scope of the results.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${include type} The entity type to filter the results.
+    ...    Only the entities that can contain included entity type will be returned.
+    ...
+    ...    ${exclude child} The entity type name of the child entities to avoid in the results. Entities that contain or can contain excluded entity type will not be returned.
+    ...
+    ...    *Return value*
+    ...
+    ...    ${roots} The list of the root entities (SAPIEntityCore) as a SAPIEntityCoreSequence
+    ...
+    ...    *Precondition*
+    ...
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    ${url}=    Set Variable    ${ENTITY TREE SERVICE ENDPOINT}
+    ${url}=    Set Variable If    '${include_type}'!='${EMPTY}'    ${url}?includeType=${include_type}    ${url}
+    ${url}=    Set Variable If    '${exclude_child}'!='${EMPTY}'    ${url}?excludeChild=${exclude_child}    ${url}
+    ${url}=    Set Variable If    '${include_type}'!='${EMPTY}' and '${exclude_child}'!='${EMPTY}'    ${ENTITY TREE SERVICE ENDPOINT}?includeType=${include_type}&excludeChild=${exclude_child}    ${url}
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${roots}=    Get Response Body
+    [Return]    ${roots}    # The list of the root entities (SAPIEntityCore) as a SAPIEntityCoreSequence
+
+Get Child Entities
+    [Arguments]    ${parent_id}    ${include_type}=${EMPTY}    ${exclude_child}=${EMPTY}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entitytree/${parent_id}
+    ...
+    ...    Returns the list of child entities of a given entity.
+    ...    Optional filters can be specified to limit the scope of the results.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${parent_id} the id of the parent entity
+    ...
+    ...    ${include type} The entity type to filter the results.
+    ...    Only the entities that can contain included entity type will be returned.
+    ...
+    ...    ${exclude child} The entity type name of the child entities to avoid in the results. Entities that contain or can contain excluded entity type will not be returned.
+    ...
+    ...    *Return value*
+    ...
+    ...    ${children} The list of child entities (SAPIEntityCore) as a SAPIEntityCoreSequence
+    ...
+    ...    *Precondition*
+    ...
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    ${url}=    Set Variable    ${ENTITY TREE SERVICE ENDPOINT}/${parent_id}
+    ${url}=    Set Variable If    '${include_type}'!='${EMPTY}'    ${url}?includeType=${include_type}    ${url}
+    ${url}=    Set Variable If    '${exclude_child}'!='${EMPTY}'    ${url}?excludeChild=${exclude_child}    ${url}
+    ${url}=    Set Variable If    '${include_type}'!='${EMPTY}' and '${exclude_child}'!='${EMPTY}'    ${ENTITY TREE SERVICE ENDPOINT}/${parent_id}?includeType=${include_type}&excludeChild=${exclude_child}    ${url}
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${children}=    Get Response Body
+    [Return]    ${children}    # The list of child entities (SAPIEntityCore) as a SAPIEntityCoreSequence

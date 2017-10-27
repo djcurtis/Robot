@@ -1,0 +1,60 @@
+*** Settings ***
+Documentation     Test Cases Covering Root Level Dictionaries
+...
+...               This test covers the following SSP items:
+Test Setup        Catalog Service Setup
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+01-01 - GET default root elements
+    [Documentation]    Gets all of the root elements (Dictionaries and Terms) from the default catalog setup and checks for the presence of default values
+    ${root elements} =    Get All Root Elements
+    Log Response Body
+    Log    ${root elements}
+    ${first json object} =    Get Json Value    ${root elements}    /catalog
+
+01-02 - POST root dictionary
+    ${new element id}=    Create Root Element    DICTIONARY    RootDictionary    RootDictionary    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    RootDictionary    /RootDictionary    true
+
+01-03 - POST root dictionary 255 characters in name
+    Create Root Element    DICTIONARY    111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111    255Name    true
+
+01-04 - POST root dictionary 256 characters in name
+    Create Root Element And Expect Error    DICTIONARY    400    222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    256Name    true
+
+01-05 - POST root dictionary spaces in name
+    Create Root Element    DICTIONARY    Spaces Name    SpacesName    true
+
+01-06 - POST root dictionary 255 characters in description
+    Create Root Element    DICTIONARY    255Description    111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111    true
+
+01-07 - POST root dictionary 256 characters in description
+    Create Root Element And Expect Error    DICTIONARY    400    256Description    222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222111112222211111222221111122222a    true
+
+01-08 - POST root dictionary spaces in description
+    Create Root Element    DICTIONARY    SpacesDescription    Spaces Description    true
+
+01-09 - POST root dictionary enabled
+    Create Root Element    DICTIONARY    EnabledDictionary    EnabledDictionary    true
+
+01-10 - POST root dictionary disabled
+    Create Root Element    DICTIONARY    DisabledDictionary    DisabledDictionary    false
+
+01-11 - POST root dictionary invalid state
+    [Documentation]    Deferred defect = QC13864
+    Create Root Element And Expect Error    DICTIONARY    500    InvalidElement    InvalidElement    invalid
+
+01-12 - POST root dictionary duplicate
+    ${new element id}=    Create Root Element    DICTIONARY    DuplicateDictionary    DuplicateDictionary    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DuplicateDictionary    /DuplicateDictionary    true
+    Create Root Element And Expect Error    DICTIONARY    409    DuplicateDictionary    DuplicateDictionary    true
+
+01-13 - POST root dictionary buffering spaces
+    ${new element id}=    Create Root Element    DICTIONARY    ${SPACE*10}PreceedingRoot    PreceedingRoot    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    PreceedingRoot    /PreceedingRoot    true
+    ${new element id}=    Create Root Element    DICTIONARY    TrailingRoot${SPACE*10}    TrailingRoot    true
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    TrailingRoot    /TrailingRoot    true

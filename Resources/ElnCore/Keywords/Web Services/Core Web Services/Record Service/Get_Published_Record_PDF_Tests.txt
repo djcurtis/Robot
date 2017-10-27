@@ -1,0 +1,82 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}/publish/pdf
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Resource          PDF content acceptance/test utilities.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Get Published PDF
+    [Documentation]    Create an experiment, add some basic content (eg. web link)
+    ...    publish the experiment
+    ...    finally, get the published PDF
+    ...
+    ...    A successful call returns the HTTP status 200 and the PDF.bytes
+    ${experiment_id}=    Create Published Experiment PDF    GPP-S001    ${project_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${APP_SERVER_OS}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Check Cannot Get Published PDF for Bad Id
+    [Documentation]    If the record entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_id}=    Set Variable    GPP-S002
+    ${entity_version_id}=    Set Variable    1
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}    expected_http_status=404
+    Response Body Should Contain    Resource not found for given ID: Record not found.
+
+Check Cannot Get Published PDF if Does Not Exist
+    [Documentation]    If the pdf entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    GPP-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}    expected_http_status=404
+    Response Body Should Contain    Resource not found for given ID: PDF folder could not be found for requested record version
+
+Check Cannot Get Published PDF Without EDIT_EXPERIMENT Permission
+    [Documentation]    Assign the user full PDF permissions, but NOT EDIT_EXPERIMENT
+    ...
+    ...    A client requires the EDIT_EXPERIMENT permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]    Record Service Test Setup
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${permission_response}=    Remove Role Permission    ${role_name}    EDIT_EXPERIMENT
+    ${permission_response}=    Remove Role Permission    ${role_name}    OPEN_EXPERIMENT
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}    ${EMPTY}    403
+    Comment    Response Body Should Contain    Authorization failure: The user does not have required permissions for EXPERIMENT: [OPEN_EXPERIMENT]
+    [Teardown]    Record Service Test Teardown
+
+Check Cannot Get Published PDF Without VIEW_PDF_FOLDER Permission
+    [Documentation]    Assign the user EDIT_EXPERIMENT, but NOT full PDF permissions
+    ...
+    ...    A client requires the VIEW_PDF_FOLDER permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]    Record Service Test Setup
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${permission_response}=    Remove Role Permission    ${role_name}    VIEW_PDF_FOLDER
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}    ${EMPTY}    403
+    Comment    Response Body Should Contain    Authorization failure: The user does not have required permissions for PDF_FOLDER: [VIEW_PDF_FOLDER]
+    [Teardown]    Record Service Test Teardown
+
+Check Cannot Get Published PDF Without VIEW_PDF Permission
+    [Documentation]    Assign the user EDIT_EXPERIMENT, but NOT full PDF permissions
+    ...
+    ...    A client requires the VIEW_PDF permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]    Record Service Test Setup
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${permission_response}=    Remove Role Permission    ${role_name}    VIEW_PDF
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}    ${EMPTY}    403
+    Comment    Response Body Should Contain    Authorization failure: The user does not have required permissions for PDF: [VIEW_PDF]
+    [Teardown]    Record Service Test Teardown

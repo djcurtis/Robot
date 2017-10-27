@@ -1,0 +1,83 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+11-01 - POST tuple String
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString1    UpdateTupleString1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    true
+
+11-02 - POST tuple Number
+    ${new element id}=    Create Root Element    TERM    UpdateTupleNumber2    UpdateTupleNumber2    true    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    123123123    123123123    true    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    true
+
+11-03 - POST tuple Timestamp
+    ${new element id}=    Create Root Element    TERM    UpdateTupleTimestamp3    UpdateTupleTimestamp3    true    {"property":[{"name":"example","type":"TIMESTAMP","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    14-Dec-2011    14-Dec-2011    true    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    true
+
+11-04 - POST tuple disable
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString4    UpdateTupleString4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    false    true
+
+11-05 - POST tuple enable
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString5    UpdateTupleString5    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple Disabled    ${new element id}    example    valuestring    valuestring    false    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    true
+
+11-06 - POST tuple make default
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString6    UpdateTupleString6    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    false
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    true
+
+11-07 - POST tuple remove default flag
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString7    UpdateTupleString7    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    false
+
+11-08 - POST tuple make default and disable
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString8    UpdateTupleString8    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    false
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    false    true
+
+11-09 - POST tuple make default and enable
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString9    UpdateTupleString9    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    false    false
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    true
+
+11-10 - POST tuple remove default flag and disable
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString10    UpdateTupleString10    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    true    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    false    false
+
+11-11 - POST tuple remove default flag and enable
+    ${new element id}=    Create Root Element    TERM    UpdateTupleString11    UpdateTupleString11    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Number Of Tuples for CatWS    ${new element id}    0
+    Create Tuple    ${new element id}    example    valuestring    valuestring    false    true
+    ${tuple id}    ${tuple data}=    Get Tuple Information    ${new element id}
+    Update Tuple    ${new element id}    ${tuple id}    true    false

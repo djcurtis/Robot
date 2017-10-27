@@ -1,0 +1,57 @@
+*** Settings ***
+Documentation     Default (Basic) and Empty experiments used to generate PDFs from within the webclient
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+
+*** Variables ***
+
+*** Test Cases ***
+empty experiment - footer false
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated through the server when the record is empty and has a header and does not have a footer appears correct
+    [Tags]    EWB-WEB-PI002-W012-01
+    [Setup]    Setup test case empty experiment
+    Comment    Defaults with footer off
+    ${print_conf_xml}=    Load Print Config - Basic Options Record Level    true    false    false
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+    Log    ${output_folder}\\${TEST NAME}.pdf
+
+empty experiment, header false
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated through the server when the record is empty and does not have a header and does have a footer appears correct
+    [Tags]    EWB-WEB-PI002-W012-02
+    [Setup]    Setup test case empty experiment
+    Comment    Defaults with header off
+    ${print_conf_xml}=    Load Print Config - Basic Options Record Level    false    true    false
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+default experiment, footer false
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated through the server when the record is populated and has a header and does not have a footer appears correct
+    [Tags]    EWB-WEB-PI002-W012-03
+    [Setup]    Setup standard test case
+    Comment    Defaults with footer off
+    ${print_conf_xml}=    Load Print Config - Basic Options Record Level    true    false    false
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+default experiment, header false
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated through the server when the record is populated and does not have a header and does have a footer appears correct
+    [Tags]    EWB-WEB-PI002-W012-04
+    [Setup]    Setup standard test case
+    Comment    Defaults with header off
+    ${print_conf_xml}=    Load Print Config - Basic Options Record Level    false    true    false
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup test case empty experiment
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}

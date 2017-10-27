@@ -1,0 +1,14 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/headericons/{configId}
+Suite Setup
+Force Tags        Entity Config Service
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Get Header Icon Fails for Bad Config Id
+    [Documentation]    If the configuration does not exist, then the HTTP status code 404 is returned to the client
+    ${header_icon}=    Get Header Icon    BAD_ID    404
+    Response Body Should Contain    Resource not found for given ID: No icon information found

@@ -1,0 +1,382 @@
+*** Settings ***
+Documentation     Keywords for 'New Search Term' dialog
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Library           IDBSSelenium2Library
+Resource          locators/search_ui.txt
+Resource          locators/new_search_term_dialog.txt
+Library           String
+Library           Collections
+Library           StringProcessingLibrary
+Resource          search_ui.txt
+
+*** Keywords ***
+Add New Advanced Search Term
+    [Arguments]    ${searchTerm}    ${name}    ${operator}    ${value}
+    [Documentation]    Add new advanced search term on 'New Search Term' screen by
+    ...    - term name ${searchTerm}
+    ...    - property name ${name}
+    ...    - operator ${operator}
+    ...    - and values ${value}
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    //*[@id='term-tree']//a[text()='${searchTerm}']
+    Robust Click    //div[@id='term-properties']//span[contains(. ,"${name}")]
+    Populate Search Tile    ${operator}    ${value}
+    Robust Click    //*[@id='term-tree']//a[text()='${searchTerm}']
+
+Select Navigator Term By Name
+    [Arguments]    ${searchTerm}
+    [Documentation]    Select Navigator Term By Name
+    ...    - ${searchTerm} value to be searched and clicked in 'New Search Term ' dialog tree ander Navigator
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    //*[@id='term-tree']//a[text()='${searchTerm}']
+    Wait until page contains element    //div[@id='term-properties-header']/div[text()='${searchTerm}']
+
+Verify Search Term List Exact
+    [Arguments]    @{expectedSearchTerms}
+    [Documentation]    Verify Search Term List Exact
+    ...    - verify search property list eqault to @{expectedSearchTerms}
+    unselect frame
+    select frame    ${searchFrame}
+    @{actualSearchTermList}=    Get WebElements    //*[@id='term-properties-list']/li
+    ${expectedLength}=    Get Length    ${expectedSearchTerms}
+    ${actualLength}=    Get Length    ${actualSearchTermList}
+    Should Be Equal As Integers    ${expectedLength}    ${actualLength}
+    : FOR    ${i}    IN RANGE    ${expectedLength}
+    \    ${actualText}    Get Text    ${actualSearchTermList[${i}]}
+    \    List Should Contain Value    ${expectedSearchTerms}    ${actualText}
+
+Add New Catalog Term
+    [Arguments]    ${dictionaryName}    ${termName}    ${propertyName}    ${operator}    ${textFieldOrPickList}    ${value}
+    [Documentation]    Add New Catalog Term
+    ...    - ${dictionaryName} - name of the dictionary in Catalog
+    ...    - ${termName} - dictionary's term
+    ...    - ${propertyName} - term's property name
+    ...    - ${operator} - 'is' or 'starts with'
+    ...    - ${textFieldOrPickList} - TEXTFIELD and PICKLIST
+    ...    - ${value} - value to insert or select from pick-list
+    unselect frame
+    select frame    ${searchFrame}
+    Wait Until Page Contains Element    ${catalogLink}    30s
+    ${catalogClass}    IDBSSelenium2Library.Get Element Attribute    ${catalogLink}/..@class
+    ${ifCollapset}    Get Count    ${catalogClass}    jstree-open
+    Run Keyword If    ${ifCollapset}>0    Click Element    ${catalogLink}
+    Wait Until Page Contains Element    //li[@id='/${dictionaryName}']
+    Scroll Element Into View    //li[@id='/${dictionaryName}']
+    ${termClass}    IDBSSelenium2Library.Get Element Attribute    //li[@id='/${dictionaryName}']@class
+    ${ifCollapset}    Get Count    ${termClass}    jstree-closed
+    Run Keyword If    ${ifCollapset}>0    Click Element    //li[@id='/${dictionaryName}']/i
+    Wait Until Page Contains Element    //li[@id='/${dictionaryName}/${termName}']/a
+    Scroll Element Into View    //li[@id='/${dictionaryName}/${termName}']/a
+    Robust Click    //li[@id='/${dictionaryName}/${termName}']/a
+    Robust Click    //span[@class='property-anchor' and contains(text(),'${propertyName}')]
+    Wait until page contains element    ${operatorDropDown}
+    IDBSSelenium2Library.select from list    ${operatorDropDown}    ${operator}
+    Run Keyword If    '${textFieldOrPickList}'=='TEXTFIELD'    Wait Until Element Is Visible    ${valueTextField}    20s
+    Run Keyword If    '${textFieldOrPickList}'=='TEXTFIELD'    Input Text    ${valueTextField}    ${value}
+    Run Keyword If    '${textFieldOrPickList}'=='TEXTFIELD'    Press Key    ${valueTextField}    \\9    #clicking tab since of make it works with IE
+    Run Keyword If    '${textFieldOrPickList}'=='PICKLIST'    Wait Until Page Contains Element    css=.selectize-input    20s
+    Run Keyword If    '${textFieldOrPickList}'=='PICKLIST'    Robust Click    css=.selectize-input
+    Run Keyword If    '${textFieldOrPickList}'=='PICKLIST'    Robust Click    css=div[data-value='${value}'].option
+    Run Keyword If    '${textFieldOrPickList}'=='TEXTFIELDPICKLIST'    Wait Until Element Is Visible    xpath=//div[@class="query-term-value"]/div[2]/div/input    20s
+    Run Keyword If    '${textFieldOrPickList}'=='TEXTFIELDPICKLIST'    Input Text    //div[@class="query-term-value"]/div[2]/div/input    ${value}
+    Run Keyword If    '${textFieldOrPickList}'=='TEXTFIELDPICKLIST'    Press Key    //div[@class="query-term-value"]/div[2]/div/input    \\9    #clicking tab since of make it works with IE
+
+Verify Value TextField Present
+    [Documentation]    Verify Value TextField Present
+    ...    - verify TextFiled is on 'New Search Term' dialog
+    Wait Until Page Contains Element    ${simpleValueTextField}    10s
+
+Verify Value PickList Items
+    [Arguments]    @{expectedList}
+    [Documentation]    Verify Value PickList Items
+    ...    - works with value PickList in 'New Search term' dialog
+    ...    - value should be equal @{expectedList} value with the same order
+    Wait Until Page Contains Element    css=.selectize-input    20s
+    Robust Click    css=.selectize-input
+    Wait Until Page Contains Element    css=div[data-value].option
+    @{actualList}    Get Webelements    css=div[data-value].option
+    ${ListSize}    Get Length    ${actualList}
+    : FOR    ${i}    IN RANGE    1    ${ListSize}
+    \    ${actualValue}    IDBSSelenium2Library.Get Element Attribute    css=div[data-value].option:nth-child(${i})@data-value
+    \    ${expI}    evaluate    ${i}-1
+    \    Should Be Equal As Strings    ${expectedList[${expI}]}    ${actualValue}
+
+Get New Catalog Advanced Search Ready To Populate
+    [Arguments]    ${dictionaryName}    ${termName}    ${propertyName}
+    [Documentation]    Get New Catalog Advanced Search Ready To Populate
+    ...    - ${dictionaryName} - name of the dictionary in Catalog
+    ...    - ${termName} - dictionary's term
+    ...    - ${propertyName} - term's property name
+    unselect frame
+    select frame    ${searchFrame}
+    Wait Until Page Contains Element    ${catalogLink}    30s
+    ${catalogClass}    IDBSSelenium2Library.Get Element Attribute    ${catalogLink}/..@class
+    ${ifCollapset}    Get Count    ${catalogClass}    jstree-open
+    Run Keyword If    ${ifCollapset}>0    Click Element    ${catalogLink}
+    Wait Until Page Contains Element    //li[@id='/${dictionaryName}']    30s
+    Scroll Element Into View    //li[@id='/${dictionaryName}']
+    ${termClass}    IDBSSelenium2Library.Get Element Attribute    //li[@id='/${dictionaryName}']@class
+    ${ifCollapset}    Get Count    ${termClass}    jstree-closed
+    Run Keyword If    ${ifCollapset}>0    Click Element    //li[@id='/${dictionaryName}']/i
+    Robust Click    //li[@id='/${dictionaryName}/${termName}']/a
+    Robust Click    //span[@class='property-anchor' and contains(text(),'${propertyName}')]
+    Wait until page contains element    ${operatorDropDown}
+
+Select Catalog Dictionary By Name
+    [Arguments]    ${dictionaryName}
+    [Documentation]    Select Catalog Dictionary By Name
+    ...    - on 'New search Term' navigate to catalog
+    ...    - navigate to dictionary with name ${dictionaryName}
+    ...    - insure it is expanded
+    unselect frame
+    select frame    ${searchFrame}
+    Wait Until Page Contains Element    ${catalogLink}    30s
+    ${catalogClass}    IDBSSelenium2Library.Get Element Attribute    ${catalogLink}/..@class
+    ${ifCollapset}    Get Count    ${catalogClass}    jstree-open
+    Run Keyword If    ${ifCollapset}>0    Click Element    ${catalogLink}
+    Wait Until Page Contains Element    //li[@id='/${dictionaryName}']    30s
+    ${termClass}    IDBSSelenium2Library.Get Element Attribute    //li[@id='/${dictionaryName}']@class
+    ${ifCollapset}    Get Count    ${termClass}    jstree-closed
+    Run Keyword If    ${ifCollapset}>0    Click Element    //li[@id='/${dictionaryName}']/i
+
+Verify Dictionary Term List Does Not Contain
+    [Arguments]    ${dictionaryName}    ${termName}
+    [Documentation]    Verify Dictionary Term List Does not Contain
+    ...    - ${dictionaryName} - name of dictionary with list
+    ...    - ${termName} - dictionary term which expected NOT to be present
+    Wait Until Page Does Not Contain Element    //li[@id='/${dictionaryName}/${termName}']/a    30s
+
+Verify Dictionary Term List Contains
+    [Arguments]    ${dictionaryName}    ${termName}
+    [Documentation]    Verify Dictionary Term List Contains
+    ...    - ${dictionaryName} - name of dictionary with list
+    ...    - ${termName} - dictionary term which expected to be present
+    Wait Until Page Contains Element    //li[@id='/${dictionaryName}/${termName}']/a
+
+Get New Navigator Advanced Search Ready To Populate
+    [Arguments]    ${searchTerm}    ${name}
+    [Documentation]    Get New Navigator Advanced Search Ready To Populate
+    ...    - ${searchTerm} - navigator search term name
+    ...    - ${name} - term's property name
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    //*[@id='term-tree']//a[text()='${searchTerm}']
+    Robust Click    //div[@id='term-properties']//span[contains(. ,"${name}")]
+    Wait until page contains element    ${operatorDropDown}
+
+Verify Property PicklList Items
+    [Arguments]    @{expectedList}
+    [Documentation]    Verify Property PickList Items
+    ...
+    ...
+    ...    Verify that value in property drop-down in the page equals @{expectedList}
+    Wait Until Page Contains Element    xpath=//*[@class='query-term-operator']/select/option
+    @{actualList}    Get Webelements    xpath=//*[@class='query-term-operator']/select/option
+    ${ListSize}    Get Length    ${actualList}
+    : FOR    ${i}    IN RANGE    ${ListSize}
+    \    ${actI}    evaluate    ${i}+1
+    \    ${actualValue}    IDBSSelenium2Library.Get Text    xpath=//*[@class='query-term-operator']/select/option[${actI}]
+    \    Should Be Equal As Strings    ${expectedList[${i}]}    ${actualValue}
+
+Verify Search Term List Contains
+    [Arguments]    @{expectedSearchTerms}
+    [Documentation]    Verify Search Term List Contains
+    ...    - Actions are in 'New Search Term' dialog
+    ...    - @{expectedSearchTerms} - property items should be in this list
+    unselect frame
+    select frame    ${searchFrame}
+    @{actualSearchTermList}    Get WebElements    //*[@id='term-properties-list']/li
+    ${expectedLength}    Get Length    ${expectedSearchTerms}
+    ${actualSearchTerms}    Create List
+    : FOR    ${actualTerm}    IN    @{actualSearchTermList}
+    \    ${actualText}    Get Text    ${actualTerm}
+    \    Append To List    ${actualSearchTerms}    ${actualText}
+    : FOR    ${expecetdSearchTerm}    IN    @{expectedSearchTerms}
+    \    List Should Contain Value    ${actualSearchTerms}    ${expecetdSearchTerm}
+
+Open 'Choose an item' Screen
+    [Documentation]    Open 'Choose an item' screen form 'New Search term' dialog
+    Unselect Frame
+    select frame    ${searchFrame}
+    Robust Click    ${chooseTemplateLink}
+    Wait Until Page Contains Element    ${navigatorDialog}
+
+Verify Template Present In Hierarchy
+    [Arguments]    ${treePath}    # \ tree items should be separated by "/", like Root/project1/template1
+    [Documentation]    Verify Template Present In Hierarchy    # ${treePath} tree items should be separated by "/", like Root/project1/exp1...
+    ...    - 'New Search Term' dialog is start point
+    @{treePathArr}    Split String    ${treePath}    /
+    ${treeCount}    Get Count    ${treePath}    /
+    : FOR    ${i}    IN RANGE    ${treeCount}
+    \    Robust Click    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${i}]}']/../i
+    wait until page contains element    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${treeCount}]}']
+
+Verify No Element In Hierarchy
+    [Arguments]    ${treePath}    # \ tree items should be separated by "/", like Root/project1/template1
+    [Documentation]    Verify No Element In Hierarchy    # ${treePath} tree items should be separated by "/", like Root/project1/exp1...
+    ...    - 'New Search Term' dialog is start point
+    @{treePathArr}    Split String    ${treePath}    /
+    ${treeCount}    Get Count    ${treePath}    /
+    : FOR    ${i}    IN RANGE    ${treeCount}
+    \    Robust Click    //div[contains(@class, 'jstree ')]//a[text()='${treePaElement}']/../i
+    ${EMPTY}
+    Wait until Page does not contain element    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${treeCount}]}']
+
+Verify Template Search Term Window Controls
+    [Arguments]    ${termName}    ${templateName}    ${templatePath}
+    [Documentation]    Verify Template Search term Window Controls
+    ...    - verify that term name is correct (should be equal ${termName})
+    ...    - verify Template Link is correct (should be equal ${templateLink})
+    ...    - verify property name is 'Template'
+    ...    - verify operator name is 'is'
+    unselect frame
+    select frame    ${searchFrame}
+    ${actualTermName}    Get Text    ${queryTermName}
+    Should Be Equal As Strings    ${termName}    ${actualTermName}
+    ${actualTemplateLink}    Get Text    ${chooseTemplateLink}
+    ${actualPropertyName}    Get Text    ${queryPropertyName}
+    Should Be Equal As Strings    Template    ${actualPropertyName}
+    ${actualOperatoName}    Get Text    ${queryTermOperatorLabel}
+    Should Be Equal As Strings    is    ${actualOperatoName}
+    Wait Until Page Contains Element    css=#dialog .query-term-value > input.showNavigator    10s
+    ${actualTemplateName}    get value    css=#dialog .query-term-value > input.showNavigator
+    Should Be Equal As Strings    ${templateName}    ${actualTemplateName}
+    ${actualTemplatePath}    Get Text    css = #dialog .entityLinkUri
+    Should Be Equal As Strings    ${templatePath}    ${actualTemplatePath}
+    unselect frame
+
+Set New Template Search Term
+    [Arguments]    ${treePath}    # \ tree items should be separated by "/", like Root/project1/template1
+    [Documentation]    Set New template Search Term
+    ...    - starting point is \ 'new Search term' dialog, template property is selected
+    ...    - click choose template link
+    ...    - select correct template
+    ...    - click choose button
+    unselect frame
+    select frame    ${searchFrame}
+    @{treePathArr}    Split String    ${treePath}    /
+    ${treeCount}    Get Count    ${treePath}    /
+    Robust Click    ${chooseTemplateLink}
+    : FOR    ${i}    IN RANGE    ${treeCount}
+    \    Robust Click    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${i}]}']/../i
+    Robust Click    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${treeCount}]}']
+    Click Button    ${chooseTemplateButton}
+
+Add New Template Advanced Search Term
+    [Arguments]    ${entity}    ${templatePath}
+    Get New Navigator Advanced Search Ready To Populate    ${entity}    Template
+    Set New Template Search Term    ${templatePath}
+
+Select New Search Template From Tree
+    [Arguments]    ${treePath}    # tree items should be separated by "/", like Root/project1/template1
+    [Documentation]    Set New Search Template From Tree
+    ...    - starting point is \ 'Choose a Template' dialog, template property is selected
+    ...    - select correct template
+    ...    - click choose button
+    unselect frame
+    select frame    ${searchFrame}
+    @{treePathArr}    Split String    ${treePath}    /
+    ${treeCount}    Get Count    ${treePath}    /
+    : FOR    ${i}    IN RANGE    ${treeCount}
+    \    Robust Click    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${i}]}']/../i
+    Robust Click    //div[contains(@class, 'jstree ')]//a[text()='${treePathArr[${treeCount}]}']
+    Click Button    ${chooseTemplateButton}
+
+Verify Search Term List Does Not Contain
+    [Arguments]    @{unexpectedSearchTerms}
+    [Documentation]    Verify Search Term List Does Not Contain
+    ...    - Actions are in 'New Search Term' dialog
+    ...    - @{unexpectedSearchTerms} - property items should be in this list
+    unselect frame
+    select frame    ${searchFrame}
+    @{actualSearchTermList}    Get WebElements    //*[@id='term-properties-list']/li
+    ${actualSearchTerms}    Create List
+    : FOR    ${actualTerm}    IN    @{actualSearchTermList}
+    \    ${actualText}    Get Text    ${actualTerm}
+    \    Append To List    ${actualSearchTerms}    ${actualText}
+    : FOR    ${expecetdSearchTerm}    IN    @{unexpectedSearchTerms}
+    \    List Should Not Contain Value    ${actualSearchTerms}    ${expecetdSearchTerm}
+
+Find Item And Verify Catalog Item List
+    [Arguments]    ${textToFind}    @{expectedList}
+    [Documentation]    Find Item And Verify Catalog Item List
+    ...
+    ...    - find catalog item by typing part of its name into the text filed
+    ...    - verify returned result is correct
+    Type Text To Find Property    ${textToFind}
+    Verify Item List    @{expectedList}
+
+Type Text To Find Property
+    [Arguments]    ${text}
+    [Documentation]    Type Text To Find Property
+    ...
+    ...    - find catalog item by typing part of its name into the text filed
+    Wait Until Element Is Enabled    ${findCatalogProperty}
+    Input Text    ${findCatalogProperty}    ${text}
+    sleep    2s
+    Wait Until Element Is Visible    ${termSuggestionList}    30s
+
+Verify Item List
+    [Arguments]    @{expectedPropertyList}
+    [Documentation]    Verify Item List
+    ...    - verify returned result is correct
+    @{actualPropertyList}=    Get Catalog Dropdown Item List
+    @{actualPropertyList}=    Sort List    ${actualPropertyList}
+    @{expectedPropertyList}=    Sort List    ${expectedPropertyList}
+    Lists Should Be Equal    ${actualPropertyList}    ${expectedPropertyList}
+
+Select Item From Dropdown List
+    [Arguments]    ${propertyPath}
+    [Documentation]    Select Item From Dropdown List
+    ...    - select item by full path ${propertyPath} from catalog item popover
+    ${xpath}=    Set Variable    //*[@id='term-suggestions-list']//a[@title='${propertyPath}']
+    Wait Until Element Is Visible    ${xpath}    10s
+    Click Element    ${xpath}
+
+Get Catalog Dropdown Item List
+    ${res}=    Create List
+    Wait Until Page Contains Element    css=#term-suggestions-list
+    ${count}=    IDBSSelenium2Library.Get Matching Xpath Count    ${termSuggestionList}
+    : FOR    ${i}    IN RANGE    1    ${count}+1
+    \    ${text}=    Get Text    xpath=(//ul[@id='term-suggestions-list']//a)[${i}]
+    \    Append To List    ${res}    ${text}
+    [Return]    ${res}
+
+Verify Correct Catalog Item Selected
+    [Arguments]    ${expectedName}    ${expectedDescription}    @{expectedPropertiesList}
+    [Documentation]    Verify Correct Catalog Item Selected
+    ...    - verify that item name is correct, equals to ${expectedName}
+    ...    - verify item has correct description, equals to ${expectedDescription}
+    ...    - property list equals to @{expectedPropertyList}
+    Wait Until Element Text Is    ${itemName}    ${expectedName}    10s
+    Wait Until Element Text Is    ${itemDescription}    ${expectedDescription}    10s
+    Verify Search Term List Exact    @{expectedPropertiesList}
+
+Click Done Button
+    [Documentation]    Click Done Button
+    ...
+    ...    on 'New Search Term' dialog
+    Robust Click    ${advancedDoneButton}
+
+Populate Search Tile
+    [Arguments]    ${operator}    ${value}
+    [Documentation]    Populate Search Tile
+    ...    - populate operator with ${operator}
+    ...    - popultate value with ${value} on 'New Search Term' dialog
+    Wait until page contains element    ${operatorDropDown}
+    IDBSSelenium2Library .Select From List    ${operatorDropDown}    ${operator}
+    Wait Until Page Contains Element    ${simpleValueTextField}
+    ${type}=    IDBSSelenium2Library.Get Element Attribute    //input[@class='query-term-text-input']@type
+    Run Keyword If    '${type}'!='hidden' and '${BROWSER}'=='ie'    Execute Javascript    $('input.query-term-text-input', document.body).prop('value','${value}').change();
+    Run Keyword If    '${type}'!='hidden' and '${BROWSER}'!='ie'    Input Text    ${simpleValueTextField}    ${value}
+    Run Keyword If    '${type}'!='hidden' and '${BROWSER}'!='ie'    Press Key    ${simpleValueTextField}    \\9
+    Run Keyword If    '${type}'=='hidden'    Input Text    css=.selectize-input > input    ${value}
+    Run Keyword If    '${type}'=='hidden'    Press Key    css=.selectize-input > input    \\9
+
+Select Property From The List
+    [Arguments]    ${propertyName}
+    [Documentation]    Select Property From The List
+    ...    - Select property by ${propertyName} from property list
+    Robust Click    //span[@class='property-anchor' and contains(text(),'${propertyName}')]

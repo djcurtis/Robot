@@ -1,0 +1,1 @@
+{"entityType":"WEB_SEARCH","entityName":"FTXT_Name","attributes":{"attribute":[{"name":"name","values":{"value":["FTXT_Name"]}},{"name":"description","values":{"value":["FTXT_Description"]}}]},"data":{"data":{"dataText":"{\"text\":{\"text\":\"FreeTextSearchSave\"},\"structured\":null}"},"dataInfo":{"mimeType":"application/json","dataType":"WEB_SEARCH","fileType":".search.json"}}}

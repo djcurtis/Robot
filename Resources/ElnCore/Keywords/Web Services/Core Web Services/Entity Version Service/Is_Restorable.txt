@@ -1,0 +1,81 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint: /services/1.0/entities/{entityId}/versions/restorable
+Suite Setup       Entity Version Suite Setup
+Suite Teardown    Entity Version Suite Teardown
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Version Service/rest_entity_version_service_resource.txt
+Resource          entity_version_suite_resource.txt
+Resource          ../../../Libraries/Web Services/REST_RecordService/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           IDBSHttpLibrary
+Library           ../../../Libraries/Web Services/Python_Service_Libraries/EntityAPILibrary
+
+*** Test Cases ***
+Check Is Restorable Succeeds for Valid Version
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIResponseStatus
+    ${experiment_id}=    Create Versioned Experiment    IRE-S001
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${version_info}=    Can Restore Entity Version    ${experiment_id}    ${entity_version_id}
+    ${is_restorable}=    Get Json Value    ${version_info}    /success
+    Should Be Equal    ${is_restorable}    true
+
+Check Is Restorable Fails for Bad Version Id
+    [Documentation]    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_id}=    Create Versioned Experiment    IRE-S002
+    ${version_info}=    Can Restore Entity Version    ${experiment_id}    ${EMPTY}    expected_http_status=400
+
+Check Is Restorable Fails for Invalid Child Id
+    [Documentation]    If one or more of the child entity ids provided via the call parameter ‘childEntityIds’ is not an entity child, then the HTTP status code 400 is returned to the client.
+    ...
+    ...    Create main versioned experiment.
+    ...    Create secondary experiment with child
+    ...
+    ...    check restorable with secondary child
+    ${main_experiment_id}=    Create Versioned Experiment    IRE-S003-Main
+    ${experiment_id}=    Create Experiment    ${project_id}    IRE-S003
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    http://version1.com
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${response}=    Commit Versioned Entity    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${main_experiment_id}
+    ${version_info}=    Can Restore Entity Version    ${main_experiment_id}    ${entity_version_id}    ${link}    400
+
+Check Is Restorable Fails for Bad Entity Id
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    IRE-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${version_id}=    Get Entity Version ID    ${experiment_id}
+    ${version_info}=    Can Restore Entity Version    ${experiment_name}    ${version_id}    expected_http_status=404
+
+Check Is Restorable Fails for Cache Version
+    [Documentation]    If the entity version is of type CACHE, then the HTTP status code 400 is returned to the client
+    ${experiment_id}=    Create Experiment    ${project_id}    IRE-S005
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    http://version1.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${publish}=    Publish Record    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${version_type}=    Get Entity Version Type    ${experiment_id}
+    Should Be Equal As Strings    ${version_type}    CACHE
+    ${version_info}=    Can Restore Entity Version    ${experiment_id}    ${entity_version_id}    expected_http_status=200
+    Comment    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Is Restorable Fails for Non Record Types
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ${experiment_id}=    Create Versioned Experiment    IRE-S006
+    ${version_id}=    Get Entity Version ID    ${project_id}
+    ${restore_response}=    Can Restore Entity Version    ${project_id}    ${version_id}    expected_http_status=400
+    Should Contain    ${restore_response}    Entity [entityId] is not the record type

@@ -1,0 +1,164 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/entities/{entityId}/filtered
+...
+...               This test verifies the new SAPI end point retrieve child entities for an entity base of different sorting.
+Suite Setup       Suite Setup
+Suite Teardown    Suite Teardown
+Test Setup
+Test Teardown
+Force Tags        Get Filtered Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Tree Service/rest_entity_tree_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+
+*** Test Cases ***
+Get entities by entity name A-Z
+    [Documentation]    This test verifies the filtered entity REST end point retrieval the child entities sorted by entity name in ascending order (A-Z) correctly.
+    #Get Filtered Entity
+    ${sort_by}=    Set Variable    ENTITY_NAME_ASCENDING
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}
+
+Get entities by entity name Z-A
+    [Documentation]    This test verifies the filtered entity REST end point retrieval the child entities sorted by entity name in descending order (Z-A) correctly.
+    #Get Filtered Entity
+    ${sort_by}=    Set Variable    ENTITY_NAME_DESCENDING
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}
+
+Get entities by Created date(oldest first)
+    [Documentation]    *Get entities by Created date (oldest first)*
+    ...
+    ...
+    ...    This test verifies the filtered entity REST end point retrieval has the child entities sorted by \ created date(oldest first) correctly.
+    ...
+    ...
+    ...    CREATED_DATE_ASCENDING- sort_by keyword used to retrieve ascending order of tiles on created date.
+    Set Created Date of Entity
+    #Get Filtered Entity with 'Created date (oldest first)'
+    ${sort_by}=    Set Variable    CREATED_DATE_ASCENDING    #Created date (oldest first)
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    #the expected list is set to verify with the result logic
+    @{current_expected_exp_names}=    Set Variable    Exp_1    π_Exp1    _Exp1    1_Exp
+    @{current_expected_exp_ids}=    Set Variable    @{expected_exp_ids}[1]    @{expected_exp_ids}[3]    @{expected_exp_ids}[2]    @{expected_exp_ids}[0]
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}    ${current_expected_exp_names}    ${current_expected_exp_ids}
+
+Get entities by Created date(newest first)
+    [Documentation]    *Get entities by Created date (newest first)*
+    ...
+    ...
+    ...    This test verifies the filtered entity REST end point retrieval has the child entities sorted by created date(newest first) correctly.
+    ...
+    ...    CREATED_DATE_DESCENDING - sort_by keywod used to retrieve descending order of tiles on created date.
+    Set Created Date of Entity
+    #Get Filtered Entity with 'Created date (newest first)'
+    ${sort_by}=    Set Variable    CREATED_DATE_DESCENDING    #Created date (newest first)
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    #the expected list is set to verify with the result logic
+    @{current_expected_exp_names}=    Set Variable    Exp_1    π_Exp1    _Exp1    1_Exp
+    @{current_expected_exp_ids}=    Set Variable    @{expected_exp_ids}[1]    @{expected_exp_ids}[3]    @{expected_exp_ids}[2]    @{expected_exp_ids}[0]
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}    ${current_expected_exp_names}    ${current_expected_exp_ids}
+
+Get entities by last edited new-old
+    [Documentation]    This test verifies the filtered entity REST end point retrieval the child entities sorted by last edited in descending order (new-old) correctly.
+    #Get Filtered Entity
+    ${sort_by}=    Set Variable    LAST_EDITED_DATE_DESCENDING
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}
+
+Get entities by last edited old-new
+    [Documentation]    This test verifies the filtered entity REST end point retrieval the child entities sorted by last edited in ascending order (old-new) correctly.
+    #Get Filtered Entity
+    ${sort_by}=    Set Variable    LAST_EDITED_DATE_ASCENDING
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}
+
+Get Entities by Last Edited (newest first)_RecordType
+    [Documentation]    This test verifies the filtered entity REST end point retrieval the child entities sorted by last edited in descending order (new-old) correctly.
+    #Get Filtered Entity
+    EntityAPILibrary.Create Text Document    @{expected_exp_ids}[1]    Other
+    ${sort_by}=    Set Variable    LAST_EDITED_DATE_DESCENDING
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    @{current_expected_exp_names}=    Set Variable    @{expected_exp_names}[0]    @{expected_exp_names}[2]    @{expected_exp_names}[3]    @{expected_exp_names}[1]
+    @{current_expected_exp_ids}=    Set Variable    @{expected_exp_ids}[0]    @{expected_exp_ids}[2]    @{expected_exp_ids}[3]    @{expected_exp_ids}[1]
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}    ${current_expected_exp_names}    ${current_expected_exp_ids}
+
+Get Entities by Last Edited (oldest first)_RecordType
+    [Documentation]    This test verifies the filtered entity REST end point retrieval the child entities sorted by last edited in ascending order (old-new) correctly.
+    #Get Filtered Entity
+    EntityAPILibrary.Create Text Document    @{expected_exp_ids}[1]    Other
+    ${sort_by}=    Set Variable    LAST_EDITED_DATE_ASCENDING
+    ${filtered_project_dto}=    Get Entity With Paged And Sorted Children    ${suite_project_id}    1    ${sort_by}
+    @{current_expected_exp_names}=    Set Variable    @{expected_exp_names}[0]    @{expected_exp_names}[2]    @{expected_exp_names}[3]    @{expected_exp_names}[1]
+    @{current_expected_exp_ids}=    Set Variable    @{expected_exp_ids}[0]    @{expected_exp_ids}[2]    @{expected_exp_ids}[3]    @{expected_exp_ids}[1]
+    Verify Results Are Sorted    ${filtered_project_dto}    ${sort_by}    ${current_expected_exp_names}    ${current_expected_exp_ids}
+
+*** Keywords ***
+Suite Setup
+    #Create Group
+    ${suite_group_id}=    EntityAPILibrary.Create Group    1    Group Sorting
+    Set Suite Variable    ${suite_group_id}
+    #Create Project
+    ${suite_project_id}=    EntityAPILibrary.Create Project    ${suite_group_id}    Project Sorting
+    Set Suite Variable    ${suite_project_id}
+    #Explicit set of names used to create the experiments
+    @{expected_exp_names}=    Set Variable    1_Exp    Exp_1    _Exp1    π_Exp1
+    Set Suite Variable    @{expected_exp_names}
+    @{expected_exp_ids}=    Create List
+    Set Suite Variable    @{expected_exp_ids}
+    ${length}=    Get Length    ${expected_exp_names}
+    Set Suite Variable    ${length}
+    : FOR    ${index}    IN RANGE    ${length}
+    \    ${exp_id}=    EntityAPILibrary.Create Experiment    ${suite_project_id}    @{expected_exp_names}[${index}]
+    \    Append To List    ${expected_exp_ids}    ${exp_id}
+
+Suite Teardown
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${suite_group_id}    As Intended    Test Suite Completed
+
+Verify Results Are Sorted
+    [Arguments]    ${filtered_entity_dto}    ${sort_order}    ${expected_ordered_names}=${expected_exp_names}    ${expected_ordered_ids}=${expected_exp_ids}
+    #Read expected results as arrays
+    @{result_entity_ids}=    XMLLibrary.Get Element Value From Xpath    ${filtered_entity_dto}    .//{http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityCore/{http://entity.services.ewb.idbs.com}entityId
+    @{result_entity_names}=    XMLLibrary.Get Element Value From Xpath    ${filtered_entity_dto}    .//{http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityCore/{http://entity.services.ewb.idbs.com}entityName
+    ${result_count}=    Get Length    ${result_entity_ids}
+    #Loop throught the number of result and verify
+    : FOR    ${index}    IN RANGE    ${result_count}
+    \    ${order}=    Fetch From Right    ${sort_order}    _
+    \    #If descending order
+    \    ${index_for_expected}=    Run Keyword If    '${order}' == 'DESCENDING'    Evaluate    ${result_count} - ${index} - 1    ELSE
+    \    ...    Set Variable    ${index}
+    \    #Check entity id and entity name
+    \    Should Match    @{result_entity_names}[${index}]    @{expected_ordered_names}[${index_for_expected}]
+    \    Should Match    @{result_entity_ids}[${index}]    @{expected_ordered_ids}[${index_for_expected}]
+
+Update Created Date of Entity
+    [Arguments]    ${entityId}    ${date}
+    [Documentation]    Update the Created on date (*CREATED_TIME_STAMP*) of an entity.
+    ...
+    ...    - ${entity_id} the id of the entity to be updated.
+    ...    - ${date} the date to updated to in format DD-MMM-YY.
+    ...
+    ...    e.g. Update Created Date of Entity \ \ \ \ 36cc92006b9e11e69f5100000a1426a7 | 30-JUL-16
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    update LATEST_ENTITY_VERSIONS set CREATED_TIME_STAMP = '${date} 01.01.01.000000000' where entity_id='${entityId}'
+    Disconnect From Database
+
+Set Created Date of Entity
+    [Documentation]    This keyword is used to set the created date of entities on the database for automated test to be verified.
+    ...
+    ...    - creates a list of dates to assign
+    ...    - updates created date of entities on database
+    #Date list with different dates with past year,week,month,day
+    @{created_date_list}=    Create List    26-AUG-16    01-DEC-15    01-AUG-16    25-JUL-16
+    #Set the created date in the database for the records
+    : FOR    ${index}    IN RANGE    ${length}
+    \    Update Created Date of Entity    @{expected_exp_ids}[${index}]    @{created_date_list}[${index}]

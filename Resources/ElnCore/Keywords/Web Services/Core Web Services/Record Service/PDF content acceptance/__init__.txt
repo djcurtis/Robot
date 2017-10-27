@@ -1,0 +1,16 @@
+*** Settings ***
+Suite Setup       Create path variables
+Resource          ../../../../Libraries/common_resource.txt
+Library           OperatingSystem
+Library           String
+
+*** Variables ***
+
+*** Keywords ***
+Create path variables
+    ${pdf_content_test_data_root_folder}=    Join Path    ${CURDIR}    ..    ..    ..    ..
+    ...    Test Data    Core Web Services    Record Service    PDF content acceptance
+    Set Global Variable    ${pdf_content_test_data_root_folder}
+    ${pdf_content_expected_root_folder}=    Join Path    ${CURDIR}    ..    ..    ..    ..
+    ...    Expected Results    Core Web Services    Record Service    PDF content acceptance    ${APP_SERVER_OS}
+    Set Global Variable    ${pdf_content_expected_root_folder}

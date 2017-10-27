@@ -1,0 +1,335 @@
+*** Settings ***
+Documentation     Test Cases Covering Security Users
+Test Setup        Services Setup
+Resource          ../../../Libraries/common_resource.txt
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+1-1 Create lower case user name
+    Create User And Validate    lowercaseuser    password    fullname    lowercase@idbs.com    Testing
+
+1-2 Create upper case user name
+    Create User And Validate    UPPERCASEUSER    password    fullname    uppercase@idbs.com    Testing
+
+1-3 Create numeric user name
+    Create User And Validate    1234567890    password    fullname    numeric@idbs.com    Testing
+
+1-4 Create special characters username
+    Create User And Validate    _+-~    password    fullname    specialcharacters@idbs.com    Testing
+    Create User And Expect Error    abc%abc    password    fullname    specialcharacters@idbs.com    Testing    400
+    Create User And Expect Error    abc//abc    password    fullname    specialcharacters@idbs.com    Testing    400
+
+1-5 Create user name with forward slashes
+    Create User And Expect Error    /user/name/    password    fullname    forwardslashes@idbs.com    Testing    400
+
+1-6 Create alphanumeric + special characters username
+    Create User And Validate    ABCdef123_+-~    password    fullname    alphanumeric@idbs.com    Testing
+
+1-7 Create username with spaces
+    Create User And Validate    This user name has spaces    password    fullsname    spaces@idbs.com    Testing
+
+1-8 Create username with preceeding spaces
+    Create User    ${SPACE*10}10spacebuffer    password    fullname    buffer1@idbs.com    Testing
+    Check User Present    10spacebuffer
+    Validate User    10spacebuffer    fullname    buffer1@idbs.com    Testing
+
+1-9 Create username with trailing spaces
+    Create User    10spaceafter${SPACE*10}    password    fullname    buffer2@idbs.com    Testing
+    Check User Present    10spaceafter
+    Validate User    10spaceafter    fullname    buffer2@idbs.com    Testing
+
+1-10 Create 32 character username
+    Create User And Validate    abcdefghiJKLMNOPQRSTUVWXYZ123456    password    fullname    maxlength@idbs.com    Testing
+
+1-11 Create 33 character username
+    Create User And Expect Error    abcdefghiJKLMNOPQRSTUVWXYZ1234567    password    fullname    overlength@idbs.com    Testing    400
+
+1-12 Create empty username
+    Create User And Expect Error    ${EMPTY}    password    fullname    empty@idbs.com    Testing    400
+
+1-13 Duplicate username
+    Create User And Validate    duplicate    password    duplicateuser    duplicate@idbs.com    Testing
+    Create User And Expect Error    duplicate    password    duplicateuser2    duplicate2@idbs.com    Testing    409
+    Create User And Expect Error    DUPLICATE    password    duplicateuser3    duplicate3@idbs.com    Testing    409
+    Create User And Expect Error    Duplicate    password    duplicateuser4    duplicate4@idbs.com    Testing    409
+    Create User And Expect Error    dupliCATE    password    duplicateuser5    duplicate5@idbs.com    Testing    409
+
+2-1 Lowercase fullname
+    Create User And Validate    User2-1    password    lowercase    user2-1@idbs.com    Testing
+
+2-2 Uppercase fullname
+    Create User And Validate    User2-2    password    UPPERCASE    user2-2@idbs.com    Testing
+
+2-3 Numeric fullname
+    Create User And Validate    User2-3    password    1234567890    user2-3@idbs.com    Testing
+
+2-4 Special characters fullname
+    Create User And Validate    User2-4    password    _+-=    user2-4@idbs.com    Testing
+    Create User And Validate    User2-4b    password    abc%abc    specialcharacters@idbs.com    Testing
+    Create User And Validate    User2-4c    password    abc//abc    specialcharacters@idbs.com    Testing
+
+2-5 Forward slash fullname
+    Create User And Validate    User2-5    password    /full/name/    user2-5@idbs.com    Testing
+
+2-6 Alphanumeric and special characters fullname
+    Create User And Validate    User2-6    password    abcDEF123-_+    user2-6@idbs.com    Testing
+
+2-7 Spaces in fullname
+    Create User And Validate    User2-7    password    this is a full name with spaces    user2-7@idbs.com    Testing
+
+2-8 Fullname with preceeding spaces
+    Create User    User2-8    password    ${SPACE*10}10spacebuffer    buffer3@idbs.com    Testing
+    Check User Present    User2-8
+    Validate User    User2-8    10spacebuffer    buffer3@idbs.com    Testing
+
+2-9 Fullname with trailing spaces
+    Create User    User2-9    password    10spaceafter${SPACE*10}    buffer4@idbs.com    Testing
+    Check User Present    User2-9
+    Validate User    User2-9    10spaceafter    buffer4@idbs.com    Testing
+
+2-10 255 Character fullname
+    Create User And Validate    User2-10    password    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345    maxfullname@idbs.com    Testing
+
+2-11 256 Character fullname
+    Create User And Expect Error    User2-11    password    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    oversizefullname@idbs.com    Testing    400
+
+2-12 Empty fullname
+    Create User And Expect Error    User2-12    password    ${EMPTY}    emptyfullname@idbs.com    Testing    400
+
+3-1 Lowercase Department
+    Create User And Validate    User3-1    password    fullname    test3-1@idbs.com    lowercase
+
+3-2 Uppercase Department
+    Create User And Validate    User3-2    password    fullname    test3-2@idbs.com    UPPERCASE
+
+3-3 Numeric Department
+    Create User And Validate    User3-3    password    fullname    test3-3@idbs.com    1234567890
+
+3-4 Special Characters Department
+    Create User And Validate    User3-4    password    fullname    test3-4@idbs.com    _+-=
+    Create User And Validate    User3-4b    password    fullname    specialcharacters@idbs.com    abc%abc
+    Create User And Validate    User3-4c    password    fullname    specialcharacters@idbs.com    abc//abc
+
+3-5 Forward Slash Department
+    Create User And Validate    User3-5    password    fullname    test3-5@idbs.com    /department/
+
+3-6 Mixed alphanumeric and special characters department
+    Create User And Validate    User3-6    password    fullname    test3-6@idbs.com    abcDEF123_-+
+
+3-7 Spaces in department name
+    Create User And Validate    User3-7    password    fullname    test3-7@idbs.com    spaces in department name
+
+3-8 Department with preceeding spaces
+    Create User    User3-8    password    fullname    buffer5@idbs.com    ${SPACE*10}10spacebuffer
+    Validate User    User3-8    fullname    buffer5@idbs.com    10spacebuffer
+
+3-9 Department with trailing spaces
+    Create User    User3-9    password    fullname    buffer6@idbs.com    10spaceafter${SPACE*10}
+    Validate User    User3-9    fullname    buffer6@idbs.com    10spaceafter
+
+3-10 255 Character Department
+    Create User And Validate    User3-10    password    fullname    maxfullname@idbs.com    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345
+
+3-11 256 Character Department
+    Create User And Expect Error    User3-11    password    fullname    oversizefullname@idbs.com    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    400
+
+3-12 Empty Department
+    Create User    User3-12    password    fullname    emptydepartment@idbs.com    \ \
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User3-12
+    ${RESPONSE BODY TEMP} =    Get Response Body
+    ${RESPONSE BODY}=    Set Variable    ${RESPONSE BODY TEMP}
+    Set Suite Variable    ${RESPONSE BODY}
+    ${Response User Name}=    Get Json Value    ${RESPONSE BODY}    /userName
+    ${Response User Full Name}=    Get Json Value    ${RESPONSE BODY}    /userFullName
+    ${Response User Email}=    Get Json Value    ${RESPONSE BODY}    /emails/email
+    ${status}    ${Response User Department}=    Run Keyword And Ignore Error    Get Json Value    ${RESPONSE BODY}    /department
+    Should Be Equal    ${Response User Name}    "User3-12"
+    Should Be Equal    ${Response User Full Name}    "fullname"
+    Should Be Equal    ${Response User Email}    ["emptydepartment@idbs.com"]
+    Should Contain    ${Response User Department}    JsonPointerException: member 'department' not found
+
+4-1 Lowercase E-Mail Address
+    Create User And Validate    User4-1    password    fullname    lowercase@idbs.com    department
+
+4-2 Uppercase E-Mail Address
+    Create User And Validate    User4-2    password    fullname    UPPERCASE@IDBS.COM    department
+
+4-3 Numeric E-Mail Address
+    Create User And Validate    User4-3    password    fullname    1234567890@idbs.com    department
+
+4-4 Special Characters E-Mail Address
+    Create User And Validate    User4-4    password    fullname    -_+@idbs.com    department
+
+4-5 Forward Slash E-Mail Address
+    Create User And Expect Error    User4-5    password    fullname    forward/slash@idbs.com    department    400
+
+4-6 Mixed alphanumeric and special characters E-Mail Address
+    Create User And Validate    User4-6    password    fullname    abcDEF123-_+@idbs.com    department
+
+4-7 Spaces in E-Mail Address name
+    Create User And Expect Error    User4-7    password    fullname    email space@idbs.com    department    400
+
+4-8 E-Mail Address with preceeding spaces
+    Create User And Expect Error    User4-8    password    fullname    ${SPACE*10}10spacebuffer@idbs.com    department    400
+
+4-9 E-Mail Address with trailing spaces
+    Create User And Expect Error    User4-9    password    fullname    trailingspaces@idbs.com${SPACE*10}    department    400
+
+4-10 255 Character E-Mail Address
+    Create User And Validate    User4-10    password    fullname    012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345@idbs.com    department
+
+4-11 256 Character E-Mail Address
+    Create User And Expect Error    User4-11    password    fullname    0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456@idbs.com    department    400
+
+4-12 Empty E-Mail Address
+    Create User    User4-12    password    fullname    \ \    department
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User4-12
+    ${RESPONSE BODY TEMP} =    Get Response Body
+    ${RESPONSE BODY}=    Set Variable    ${RESPONSE BODY TEMP}
+    Set Suite Variable    ${RESPONSE BODY}
+    ${Response User Name}=    Get Json Value    ${RESPONSE BODY}    /userName
+    ${Response User Full Name}=    Get Json Value    ${RESPONSE BODY}    /userFullName
+    ${Response User Email}=    Get Json Value    ${RESPONSE BODY}    /emails/email
+    ${Response User Department}=    Get Json Value    ${RESPONSE BODY}    /department
+    Should Be Equal    ${Response User Name}    "User4-12"
+    Should Be Equal    ${Response User Full Name}    "fullname"
+    Should Be Equal    ${Response User Email}    []
+    Should Be Equal    ${Response User Department}    "department"
+
+4-13 Multiple E-Mail Addresses
+    Create User    User4-13    password    fullname    user1@idbs.com;user2@idbs.com;user3@idbs.com    department
+    Validate User    User4-13    fullname    user1@idbs.com", "user2@idbs.com", "user3@idbs.com    department
+
+5-1 Disabling Users
+    Create User And Validate    User5-1    password    fullname    user5-1@idbs.com    department
+    Disable User    User5-1    disabledreason
+
+5-2 Enabling Users
+    Create User And Validate    User5-2    password    fullname    user5-2@idbs.com    department
+    Disable User    User5-2    disabledreason
+    Enable User    User5-2
+
+5-3 Disabled User Lowercase Reason
+    Create User And Validate    User5-3    password    fullname    user5-3@idbs.com    department
+    Disable User    User5-3    lowercase
+
+5-4 Disabled User Uppercase Reason
+    Create User And Validate    User5-4    password    fullname    user5-4@idbs.com    department
+    Disable User    User5-4    UPPERCASE
+
+5-5 Disabled User Numeric Reason
+    Create User And Validate    User5-5    password    fullname    user5-5@idbs.com    department
+    Disable User    User5-5    1234567890
+
+5-6 Disabled User Special Characters Reason
+    Create User And Validate    User5-6    password    fullname    user5-6@idbs.com    department
+    Disable User    User5-6    -=_+
+
+5-7 Disabled User Mixed Characters + Special Characters Reason
+    Create User And Validate    User5-7    password    fullname    user5-7@idbs.com    department
+    Disable User    User5-7    abcDEF123-_+
+
+5-8 Disabled User Empty Reason
+    Create User And Validate    User5-8    password    fullname    user5-8@idbs.com    department
+    Disable User And Expect Error    User5-8    \ \    400
+
+5-9 Disabled User 255 Characters Reason
+    Create User And Validate    User5-9    password    fullname    user5-9@idbs.com    department
+    Disable User    User5-9    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345
+
+5-10 Disabled User 256 Characters Reason
+    Create User And Validate    User5-10    password    fullname    user5-10@idbs.com    department
+    Disable User And Expect Error    User5-10    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    400
+
+6-1 Reset User Password
+    Create User And Validate    User6-1    password    fullname    user6-1@idbs.com    department
+    Reset Users Password    User6-1
+
+6-2 User Creation State
+    Create User And Validate    User6-2    password    fullname    user6-2@idbs.com    department
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User6-2
+    ${RESPONSE BODY} =    Get Response Body
+    ${Response User Assignable Roles}=    Get Json Value    ${RESPONSE BODY}    /disabled
+    Should Be Equal    ${Response User Assignable Roles}    false
+
+7-1 Assignable Roles Level - ANY_ROLES
+    Create User    User7-1    password    fullname    user7-1@idbs.com    department    ANY_ROLES
+    Validate User    User7-1    fullname    user7-1@idbs.com    department
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User7-1
+    ${RESPONSE BODY} =    Get Response Body
+    ${Response User Assignable Roles}=    Get Json Value    ${RESPONSE BODY}    /assignablerolelevel
+    Should Be Equal    ${Response User Assignable Roles}    "ANY_ROLES"
+
+7-2 Assignable Roles Level - STANDARD_ROLES
+    Create User    User7-2    password    fullname    user7-2@idbs.com    department    STANDARD_ROLES
+    Validate User    User7-2    fullname    user7-2@idbs.com    department
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User7-2
+    ${RESPONSE BODY} =    Get Response Body
+    ${Response User Assignable Roles}=    Get Json Value    ${RESPONSE BODY}    /assignablerolelevel
+    Should Be Equal    ${Response User Assignable Roles}    "STANDARD_ROLES"
+
+7-3 Assignable Roles Level - USER_ROLES
+    Create User    User7-3    password    fullname    user7-3@idbs.com    department    USER_ROLES
+    Validate User    User7-3    fullname    user7-3@idbs.com    department
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User7-3
+    ${RESPONSE BODY} =    Get Response Body
+    ${Response User Assignable Roles}=    Get Json Value    ${RESPONSE BODY}    /assignablerolelevel
+    Should Be Equal    ${Response User Assignable Roles}    "USER_ROLES"
+
+7-4 Assignable Roles Level - ENTITY_ROLES
+    Create User    User7-4    password    fullname    user7-4@idbs.com    department    ENTITY_ROLES
+    Validate User    User7-4    fullname    user7-4@idbs.com    department
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/User7-4
+    ${RESPONSE BODY} =    Get Response Body
+    ${Response User Assignable Roles}=    Get Json Value    ${RESPONSE BODY}    /assignablerolelevel
+    Should Be Equal    ${Response User Assignable Roles}    "ENTITY_ROLES"
+
+8-1 Delete Users
+    Create User    User8-1    password    fullname    user8-1@idbs.com    department
+    Validate User    User8-1    fullname    user8-1@idbs.com    department
+    Request Setup
+    Next Request Should Not Succeed
+    DELETE    ${SECURITY ADMINISTRATION USER ENDPOINT}/User8-1
+    Response Status Code Should Equal    405
+    ${RESPONSE BODY} =    Get Response Body
+    Next Request Should Succeed
+
+9-1 Update User - User name
+    Create User    User9-1    password    fullname    user9-1@idbs.com    department
+    Request Setup
+    Next Request Should Not Succeed
+    Set Request Body    {"username":"User9-1b","userfullname":"fullname","emails":{"email":["user9-1@idbs.com"]},"department":"department"}
+    POST    ${SECURITY ADMINISTRATION USER ENDPOINT}/User9-1
+    Response Status Code Should Equal    500    # username field is invalid
+    ${RESPONSE BODY} =    Get Response Body
+    Should Contain    ${RESPONSE BODY}    Unrecognized field "username"
+    Next Request Should Succeed
+
+9-2 Update User - User fullname
+    Create User    User9-2    password    fullname    user9-2@idbs.com    department
+    Update User    User9-2    fullname2    user9-2@idbs.com    department
+    Validate User    User9-2    fullname2    user9-2@idbs.com    department
+
+9-3 Update User - User Email Address
+    Create User    User9-3    password    fullname    user9-3@idbs.com    department
+    Update User    User9-3    fullname    user9-3b@idbs.com    department
+    Validate User    User9-3    fullname    user9-3b@idbs.com    department
+
+9-4 Update User - User Department
+    Create User    User9-4    password    fullname    user9-4@idbs.com    department
+    Update User    User9-4    fullname    user9-4@idbs.com    department2
+    Validate User    User9-4    fullname    user9-4@idbs.com    department2
+
+9-4 Update User - Assignable Roles
+    Create User    User9-5    password    fullname    user9-5@idbs.com    department
+    Update User    User9-5    fullname    user9-5@idbs.com    department    ANY_ROLES
+    Validate User    User9-5    fullname    user9-5@idbs.com    department

@@ -1,0 +1,84 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               PUT \ /services/1.0/settings/usersettings/{key}
+Force Tags        User Settings
+Resource          ../../../Libraries/Core Web Services/Settings Service/rest_settings_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Check can replace a user setting
+    [Documentation]    Sets the test setting to true and then to false
+    ...
+    ...    A successful call returns the HTTP status 204 and the new setting is added
+    ${response}=    Put User Setting    testSetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting \ xmlns="http://settings.services.ewb.idbs.com"><key>testSetting</key><dataType>BOOLEAN</dataType><type>USER</type><values><value>true</value></values></setting>
+    ${user_settings}=    Get User Setting    testSetting    BOOLEAN
+    ${test-value}=    Get Json Value    ${user_settings}    /values/value
+    Should Be Equal    ${test-value}    ["true"]
+    ${response}=    Put User Setting    testSetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting \ xmlns="http://settings.services.ewb.idbs.com"><key>testSetting</key><dataType>BOOLEAN</dataType><type>USER</type><values><value>false</value></values></setting>
+    ${user_settings}=    Get User Setting    testSetting    BOOLEAN
+    ${test-value}=    Get Json Value    ${user_settings}    /values/value
+    Should Be Equal    ${test-value}    ["false"]
+
+Check cannot replace a user setting if no value is specified
+    [Documentation]    If the call request body SAPISettingValueList instance has no values, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    showTipsAtStartup    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting \ xmlns="http://settings.services.ewb.idbs.com"><key>showTipsAtStartup</key><dataType>BOOLEAN</dataType><type>USER</type><values></values></setting>    400
+    Response Body Should Contain    Problem with request: No values supplied in the request
+
+Check cannot replace a user setting if no key is specified
+    [Documentation]    SAPISettingValueList validation: element ‘key’ is missing, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    nokey    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><dataType>BOOLEAN</dataType><type>USER</type><values></values></setting>    400
+    Comment    Response Body Should Contain    Problem with request: Key value must be specified
+
+Check cannot replace a user setting if no key value is specified
+    [Documentation]    SAPISettingValueList validation: element ‘key’ value is missing, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    nokey    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key></key><dataType>BOOLEAN</dataType><type>USER</type><values></values></setting>    400
+    Response Body Should Contain    Problem with request: Key value must be specified
+
+Check cannot replace a user setting if data type is not specified
+    [Documentation]    SAPISettingValueList validation: element ‘key’ value is missing, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    noDataType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>noDataType</key><type>USER</type><values></values></setting>    400
+    Comment    Response Body Should Contain    Problem with request: Data type value not supported
+
+Check cannot replace a user setting if data type value is not specified
+    [Documentation]    SAPISettingValueList validation: element ‘dataType’ value is missing, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    noDataTypeValue    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>noDataTypeValue</key><dataType></dataType><type>USER</type><values><value>1</value></values></setting>    400
+    Response Body Should Contain    Problem with request
+
+Check cannot replace a user setting if data type is not valid
+    [Documentation]    SAPISettingValueList validation: element ‘dataType’ value is not one of those defined in SAPISettingsDataType, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    InvalidType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>InvalidType</key><dataType>DECIMAL</dataType><type>USER</type><values><value>1.0</value></values></setting>    400
+    Response Body Should Contain    Problem with request
+
+Check cannot replace a user setting if type element is missing
+    [Documentation]    SAPISettingValueList validation: element ‘type’ is missing, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    InvalidType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>InvalidType</key><dataType>NUMBER</dataType><values><value>1.0</value></values></setting>    400
+    Response Body Should Contain    Problem with request
+
+Check cannot replace a user setting if type value is missing
+    [Documentation]    SAPISettingValueList validation: element ‘type’ value is missing, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    InvalidType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>InvalidType</key><dataType>NUMBER</dataType><type></type><values><value>1.0</value></values></setting>    400
+    Response Body Should Contain    Problem with request
+
+Check cannot replace a user setting if type value is invalid
+    [Documentation]    SAPISettingValueList validation: element ‘type’ value is not one of those defined in SAPISettingType, then the HTTP status code 400 is returned to the client
+    ${response}=    Put User Setting    InvalidType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>InvalidType</key><dataType>NUMBER</dataType><type>EWB</type><values><value>1.0</value></values></setting>    400
+    Response Body Should Contain    Problem with request
+
+Check cannot replace a user setting if type value has changed
+    [Documentation]    SAPISettingValueList validation: element ‘type’ value differs to the existing stored type, then the HTTP status code 400 is returned to the client
+    [Tags]    QC19606
+    ${response}=    Put User Setting    changedType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>changedType</key><dataType>BOOLEAN</dataType><type>USER</type><values><value>true</value></values></setting>    204
+    ${response}=    Put User Setting    changedType    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>changedType</key><dataType>INTEGER</dataType><type>USER</type><values><value>1</value></values></setting>    400
+    Response Body Should Contain    Problem with request
+
+Check can replace a user setting with encoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${response}=    Put User Setting    url%252fuser%252fsetting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>url/user/setting</key><dataType>NUMBER</dataType><type>USER</type><values><value>3</value></values></setting>
+    ${user_settings}=    Get User Setting    url%252fuser%252fsetting    NUMBER
+    ${test_value}=    Get Json Value    ${user_settings}    /values/value
+    Should Be Equal As Strings    ${test_value}    ["3"]
+
+Check cannot replace a user setting with incorrect encoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${response}=    Put User Setting    url/user/setting    <?xml version="1.0" encoding="UTF-8" standalone="yes"?><setting xmlns="http://settings.services.ewb.idbs.com"><key>url/user/setting</key><dataType>NUMBER</dataType><type>USER</type><values><value>3</value></values></setting>    404

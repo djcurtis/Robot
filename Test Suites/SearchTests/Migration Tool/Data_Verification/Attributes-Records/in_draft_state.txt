@@ -1,0 +1,15 @@
+*** Settings ***
+Documentation     Script for SH-1351 - data verification to be run after:
+...               - the data creation scripts have been run on a pre-EWB 10.2.0 system
+...               - the EWB system has been upgraded to 10.2.1
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+D1 | [Dadbd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordD1
+    Execute Free Text Search And Verify Data By Name And Count    recordAttributeD1ad    1    MigrationToolAttrRecordD1b
+    Execute Free Text Search And Verify Data By Name And Count    MigrationToolAttrRecordD1b    1    MigrationToolAttrRecordD1b

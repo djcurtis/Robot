@@ -1,0 +1,23 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/{taskid}/userpool/history* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - Non Existent Task Id
+    [Documentation]    Verify that if a nonexistent taskid is supplied a 404 is returned
+    [Tags]       EWB-WEB-ICM-PI004-W009-01
+    Get History Candidates For Assigning A Task Too And Expect Error    IDONTEXIST    404
+
+Test 2 - Call by user who doesn't have permissions to reassign a task
+    [Documentation]    Verify that if a user lacks permissions to use this endpoint a 403 is returned\n\nA user requires REASSIGN_ANY_TASK to use the endpoint
+    [Tags]       EWB-WEB-ICM-PI004-W009-02
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    ${task id}    Get Task ID From Workflow ID    ${workflow id}    1
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser7
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser71
+    Get History Candidates For Assigning A Task Too And Expect Error    ${task id}    403

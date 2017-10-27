@@ -1,0 +1,68 @@
+*** Settings ***
+Documentation     Created for story SH-1301
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Cloned Record - Version
+    [Documentation]    Record - Cloned Record - Version Save
+    ...
+    ...    - verify that record is searchable by attribute text after version save
+    Version Save    ${experimenCloneId}    Data Added
+    ${experimentId}=    EntityAPILibrary.Create Entity From Template    EXPERIMENT    ${projectId}    ${experimenCloneId}    ${experimentName}    statusName:::Started
+    ...    title:::${experimentName}
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}|Experiment    caption_qwerty    all    Group|name|is|"${groupName}"
+
+Record - Cloned Record - Draft
+    [Documentation]    Record - Cloned Record - Version Save
+    ...
+    ...    - verify that record is searchable by item's attribute text after draft save
+    Draft Save    ${experimenCloneId}
+    ${experimentId}=    EntityAPILibrary.Create Entity From Template    EXPERIMENT    ${projectId}    ${experimenCloneId}    ${experimentName}    statusName:::Started
+    ...    title:::${experimentName}
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}|Experiment    caption_qwerty    all    Group|name|is|"${groupName}"
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectCloneFromId}=    EntityAPILibrary.Create Project    ${groupId}    project clone from
+    Set Suite Variable    ${projectCloneFromId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project clone to
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${experimentId}=    Set Variable    ${EMPTY}
+    Set Suite Variable    ${experimentId}
+    ${currentTime}=    Get Current Date
+    ${experimentName}=    Set Variable    Experiment_${currentTime}
+    Set Suite Variable    ${experimentName}
+    ${experimenCloneId}=    EntityAPILibrary.Create Experiment    ${projectCloneFromId}    Experiment    Started
+    Set Suite Variable    ${experimenCloneId}
+    EntityAPILibrary.Create Web Link Document    ${experimenCloneId}    www.ewb.com    caption_qwerty
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended
+    Unlock Entity    ${experimenCloneId}
+    EntityAPILibrary.Delete Entity    ${experimenCloneId}    As Intended    As Intended

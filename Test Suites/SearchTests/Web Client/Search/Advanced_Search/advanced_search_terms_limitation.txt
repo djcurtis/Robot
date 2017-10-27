@@ -1,0 +1,61 @@
+*** Settings ***
+Documentation     max number of active advanced search terms might be 6
+Suite Setup       Login To EWB
+Suite Teardown    close browser
+Test Setup        Navigate Search Screen
+Test Teardown     Reload Page
+Default Tags      NO_IE
+Resource          ../../../../Resources/UI/Search_Page/advanced_search_term.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/save_search_dialog.txt
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Resource          ../../../../Resources/UI/navigator.txt
+
+*** Test Cases ***
+Verify Number Of Advanced Active Search Terms More Then Six
+    [Documentation]    Verify Number Of Advanced Active Search More Then Six
+    ...    - add 7 advanced search active terms, click Search button
+    ...    - verify "Too Many Searches" dialog appears
+    ...
+    ...    Story number SH-458
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Perform Advanced Search    text    Report|Keywords|is|status_1    Report|Keywords|is|status_2    Report|Keywords|is|status_3    Report|Keywords|is|status_4    Report|Keywords|is|status_5
+    ...    Report|Keywords|is|status_6    Report|Keywords|is|status_7
+    Click Search Button
+    Verify Too Many Search Dialog Appears
+    Click Close
+
+Verify Number Of Advanced Active and Disabled Search Terms More Then Six
+    [Documentation]    Verify Number Of Advanced Active and Disabled Search Terms More the Six
+    ...    - create 7 advanced search terms
+    ...    - disable one term
+    ...    - verify possible search performing
+    ...
+    ...    Story number SH-458
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Perform Advanced Search    text    Report|Keywords|is|status_1    Report|Keywords|is|status_2    Report|Keywords|is|status_3    Report|Keywords|is|status_4    Report|Keywords|is|status_5
+    ...    Report|Keywords|is|status_6    Report|Keywords|is|status_7
+    Disable Advanced Search Terms    Keywords|is|status_1
+    Click Search Button
+    Verify Too Many Search Dialog Not Appears
+    Verify Blank Search Result
+
+Save Search With More Then Six Advanced Terms
+    [Documentation]    Save Search With More Then Six Advanced Terms
+    ...    - Save search with 7 active advanced terms
+    ...    - Restore search and perfore search
+    ...    - Verify"Too Many Searches.." dialog appers
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Perform Advanced Search    text    Report|Keywords|is|status_1    Report|Keywords|is|status_2    Report|Keywords|is|status_3    Report|Keywords|is|status_4    Report|Keywords|is|status_5
+    ...    Report|Keywords|is|status_6    Report|Keywords|is|status_7
+    Save Search Via UI    LongSearch    LongSearch_Description
+    Reload Page
+    sleep    10s
+    Restore Saved Search    LongSearch    0
+    Verify Advanced Search Items    Keywords|is|status_1    Keywords|is|status_2    Keywords|is|status_3    Keywords|is|status_4    Keywords|is|status_5    Keywords|is|status_6
+    ...    Keywords|is|status_7
+    Verify Search Text Field    text
+    Click Search Button
+    Verify Too Many Search Dialog Appears
+    Click Close

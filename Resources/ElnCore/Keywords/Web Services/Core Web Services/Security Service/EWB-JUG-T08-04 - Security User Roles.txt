@@ -1,0 +1,222 @@
+*** Settings ***
+Documentation     Test Cases Covering Security User Roles
+Test Setup        Services Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+1-1 Lowercase User Role Name
+    Create Role And Validate    userlowercase    1-1    description    true
+
+1-2 Uppercase User Role Name
+    Create Role And Validate    USERUPPERCASE    1-2    description    true
+
+1-3 Numeric User Role Name
+    Create Role And Validate    2345678901    1-3    description    true
+
+1-4 Special Characters User Role Name
+    Create Role And Validate    +_-=    1-4    description    true
+
+1-5 Mixed Characters User Role Name
+    Create Role And Validate    UserabcDEF123-=+    1-5    description    true
+
+1-6 Forward Slashes User Role Name
+    [Tags]    ignore
+    Create Role And Validate    User%2Fforward%2Fslashes    1-6    description    true
+
+1-7 Spaces In User Role Name
+    Create Role And Validate    User Role Name With Spaces    1-7    description    true
+
+1-8 Preceeding Spaces In User Role Name
+    Create Role    ${SPACE*10}User10spacebuffer    1-8    description    true
+    Validate Role    User10spacebuffer    1-8    description    true
+
+1-9 Trailing Spaces In User Role Name
+    Create Role    User10spaceafter${SPACE*10}    1-9    description    true
+    Validate Role    User10spaceafter    1-9    description    true
+
+1-10 32 Characters In User Role Name
+    Create Role And Validate    userabbbbbcccccdddddeeeeefffffgg    1-10    description    true
+
+1-11 33 Characters In User Role Name
+    Create Role And Expect Error    userabbbbbcccccdddddeeeeefffffggg    1-11    description    true    400
+
+2-1 Lowercase User Role Display Name
+    Create Role And Validate    User2-1    lowercase    description    true
+
+2-2 Uppercase User Role Display Name
+    Create Role And Validate    User2-2    UPPERCASE    description    true
+
+2-3 Numeric User Role Display Name
+    Create Role And Validate    User2-3    1234567890    description    true
+
+2-4 Special Characters User Role Display Name
+    Create Role And Validate    User2-4    -=_+    description    true
+
+2-5 Mixed Characters User Role Display Name
+    Create Role And Validate    User2-5    abcDEF123-=+    description    true
+
+2-6 Forward Slashes User Role Display Name
+    Create Role And Validate    User2-6    /forward/slashes    description    true
+
+2-7 Spaces In User Role Display Name
+    Create Role And Validate    User2-7    User Display With Spaces    description    true
+
+2-8 Preceeding Spaces In User Role Display Name
+    Create Role    User2-8    ${SPACE*10}10spacebuffer    description    true
+    Validate Role    User2-8    10spacebuffer    description    true
+
+2-9 Trailing Spaces In User Role Display Name
+    Create Role    User2-9    10spaceafter${SPACE*10}    description    true
+    Validate Role    User2-9    10spaceafter    description    true
+
+2-10 32 Characters In User Role Display Name
+    Create Role And Validate    User2-10    abcdefghiJKLMNOPQRSTUVWXYZ123456    description    true
+
+2-11 33 Characters In User Role Display Name
+    Create Role And Expect Error    User2-11    abcdefghiJKLMNOPQRSTUVWXYZ1234567    description    true    400
+
+3-1 Lowercase User Role Description
+    Create Role And Validate    User3-1    3-1    lowercase    true
+
+3-2 Uppercase User Role Description
+    Create Role And Validate    User3-2    3-2    UPPERCASE    true
+
+3-3 Numeric User Role Description
+    Create Role And Validate    User3-3    3-3    1234567890    true
+
+3-4 Special Characters User Role Description
+    Create Role And Validate    User3-4    3-4    -=_+    true
+
+3-5 Mixed Characters User Role Description
+    Create Role And Validate    User3-5    3-5    abcDEF123-=+    true
+
+3-6 Forward Slashes User Role Description
+    Create Role And Validate    User3-6    3-6    /forward/slashes    true
+
+3-7 Spaces In User Role Description
+    Create Role And Validate    User3-7    3-7    User Role Description With Spaces    true
+
+3-8 Preceeding Spaces In User Role Description
+    Create Role    User3-8    3-8    ${SPACE*10}10spacebuffer    true
+    Validate Role    User3-8    3-8    10spacebuffer    true
+
+3-9 Trailing Spaces In User Role Description
+    Create Role    User3-9    3-9    10spaceafter${SPACE*10}    true
+    Validate Role    User3-9    3-9    10spaceafter    true
+
+3-10 255 Characters In User Role Description
+    Create Role And Validate    User3-10    3-10    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345    true
+
+3-11 256 Characters In User Role Description
+    Create Role And Expect Error    User3-11    3-11    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    true    400
+
+3-12 Line Breaks In Description
+    Create Role And Validate    User3-12    3-12    firstline\\nsecondline    true
+
+4-1 Update Role Description - lowercase
+    Create Role And Validate    User4-1    4-1    originaldescription    true
+    Update Role And Validate    User4-1    4-1    lowercasedescription    true
+
+4-2 Update Role Description - Uppercase
+    Create Role And Validate    User4-2    4-2    originaldescription    true
+    Update Role And Validate    User4-2    4-2    UPPERCASEDESCRIPTION    true
+
+4-3 Update Role Description - Numeric
+    Create Role And Validate    User4-3    4-3    originaldescription    true
+    Update Role And Validate    User4-3    4-3    1234567890    true
+
+4-4 Update Role Description - Special Characters
+    Create Role And Validate    User4-4    4-4    originaldescription    true
+    Update Role And Validate    User4-4    4-4    -=_+    true
+
+4-5 Update Role Description - Mixed Characters
+    Create Role And Validate    User4-5    4-5    originaldescription    true
+    Update Role And Validate    User4-5    4-5    ABCdef123_+=    true
+
+4-6 Update Role Description - Spaces In Description
+    Create Role And Validate    User4-6    4-6    originaldescription    true
+    Update Role And Validate    User4-6    4-6    Description With Spaces    true
+
+4-7 Update Role Description - Preceeding Spaces
+    Create Role And Validate    User4-7    4-7    originaldescription    true
+    Update Role    User4-7    ${SPACE*10}10spacebuffer
+    Validate Role    User4-7    4-7    10spacebuffer    true
+
+4-8 Update Role Description - Trailing Spaces
+    Create Role And Validate    User4-8    4-8    originaldescription    true
+    Update Role    User4-8    10spaceafter${SPACE*10}
+    Validate Role    User4-8    4-8    10spaceafter    true
+
+4-9 Update Role Description - Forward Slashes
+    Create Role And Validate    User4-9    4-9    originaldescription    true
+    Update Role And Validate    User4-9    4-9    /forward/slashes    true
+
+4-10 Update Role Description - 255 Characters
+    Create Role And Validate    User4-10    4-10    originaldescription    true
+    Update Role And Validate    User4-10    4-10    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345    true
+
+4-11 Update Role Description - 256 Characters
+    Create Role And Validate    User4-11    4-11    originaldescription    true
+    Update Role And Expect Error    User4-11    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    400
+
+4-12 Update Role Description - Line Breaks
+    Create Role And Validate    User4-12    4-12    originaldescription    true
+    Update Role And Validate    User4-12    4-12    firstline\\nsecondline    true
+
+5-1 Delete User Role - Valid Role
+    Create Role And Validate    User5-1    5-1    5-1    true
+    Delete Role And Validate    User5-1    DeleteReason
+
+5-2 Delete User Role - Invalid Role
+    Request Setup
+    Set Request Body    {"comments":"deletion comment"}
+    Next Request Should Not Succeed
+    POST    ${SECURITY ADMINISTRATION ROLE ENDPOINT}/User5-2
+    Response Status Code Should Equal    400
+    Next Request Should Succeed
+    Check Role Not Present    User5-2
+
+6-1 Addition of User Role Permissions - Valid Permissions
+    Create Role And Validate    User6-1    6-1    6-1    true
+    Add Role Permission    User6-1    CREATE_ANALYTICAL_COMPONENT
+    Add Role Permission    User6-1    USE_BIOBOOK_EDITOR
+    Add Role Permission    User6-1    USE_STOICHIOMETRY
+    Add Role Permission    User6-1    QUERY_MART
+    Add Role Permission    User6-1    SET_SIGNATURE_OPTIONS
+
+6-2 Addition of User Role Permissions - Invalid Permissions
+    Create Role And Validate    User6-2    6-2    6-2    true
+    Add Role Permission And Expect Error    User6-2    INVALID_PERMISSION    404
+
+6-3 Deletion of User Role Permissions - Valid Permissions Assigned To Role
+    Create Role And Validate    User6-3    6-3    6-3    true
+    Add Role Permission    User6-3    CREATE_ANALYTICAL_COMPONENT
+    Add Role Permission    User6-3    USE_BIOBOOK_EDITOR
+    Add Role Permission    User6-3    USE_STOICHIOMETRY
+    Add Role Permission    User6-3    QUERY_MART
+    Add Role Permission    User6-3    SET_SIGNATURE_OPTIONS
+    Remove Role Permission    User6-3    CREATE_ANALYTICAL_COMPONENT
+    Remove Role Permission    User6-3    USE_BIOBOOK_EDITOR
+    Remove Role Permission    User6-3    USE_STOICHIOMETRY
+    Remove Role Permission    User6-3    QUERY_MART
+    Remove Role Permission    User6-3    SET_SIGNATURE_OPTIONS
+
+6-4 Deletion of User Role Permissions - Valid Permissions Not Assigned To Role
+    Create Role And Validate    User6-4    6-4    6-4    true
+    Remove Role Permission And Expect Error No Role Check    User6-4    CREATE_ANALYTICAL_COMPONENT    400
+    Remove Role Permission And Expect Error No Role Check    User6-4    USE_BIOBOOK_EDITOR    400
+    Remove Role Permission And Expect Error No Role Check    User6-4    USE_STOICHIOMETRY    400
+    Remove Role Permission And Expect Error No Role Check    User6-4    QUERY_MART    400
+    Remove Role Permission And Expect Error No Role Check    User6-4    SET_SIGNATURE_OPTIONS    400
+
+6-5 Deletion of User Role Permissions - Invalid Permissions
+    Create Role And Validate    User6-5    6-5    6-5    true
+    Request Setup
+    Next Request Should Not Succeed
+    DELETE    ${SECURITY ADMINISTRATION ROLE ENDPOINT}/User6-5/permissions/INVALID_PERMISSION
+    Response Status Code Should Equal    404
+    Next Request Should Succeed
+    Check Permission Assigned To Role    User6-5    ${EMPTY}

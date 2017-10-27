@@ -1,0 +1,206 @@
+*** Settings ***
+Documentation     *Get authorization grant*
+Force Tags        PLFM-219
+Resource          oauth_service_resources.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/OAuth Service/rest_oauth_service_resource.txt    # Rest OAuth Service
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Library           TestDataGenerationLibrary
+Library           JSONLibrary
+
+*** Variables ***
+${client_name}    My Client Name
+${redirect_uri}    https://client.example.org/callback
+${state}          xyz    # An opaque value used by the client to maintain state between the request and callback (See OAuth 2.0)
+
+*** Test Cases ***
+Client Authorization (success)
+    [Documentation]    *Client Authorization - \ Successful Call*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage:* \ Handling of a successful call
+    ...
+    ...    *Expected:*
+    ...    - \ HTTP status code = 302
+    ...    - Constructed URI matches that of the redirect_URI
+    ...
+    ...    *Example :*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=VALID_id&state=xyz &redirect_uri=https//client.example.org/callback
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    ${redirect_uri}
+    Should Contain    ${redirect_uri}    ${redirect_uri}
+    Should Contain    ${redirect_uri}    state=${state}
+    Should Contain    ${redirect_uri}    code=
+
+Client Authorization - unknown client_id
+    [Documentation]    *Client Authorization - unknown client id*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an unknown client id in the endpoint
+    ...
+    ...    *Expected*
+    ...    HTTP status code = 403, there is no redirection URI
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=INVALID_id&state=xyz &redirect_uri=https//client.example.org/callback
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    Set Variable    WrongClientId
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    ${redirect_uri}    EWB_ALL_SAPI
+    ...    403
+
+Client Authorization - empty client_id
+    [Documentation]    *Client Authorization - \ empty client_id*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an empty client id in the endpoint
+    ...
+    ...    *Expected*
+    ...    HTTP status code = 400, there is no redirection URI
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=&state=xyz &redirect_uri=https//client.example.org/callback
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    Set Variable    ${EMPTY}
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    ${redirect_uri}    EWB_ALL_SAPI
+    ...    400
+
+Client Authorization - unsupported code
+    [Documentation]    *Client Authorization - unsupported response type code*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an invalid request where the response_type code is unsupported
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 302
+    ...    - redirection uri contain error description e.g. https://client.example.org/callback?error=unsupported_response_type&state=xyz
+    ...
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=UNSUPPORTEDcode&client_id=VALID_id&state=xyz &redirect_uri=https//client.example.org/callback&scope=EWB_ALL_SAPI
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    WrongCode    ${client_id}    ${state}    ${redirect_uri}    EWB_ALL_SAPI
+    ...    302
+    Should Contain    ${redirect_uri}    error=unsupported_response_type
+    Should Contain    ${redirect_uri}    state=xyz
+
+Client Authorization - empty code
+    [Documentation]    *Client Authorization - empty response type code*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an invalid request where the response_type code is empty
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - redirection uri contain error description e.g. https://client.example.org/callback?error=access_denied&state=xyz
+    ...
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=&client_id=VALID_id&state=xyz &redirect_uri=https//client.example.org/callback&scope=EWB_ALL_SAPI
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    ${EMPTY}    ${client_id}    ${state}    ${redirect_uri}    EWB_ALL_SAPI
+    ...    400
+
+Client Authorization - unknown URI
+    [Documentation]    *Client Authorization - unknown URI*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an invalid request where the URI is unknown
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 403
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=VALID_id&state=xyz &redirect_uri=UnknownURI&scope=EWB_ALL_SAPI
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    UnknownURI    EWB_ALL_SAPI
+    ...    403
+
+Client Authorization - empty URI
+    [Documentation]    *Client Authorization - empty URI*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an invalid request where the URI is empty
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=VALID_id&state=xyz &redirect_uri=&scope=EWB_ALL_SAPI
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    ${EMPTY}    EWB_ALL_SAPI
+    ...    400
+
+Client Authorization - unknown scope
+    [Documentation]    *Client Authorization - Unknown scope*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an invalid request where the scope is unknown
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 302
+    ...    - redirection uri contain error description e.g. https://client.example.org/callback?error=access_denied&state=xyz
+    ...
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=VALID_id&state=xyz &redirect_uri=https//client.example.org/callback&scope=unknown_scope
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    ${redirect_uri}    unknown_scope
+    ...    302
+    Should Contain    ${redirect_uri}    error=invalid_scope
+    Should Contain    ${redirect_uri}    state=xyz
+
+Client Authorization - empty scope
+    [Documentation]    *Client Authorization - empty scope*
+    ...
+    ...    *Endpoint:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Test Coverage*
+    ...    Handling of an invalid request where the scope is empty
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 302
+    ...    - redirection uri contain error description e.g. https://client.example.org/callback?error=invalid_scope&state=xyz
+    ...
+    ...
+    ...    *Example url:*
+    ...    https://{server}:8443/ewb/services/1.0/oauth/authz?response_type=code&client_id=VALID_id&state=xyz &redirect_uri=https//client.example.org/callback&scope=
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    ${client_id}=    OAuth Register Client And Return Client Id    ${client_name}    ${redirect_uri}
+    ${redirect_uri}=    OAuth Get Redirect URI    code    ${client_id}    ${state}    ${redirect_uri}    ${EMPTY}
+    ...    302
+    Should Contain    ${redirect_uri}    error=invalid_scope
+    Should Contain    ${redirect_uri}    state=xyz
+
+*** Keywords ***

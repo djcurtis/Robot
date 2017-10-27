@@ -1,0 +1,75 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: POST /services/1.0/entities/{parentEntityId}/children
+...
+...               Add a new entity from a template to a parent entity and returns the newly created entity id.
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags           Add Entity From Template
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Add entity from template
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200 and a the newly created entity id
+    [Tags]       exclusive_access
+    [Setup]    Disable Template Show Reviewed    # This is EWB default state for this system property
+    ${experiment_name}=    Set Variable    AET-S001
+    ${template_id}=    rest_entity_service_resource.Create Template    ${project_id}    TestTemplate
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    TestExperimentFromTemplate    ${template_id}
+    # Checking expectations
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${sapi_entity_dto}=    Get Entity    ${experiment_id}    ${experiment_version_id}
+    Check Xml Element Value Contains    check experiment id value    ${sapi_entity_dto}    ${experiment_id}    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    [Teardown]
+
+Add entity from template with not existing template id
+    [Documentation]    
+    ...
+    ...    If the template entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    AET-S002
+    ${template_id}=    rest_entity_service_resource.Create Template    ${project_id}    TestTemplate
+    # missing template id
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    TestExperimentFromTemplate    WrongTemplateId    404
+
+Add entity from template with no CREATE permission
+    [Documentation]    
+    ...
+    ...    A client requires the CREATE_<ENTITY_TYPE> permission. The entity type is specified in the SAPIEntityDefinition passed in the request body. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    AET-S003
+    ${template_id}=    rest_entity_service_resource.Create Template    ${project_id}    TestTemplate
+    # no CREATE permission
+    Use User With Permissions    ${username}    ${password}    ${project_id}
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    TestExperimentFromTemplate    ${template_id}    403
+
+Add entity from template with no EDIT and OPEN permissions
+    [Documentation]    
+    ...
+    ...    A client requires the EDIT or OPEN_<TEMPLATE_CONTAINER_ENTITY_TYPE> permission if ‘templateId’ is specified. If it does not have them, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    AET-S004
+    ${template_id}=    rest_entity_service_resource.Create Template    ${project_id}    TestTemplate
+    # no CREATE permission
+    Use User With Permissions    ${username}    ${password}    ${project_id}
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    TestExperimentFromTemplate    ${template_id}    403
+
+Add entity from template with show reviewed templates setting enabled
+    [Documentation]    
+    ...
+    ...    If system setting “show reviewed templates” is enabled and the template entity does not have any signed entity, then the HTTP status code 400 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Template Show Reviewed
+    ${experiment_name}=    Set Variable    AET-S005
+    ${template_id}=    rest_entity_service_resource.Create Template    ${project_id}    TestTemplate
+    # missing template id
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    TestExperimentFromTemplate    ${template_id}    400
+    [Teardown]    Disable Template Show Reviewed    # This is EWB default state for this system property
+
+*** Keywords ***

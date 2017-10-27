@@ -1,0 +1,144 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/entities/{entityId}/filtered
+...
+...               This test verifies the new SAPI end point retrieval for the right number of children at selected parent entity using the page size for the first page and the last page
+...
+...               ${Child_Count} = \ number of children for the parent entity
+...
+...               ${entity_pagesize} = page size for paging set up at system setting
+Suite Setup       Create Entity Structure
+Suite Teardown    Delete Entity Structure
+Test Setup
+Test Teardown
+Force Tags        Get Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Tree Service/rest_entity_tree_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+
+*** Variables ***
+${total_no_of_children}    6    # the number of total children entities for the parent
+${entity_page_size}    5    # Sets the paging size (children on each page) on the system setting
+
+*** Test Cases ***
+Get Entities on First Page
+    [Documentation]    This test verifies the new SAPI end point retrieval for the right number of children at selected parent entity using the page size(first page)
+    ...
+    ...
+    ...    - Retrieves all the entities under group level
+    ...    - Retrieves all the entities under project level
+    ...    - Checks each record matches with the SAPI xml dto returned xml
+    [Setup]
+    Set Suite Variable    ${page_number}    1
+    #Below verifies entities on page 1 from index 0-index 4
+    Verify Entities    ${suite_group_id}    ${page_number}    ${entity_page_size}    0    ${entity_page_size}
+    #Below verifies records on page 1 from index 0-index 4 under the last entity with paged children
+    Verify Entities    ${suite_project_id}    ${page_number}    ${entity_page_size}    0    ${entity_page_size}
+    [Teardown]
+
+Get Entities on Last Page
+    [Documentation]    This test verifies the new SAPI end point retrieval for the right number of children at selected parent entity using the page Size (last page)
+    ...
+    ...
+    ...    - Retrieves all the entities under group level
+    ...    - Retrieves all the entities under project level
+    ...    - Checks each record matches with the SAPI xml dto returned xml
+    #Setting the endloop for the last page to the total number of created children for the parent.This runs the loop for those number of childrens
+    ${endloopcount}=    Set Variable    ${total_no_of_children}
+    #Evaluating the number of entities on next page to verify based on the entity_page_size
+    ${Child_Count}=    Evaluate    ${total_no_of_children}-${entity_page_size}
+    #Setting the startloopcount for the loop to start at the first entity on page 2. this will loop only the next page entities
+    ${startloopcount}=    Evaluate    ${entity_page_size}
+    Set Suite Variable    ${page_number}    2
+    Set Suite Variable    ${entity_page_size}    ${Child_Count}
+    #Below verifies entities on page 2 from index 5-index 6(total)
+    Verify Entities    ${suite_group_id}    ${page_number}    ${entity_page_size}    ${startloopcount}    ${endloopcount}
+    #Below verifies records on page 2 from index 5-index 6 under the last entity with paged children
+    Verify Entities    ${suite_project_id}    ${page_number}    ${entity_page_size}    ${startloopcount}    ${endloopcount}
+
+*** Keywords ***
+Create Entity Structure
+    [Documentation]    This test creates Group and Projects structure for paging
+    ...
+    ...
+    ...    A group with total number of projects are created for paging to test the SAPI end point retrieval for
+    ...    the right number of children at selected parent entity using the page Size
+    ...
+    ...
+    ...    Set Entity Paging Size - \ setting the page size to '5' to verify paging.
+    #Set Entity Paging Size
+    Set Entity Paging Size    ${entity_page_size}
+    #Create Entity Structure
+    ${time}=    Get Time    epoch
+    Set Suite Variable    ${group_name}    Automated Test Data Paging ${time}
+    ${group_id}=    EntityAPILibrary.Create Group    1    ${group_name}
+    Set Suite Variable    ${suite_group_id}    ${group_id}
+    #Creates 6 projects under the last group with 5 child entities on first page and 1 on last \ page
+    : FOR    ${index_project}    IN RANGE    ${total_no_of_children}    #number of iterative projects to be created
+    \    ${index_project}=    Evaluate    ${index_project}+1
+    \    Set Suite Variable    ${project_name}    Project ${index_project}
+    \    ${project_id}=    EntityAPILibrary.Create Project    ${group_id}    ${project_name}
+    \    Set Suite Variable    ${suite_project_id}    ${project_id}
+    #Creates 6 records under the last project. 5 child entities on first page and 1 on last page
+    : FOR    ${index_exp}    IN RANGE    ${total_no_of_children}
+    \    ${index_exp}=    Evaluate    ${index_exp}+1
+    \    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${suite_project_id}    Experiment ${index_exp}
+    \    EntityAPILibrary.Version Save    ${experiment_id}    Data Added
+
+Delete Entity Structure
+    [Documentation]    Delete the created entity structure at the end and reset the entity paging size to default
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${suite_group_id}    As Intended    Test Suite Completed
+    #Reset paging size to default
+    Reset Entity Paging Size to Default
+
+Set Entity Paging Size
+    [Arguments]    ${pageSize}
+    [Documentation]    This keywords is used to set the page size to '5' to verify paging.
+    Replace System Setting    EntityPagingSize    ${pageSize}    INTEGER
+
+Reset Entity Paging Size to Default
+    [Documentation]    Reset the paging size from 5 back to default
+    Delete System Setting    EntityPagingSize
+
+Verify Entities
+    [Arguments]    ${entity_id}    ${page_number}    ${entity_page_size}    ${start}    ${end}
+    [Documentation]    Verifies each entity for the entity count, entity IDs and entity names from the new entity end point dto xml retrieved
+    ...
+    ...    ${entity_id} - the relevant entity id to verify for paged children (group or project ids)
+    ...
+    ...    ${page_number} - the page number to retrieve the child entities (page1, page2)
+    ...
+    ...    ${entity_page_size} - the page size at that level (for this test, page1 has 5 entities and page 2 has 1)
+    ...
+    ...    ${start} - specifies the starting index for the loop to retrieve from specified pages.
+    ...    \ \ \ \ \ \ [ start from entity 1 on Page 1 , \ \ start from entity 6 on Page 2 ]
+    ...
+    ...
+    ...    ${end} - specifies the ending index for the loop to retrieve from specified pages.
+    ...    \ [ end at 5 (entity_page_size) on Page 1, \ end at total number of children on Page 2 ]
+    ${group_filtered_xml}=    Get Entity With Paged Children    ${entity_id}    ${page_number}
+    #sapi dto xml contains matching child entities at group level for set ${page_number}
+    Check Xml Element Count    Check returned number of children count matches on page    ${group_filtered_xml}    ${entity_page_size}    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    @{entity_ids}=    XMLLibrary.Get Element Value    ${group_filtered_xml}    http://entity.services.ewb.idbs.com    entityId
+    @{entity_names}=    XMLLibrary.Get Element Value    ${group_filtered_xml}    http://entity.services.ewb.idbs.com    entityName
+    #retrieve all the chilld entities on the entity to verify with the sapi dto
+    ${children}=    Get Child Entities    ${entity_id}
+    ${list_proj_id}=    Get Element Value From Xpath    ${children}    {http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityId
+    ${list_proj_names}=    Get Element Value From Xpath    ${children}    {http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityName
+    #Looping through n number of entities
+    : FOR    ${index}    IN RANGE    ${start}    ${end}
+    \    #verify the dto matches with the individual entity IDs and Names
+    \    ${temp_list_ids}=    Create List    @{entity_ids}
+    \    ${temp_list_names}=    Create List    @{entity_names}
+    \    ${each_entity_ID}=    Get From List    ${list_proj_id}    ${index}
+    \    ${each_entity_Name}=    Get From List    ${list_proj_names}    ${index}
+    \    Should Contain Match    ${temp_list_ids}    ${each_entity_ID}
+    \    Should Contain Match    ${temp_list_names}    ${each_entity_Name}

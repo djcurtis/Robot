@@ -1,0 +1,49 @@
+*** Settings ***
+Suite Setup       Setup standard suite
+Suite Teardown
+Resource          test utilities.txt
+Library           OperatingSystem
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          add_items_to_experiments.txt
+
+*** Test Cases ***
+PDF dropped file one page no rotations
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a dropped file that has not been rotated
+    [Tags]    EWB-WEB-PI002-W025-01
+    Do Dropped File Test    odd_page_format.pdf    ${TEST NAME}.zip
+
+PDF dropped file basic rotations
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a dropped file that has pages rotated
+    [Tags]    EWB-WEB-PI002-W025-02
+    Do Dropped File Test    default.pdf    ${TEST NAME}.zip
+
+PDF dropped file zoom and rotation
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a dropped file that has pages rotated and zoomed
+    ...    EWB-WEB-PI002-W025-03
+    Do Dropped File Test    default.pdf    ${TEST NAME}.zip
+
+Word no rotations
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a dropped file that has not been rotated
+    [Tags]    EWB-WEB-PI002-W025-04
+    Do Dropped File Test    word_2010.docx    ${TEST NAME}.zip
+
+Word rotations zooms landscape
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a dropped file that has been rotated, is zoomed and has pages in landscape format
+    [Tags]    EWB-WEB-PI002-W025-05
+    Do Dropped File Test    word_2010.docx    ${TEST NAME}.zip
+
+*** Keywords ***
+Do Dropped File Test
+    [Arguments]    ${item_file}    ${preview_file}
+    [Documentation]    Does the dropped file test, using by default the config file matching the test name, and the input file provided
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${print_conf_xml}=    Get File    ${input_folder}\\print publish configuration - dropped files.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    ${doc_entity_id}=    Add DOCUMENT (and Preview) To Experiment    ${experiment_id}    ${input_folder}\\${item_file}    ${input_folder}\\${preview_file}    application/pdf    FILE
+    ...    .pdf
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

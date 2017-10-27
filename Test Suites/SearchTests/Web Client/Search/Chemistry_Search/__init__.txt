@@ -1,0 +1,2 @@
+*** Settings ***
+Documentation     Folder suite to test chemistry search functionality, initially created for SH-1001 jira task

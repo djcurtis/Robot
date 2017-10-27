@@ -1,0 +1,52 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/summary* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          task_service_common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Resource          ../../../Libraries/E-WorkBook_Database/cdc_resource.txt
+Resource          ../../../Libraries/Core Web Services/Task_Service/task_service_resource.txt
+Library           XMLLibrary
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+
+*** Test Cases ***
+Check can get task subset summary
+    [Documentation]    A successful call returns the HTTP status 200
+    ${task}=    Create and Accept Task
+    #Sleep    70s
+    ${workflow tasks}=    Get Task Subset Summary    <?xml version="1.0" encoding="utf-8"?><taskFilterSequence xmlns="http://workflow.services.ewb.idbs.com"><taskFilter><viewAnyTasks>true</viewAnyTasks><includeAssignedSet>false</includeAssignedSet><includeSentSet>false</includeSentSet><includeResponsibleSet>true</includeResponsibleSet><propertyFilters><propertyFilter><property>Task type</property><name>Task type</name><constraints><stringConstraint><operation>IS</operation><stringValue>Review</stringValue></stringConstraint></constraints></propertyFilter><propertyFilter><property>Task status</property><name>Task status</name><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress</stringValue></stringConstraint></constraints><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress - Overdue</stringValue></stringConstraint></constraints></propertyFilter></propertyFilters></taskFilter></taskFilterSequence>
+    @{attribute}=    Get Element Attribute    ${workflow tasks}    summary    status    http://workflow.services.ewb.idbs.com
+    Should Be True    '@{attribute}[0]' == 'In-Progress' or '@{attribute}[0]' == 'In-Progress - Overdue'
+
+Check can get task subset summary with VIEW_ANY_TASK permission
+    [Documentation]    If the user has the VIEW_ANY_TASK permission then the HTTP status 200 is returned and all tasks are returned.
+    ${task}=    Create and Accept Task
+    #Sleep    70s
+    ${workflow tasks}=    Get Task Subset Summary    <?xml version="1.0" encoding="utf-8"?><taskFilterSequence xmlns="http://workflow.services.ewb.idbs.com"><taskFilter><viewAnyTasks>true</viewAnyTasks><includeAssignedSet>false</includeAssignedSet><includeSentSet>false</includeSentSet><includeResponsibleSet>true</includeResponsibleSet><propertyFilters><propertyFilter><property>Task type</property><name>Task type</name><constraints><stringConstraint><operation>IS</operation><stringValue>Review</stringValue></stringConstraint></constraints></propertyFilter><propertyFilter><property>Task status</property><name>Task status</name><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress</stringValue></stringConstraint></constraints><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress - Overdue</stringValue></stringConstraint></constraints></propertyFilter></propertyFilters></taskFilter></taskFilterSequence>
+    @{attribute}=    Get Element Attribute    ${workflow tasks}    summary    status    http://workflow.services.ewb.idbs.com
+    Should Be True    '@{attribute}[0]' == 'In-Progress' or '@{attribute}[0]' == 'In-Progress - Overdue'
+
+Check can get task subset summary as assigned user
+    [Documentation]    If the user does not have the VIEW_ANY_TASK permission then the HTTP status 200 is returned and only the tasks where the user is the requester, the responsible user or an assigned user.
+    ${task}=    Create and Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Sleep    70s
+    Comment    As WorkflowWSUser1 (no VIEW_ANY_TASK permission) try to retrieve Administrator tasks
+    ${workflow tasks}=    Get Task Subset Summary    <?xml version="1.0" encoding="utf-8"?><taskFilterSequence xmlns="http://workflow.services.ewb.idbs.com"><taskFilter><viewAnyTasks>true</viewAnyTasks><includeAssignedSet>false</includeAssignedSet><includeSentSet>false</includeSentSet><includeResponsibleSet>true</includeResponsibleSet><propertyFilters><propertyFilter><property>Actioning user</property><name>Actioning user</name><constraints><nameConstraint><operation>IS</operation><nameType>User type</nameType><stringValue>Administrator</stringValue></nameConstraint></constraints></propertyFilter><propertyFilter><property>Task type</property><name>Task type</name><constraints><stringConstraint><operation>IS</operation><stringValue>Review</stringValue></stringConstraint></constraints></propertyFilter><propertyFilter><property>Task status</property><name>Task status</name><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress</stringValue></stringConstraint></constraints><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress - Overdue</stringValue></stringConstraint></constraints></propertyFilter></propertyFilters></taskFilter></taskFilterSequence>
+    XMLLibrary.Check Xml Does Not Contain Element    Checks for element taskDetail    ${workflow tasks}    taskDetail
+
+Check cannot get task subset summary with invalid filter
+    [Documentation]    If the task filter is not supplied, not well formed or is invalid then the HTTP status code 400 is returned to the client.
+    ${workflow tasks}=    Get Task Subset Summary    <?xml version="1.0" encoding="utf-8"?><taskFilterSequence xmlns="http://workflow.services.ewb.idbs.com"></taskFilterSequence>    400
+
+Check get task subset summary does not fail with over 1000 results
+    [Documentation]    If any of the filters returns more than 1000 results then the HTTP status code 200 is returned to the client.
+    ${task}=    Create and Accept Task
+    #Sleep    70s
+    ${workflow tasks}=    Get Task Subset Summary    <?xml version="1.0" encoding="utf-8"?><taskFilterSequence xmlns="http://workflow.services.ewb.idbs.com"><taskFilter><viewAnyTasks>true</viewAnyTasks><includeAssignedSet>false</includeAssignedSet><includeSentSet>false</includeSentSet><includeResponsibleSet>true</includeResponsibleSet><propertyFilters><propertyFilter><property>Task type</property><name>Task type</name><constraints><stringConstraint><operation>IS</operation><stringValue>Review</stringValue></stringConstraint></constraints></propertyFilter><propertyFilter><property>Task status</property><name>Task status</name><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress</stringValue></stringConstraint></constraints><constraints><stringConstraint><operation>IS</operation><stringValue>In-Progress - Overdue</stringValue></stringConstraint></constraints></propertyFilter></propertyFilters></taskFilter></taskFilterSequence>
+    @{attribute}=    Get Element Attribute    ${workflow tasks}    summary    status    http://workflow.services.ewb.idbs.com
+    Should Be True    '@{attribute}[0]' == 'In-Progress' or '@{attribute}[0]' == 'In-Progress - Overdue'
+
+Check get task subset summary fails with missing filter properties
+    [Documentation]    If the filter properties includeAssignedSet, includeResponsibleSet and includeSentSet are all set to false then the HTTP status code 400 is returned to the client.
+    ${workflow tasks}=    Get Task Subset Summary    <?xml version="1.0" encoding="utf-8"?><taskFilterSequence xmlns="http://workflow.services.ewb.idbs.com"><taskFilter><viewAnyTasks>false</viewAnyTasks><includeAssignedSet>false</includeAssignedSet><includeSentSet>false</includeSentSet><includeResponsibleSet>false</includeResponsibleSet></taskFilter></taskFilterSequence>    400

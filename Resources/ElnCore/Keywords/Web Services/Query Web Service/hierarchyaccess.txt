@@ -1,0 +1,25 @@
+*** Settings ***
+Resource          query_resources.txt
+
+*** Keywords ***
+Query hierarchyAccess
+    [Arguments]    ${term path}    ${stringColumn}    ${numColumn}    ${molColumn}    ${Full User}    ${Full Access PW}
+    ...    ${User1}    ${User1 PW}    ${User2}    ${User2 PW}
+    ${SERVICES USERNAME}=    set variable    ${Full User}
+    ${SERVICES PASSWORD}=    set variable    ${Full Access PW}
+    # Basic Sanity Check to confirm all the query testdata is present. \ Run as user with system wide access
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path}    hAccess001    hAccess002    hAccess003    hAccess004    hAccess005
+    ...    hAccess006    hAccess007    hAccess008    hAccess009    hAccess010    hAccess011
+    #The following will run the same/similar queries, but logged in as different users with different access permissions.
+    ${SERVICES USERNAME}=    set variable    ${User1}
+    ${SERVICES PASSWORD}=    set variable    ${User1 PW}
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path}    hAccess001    hAccess002    hAccess005    hAccess006    hAccess007
+    ...    hAccess010
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${molColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1    hAccess001    hAccess005    hAccess006    hAccess010
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${molColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1 and ${numColumn} <=5    hAccess001    hAccess005
+    ${SERVICES USERNAME}=    set variable    ${User2}
+    ${SERVICES PASSWORD}=    set variable    ${User2 PW}
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path}    hAccess003    hAccess004    hAccess005    hAccess008    hAccess009
+    ...    hAccess010
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${molColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1    hAccess003    hAccess004    hAccess005    hAccess010
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${molColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1 and ${numColumn} >=5    hAccess005    hAccess010

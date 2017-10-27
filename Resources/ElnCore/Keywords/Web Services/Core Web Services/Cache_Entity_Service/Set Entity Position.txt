@@ -1,0 +1,116 @@
+*** Settings ***
+Documentation     It deletes an entity from the cache.
+...
+...               *end point:* POST /services/1.0/cache/entities/position/{positionIndex}
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Test Teardown
+Force Tags           Set Entity Position
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Set position
+    [Documentation]    A successful call returns the HTTP status 204. The entity position is set.
+    [Setup]
+    ${experiment_name}=    Set Variable    SEP-S001
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    @{web_link_ids}[0]
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Checking expectations
+    ${web_link_to_move_id}=    Set Variable    @{web_link_ids}[0]
+    Set Cache Entity Position    ${web_link_to_move_id}    ${web_link_version_id}    3
+    ${experiment_dto}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true
+    @{children_entities_dto}=    XMLLibrary.Get Element Xml    ${experiment_dto}    http://entity.services.ewb.idbs.com    entity
+    @{web_link_id}=    XMLLibrary.Get Element Value    @{children_entities_dto}[3]    http://entity.services.ewb.idbs.com    entityId
+    # gets the id of the web link that was moved to the bottom
+    Should Be Equal    @{web_link_id}[0]    ${web_link_to_move_id}
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set position with invalid entity version id
+    [Documentation]    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SEP-S002
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    @{web_link_ids}[0]
+    ${web_link_to_move_id}=    Set Variable    @{web_link_ids}[0]
+    # Worng version id
+    Set Cache Entity Position    ${web_link_to_move_id}    WrongVersionId    3    404
+    # Missing version id
+    Set Cache Entity Position    ${web_link_to_move_id}    ${EMPTY}    3    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set position with invalid index
+    [Documentation]    If the call parameter ‘positionIndex’ is missing or invalid (e.g. a negative value), then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SEP-S003
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    @{web_link_ids}[0]
+    ${web_link_to_move_id}=    Set Variable    @{web_link_ids}[0]
+    # Worng entity id
+    Set Cache Entity Position    ${web_link_to_move_id}    ${web_link_version_id}    -1    400
+    # Missing entity id
+    Set Cache Entity Position    ${web_link_to_move_id}    ${web_link_version_id}    5    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set position with not existing entity
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SEP-S004
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    @{web_link_ids}[0]
+    ${web_link_to_move_id}=    Set Variable    @{web_link_ids}[0]
+    # Worng entity id
+    Set Cache Entity Position    WrongEntityId    ${web_link_version_id}    3    404
+    # Missing entity id
+    Set Cache Entity Position    ${EMPTY}    ${web_link_version_id}    3    404
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set position with no lock
+    [Documentation]    If the container entity is not locked by the request user, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SEP-S005
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    Save As Draft Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${web_link_version_id}=    Get Entity Version ID    @{web_link_ids}[0]
+    ${web_link_to_move_id}=    Set Variable    @{web_link_ids}[0]
+    # Unlocked experiment
+    Set Cache Entity Position    ${web_link_to_move_id}    ${web_link_version_id}    3    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set position with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Setup]
+    ${experiment_name}=    Set Variable    SEP-S006
+    @{web_link_ids}=    Create Experiment And Add 4 Web Links    ${experiment_name}
+    ${web_link_version_id}=    Get Entity Version ID    @{web_link_ids}[0]
+    ${web_link_to_move_id}=    Set Variable    @{web_link_ids}[0]
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # Unlocked experiment
+    Set Cache Entity Position    ${web_link_to_move_id}    ${web_link_version_id}    3    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+*** Keywords ***

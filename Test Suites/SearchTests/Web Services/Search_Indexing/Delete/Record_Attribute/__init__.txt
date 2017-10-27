@@ -1,0 +1,2 @@
+*** Settings ***
+Documentation     Created for story SH-1302

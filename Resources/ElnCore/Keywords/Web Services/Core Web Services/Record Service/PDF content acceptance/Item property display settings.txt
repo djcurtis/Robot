@@ -1,0 +1,50 @@
+*** Settings ***
+Documentation     This set of tests looks at the Webclients ability to PDF and experiement when using custom Item Properties Display settings and showing selection of properties at the different configurable locations within a PDF
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup standard test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Library           OperatingSystem
+
+*** Variables ***
+
+*** Test Cases ***
+Properties appear on the top right
+    [Documentation]    Test ensures that
+    ...    - The 'Display Item Properties' and 'Include Properties' for items options are configured in the desktop client are honoured in the web client PDF
+    ...    - The content of the generated PDF is correct
+    [Tags]    EWB-WEB-PI002-W014-01
+    ${item_properties_config_xml}=    Get File    ${input_folder}\\item display properties - several top right.xml
+    Replace Entity Config    ${experiment_id}    DISPLAY_ITEM_ATTRIBUTES    ${item_properties_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Properties appear on the top left
+    [Documentation]    Test ensures that
+    ...    - The 'Display Item Properties' and 'Include Properties' for items options are configured in the desktop client are honoured in the web client PDF
+    ...    - The content of the generated PDF is correct
+    [Tags]    EWB-WEB-PI002-W014-02
+    ${item_properties_config_xml}=    Get File    ${input_folder}\\item display properties - several top left.xml
+    Replace Entity Config    ${experiment_id}    DISPLAY_ITEM_ATTRIBUTES    ${item_properties_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Properties appear on the bottom right
+    [Documentation]    Test ensures that
+    ...    - The 'Display Item Properties' and 'Include Properties' for items options are configured in the desktop client are honoured in the web client PDF
+    ...    - The content of the generated PDF is correct
+    [Tags]    EWB-WEB-PI002-W014-03
+    ${item_properties_config_xml}=    Get File    ${input_folder}\\item display properties - several bottom right.xml
+    Replace Entity Config    ${experiment_id}    DISPLAY_ITEM_ATTRIBUTES    ${item_properties_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Properties appear on the bottom left
+    [Documentation]    Test ensures that
+    ...    - The 'Display Item Properties' and 'Include Properties' for items options are configured in the desktop client are honoured in the web client PDF
+    ...    - The content of the generated PDF is correct
+    [Tags]    EWB-WEB-PI002-W014-04
+    ${item_properties_config_xml}=    Get File    ${input_folder}\\item display properties - several bottom left.xml
+    Replace Entity Config    ${experiment_id}    DISPLAY_ITEM_ATTRIBUTES    ${item_properties_config_xml}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

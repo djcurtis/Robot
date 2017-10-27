@@ -1,0 +1,92 @@
+*** Settings ***
+Documentation     Cancel MarvinJS Button Verification
+...               verify cancel button on MarvinJS screen and prepreview screen
+...
+...               created for SH-1001 jira task
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     Go To EWB Home
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/marvin_js.txt
+Resource          ../../../../Resources/UI/Search_Page/chemistry_search_prepreview.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Library           DateTime
+Library           EntityAPILibrary
+Library           IDBSSelenium2Library
+Library           OperatingSystem
+Library           OracleLibrary
+
+*** Test Cases ***
+Verify MarvinJS Cancel Button Does Not Save Search
+    [Documentation]    Verify MarvinJS Cancel Button Does Not Save Search
+    ...    - Open MarvinJS
+    ...    - Create Molecule and click Cancel
+    ...    - Back To MarvinJS, verify canvas is blank
+    [Tags]    SRCH-CHEM
+    Select Search By Option    Chemistry
+    Open MarvinJS From Search Screen
+    Perform Chemistry Search By One Ring    Exact search    Benzene
+    Click MarvinJS Cancel Button
+    Open MarvinJS From Search Screen
+    Verify Empty MarvinJS Canvas
+
+Verify Prepreview Window Сancel Button
+    [Documentation]    Verify Prepreview Window Cancel Button
+    ...    - Open MarvinJS, create molecule to search for and click Search
+    ...    - Click Cancel Button on prepreview screen
+    ...    - Verify MarvinJS in not empty
+    [Tags]    SRCH-CHEM    BROWSER_REGRESSION
+    Select Search By Option    Chemistry
+    Open MarvinJS From Search Screen
+    Execute Chemistry Search By One Ring    Exact search    Benzene
+    Click Prepreview Cancel Button
+    Verify Not Empty MarvinJS Canvas
+
+*** Keywords ***
+setup
+    [Documentation]    Setup For 'Chemistry search' suite
+    ...
+    ...    - Create 'Chemistry Items' group
+    ...    - Create \ 'Project 1' project with experiment 'Expt - Molecule' with 2 chemistry items inside
+    ...    - Create 'Template - Molecule and Reaction' template from 'Project 1' \ with reaction and molecule inside
+    ...    - it seturs suite variable for project ID, reaction \ and 3 molecules chemaxon IDs
+    ${currentDate}=    Get Current Date
+    ${methylnaphthaleneData}=    Get File    ${CURDIR}/Test Data/Methylnaphthalene (SH-520).txt
+    ${benzeneData}=    Get File    ${CURDIR}/Test Data/Benzene.txt
+    ${iodonaphthaleneReactionData}=    Get File    ${CURDIR}/Test Data/Iodonaphthalene reaction (SH-520).txt
+    ${methylnaphthaleneDataTemplate}=    Get File    ${CURDIR}/Test Data/Methylnaphthalene (SH-520).txt
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    Project 1
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Expt - Molecule    Started
+    ${methylnaphthaleneChem}=    EntityAPILibrary.Create Chemistry item    ${experimentId}
+    EntityAPILibrary.Edit Chemistry Item    ${methylnaphthaleneChem}    ${experimentId}    ${methylnaphthaleneData}
+    ${benzeneChem}=    EntityAPILibrary.Create Chemistry item    ${experimentId}
+    EntityAPILibrary.Edit Chemistry Item    ${benzeneChem}    ${experimentId}    ${benzeneData}
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    ${templateId}=    EntityAPILibrary.Create Template    ${projectId}    Template - Molecule and Reaction    Planned
+    ${iodonaphthaleneReactionChem}=    EntityAPILibrary.Create Chemistry item    ${templateId}
+    EntityAPILibrary.Edit Chemistry Item    ${iodonaphthaleneReactionChem}    ${templateId}    ${iodonaphthaleneReactionData}
+    ${methylnaphthaleneChemTemplate}=    EntityAPILibrary.Create Chemistry item    ${templateId}
+    EntityAPILibrary.Edit Chemistry Item    ${methylnaphthaleneChemTemplate}    ${templateId}    ${methylnaphthaleneDataTemplate}
+    EntityAPILibrary.Version Save    ${templateId}    Data Added
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${methylnaphthaleneIdList}=    Query    select distinct CHEMAXON_MOLECULE_ID from LATEST_ENTITY_VERSION_MOLECULE where ENTITY_ID in ('${methylnaphthaleneChemTemplate}', '${methylnaphthaleneChem}')
+    ${iodonaphthaleneReactionIdList}=    Query    select distinct CHEMAXON_REACTION_ID from LATEST_ENTITY_VERSION_REACTION where ENTITY_ID in ('${iodonaphthaleneReactionChem}')
+    ${benzeneIdList}=    Query    select distinct CHEMAXON_MOLECULE_ID from LATEST_ENTITY_VERSION_MOLECULE where ENTITY_ID in ('${benzeneChem}')
+    ${methylnaphthaleneId}=    set variable    ${methylnaphthaleneIdList[0][0]}
+    ${iodonaphthaleneReactionId}=    set variable    ${iodonaphthaleneReactionIdList[0][0]}
+    ${benzeneId}=    set variable    ${benzeneIdList[0][0]}
+    Set suite Variable    ${methylnaphthaleneId}
+    Set suite Variable    ${iodonaphthaleneReactionId}
+    Set suite Variable    ${benzeneId}
+    Login to EWB
+
+teardown
+    [Documentation]    Teardown for 'Chemistry Search' suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    close browser

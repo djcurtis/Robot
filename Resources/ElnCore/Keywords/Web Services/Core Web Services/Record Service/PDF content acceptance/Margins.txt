@@ -1,0 +1,255 @@
+*** Settings ***
+Documentation     Covers all user stories relating to explicitly setting the PDF margins
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup simple test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+
+*** Variables ***
+
+*** Test Cases ***
+portrait A3 margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in portrait orientation with a default page configuration and margins at 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-01
+    Set Page Config    5    5    1    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A4 margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in portrait orientation with a default page configuration and margins at 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-02
+    Set Page Config    5    5    1    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A5 margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in portrait orientation with a default page configuration and margins at 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-03
+    Set Page Config    5    5    1    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait Letter margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in portrait orientation with a default page configuration and margins at 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-04
+    Set Page Config    5    5    1    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait Executive margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in portrait orientation with a default page configuration and margins at 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-05
+    Set Page Config    5    5    1    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A3 margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in portrait orientation with a default page configuration and margins at 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-06
+    Set Page Config    30    30    1    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A4 margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in portrait orientation with a default page configuration and margins at 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-07
+    Set Page Config    30    30    1    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A5 margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in portrait orientation with a default page configuration and margins at 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-08
+    Set Page Config    30    30    1    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait Letter margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in portrait orientation with a default page configuration and margins at 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-09
+    Set Page Config    30    30    1    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait Executive margin 30 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in portrait orientation with a default page configuration and margins at 30 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-10
+    Set Page Config    30    25    1    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A3 margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in portrait orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-11
+    Set Page Config    10    25    1    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A4 margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in portrait orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-12
+    Set Page Config    10    25    1    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait A5 margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in portrait orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-13
+    Set Page Config    10    25    1    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait Letter margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in portrait orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-14
+    Set Page Config    10    25    1    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+portrait Executive margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in portrait orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-15
+    Set Page Config    10    25    1    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A3 margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in landscape orientation with a default page configuration and margins at 5 and 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-16
+    Set Page Config    5    5    0    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A4 margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in landscape orientation with a default page configuration and margins at 5 and 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-17
+    Set Page Config    5    5    0    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A5 margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in landscape orientation with a default page configuration and margins at 5 and 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-18
+    Set Page Config    5    5    0    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Letter margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in landscape orientation with a default page configuration and margins at 5 and 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-19
+    Set Page Config    5    5    0    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Executive margin 5 5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in landscape orientation with a default page configuration and margins at 5 and 5 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-20
+    Set Page Config    5    5    0    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A3 margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in landscape orientation with a default page configuration and margins at 30 and 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-21
+    Set Page Config    30    30    0    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A4 margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in landscape orientation with a default page configuration and margins at 30 and 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-22
+    Set Page Config    30    30    0    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A5 margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in landscape orientation with a default page configuration and margins at 30 and 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-23
+    Set Page Config    30    30    0    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Letter margin 30 30
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in landscape orientation with a default page configuration and margins at 30 and 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-24
+    Set Page Config    30    30    0    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Executive margin 30 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in landscape orientation with a default page configuration and margins at 30 and 30 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-25
+    Set Page Config    30    25    0    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A3 margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in landscape orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-26
+    Set Page Config    10    25    0    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A4 margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in landscape orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-27
+    Set Page Config    10    25    0    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A5 margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in landscape orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-28
+    Set Page Config    10    25    0    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Letter margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in landscape orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-29
+    Set Page Config    10    25    0    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Executive margin 10 25
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in landscape orientation with a default page configuration and margins at 10 and 25 points
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W008-30
+    Set Page Config    10    25    0    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***

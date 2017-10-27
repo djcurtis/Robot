@@ -1,0 +1,34 @@
+*** Settings ***
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags        Tier_2_critical_spreadsheet_tests    Web Service
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../Cache_Entity_Service/cache_entity_service_suite_keywords.txt
+Library           TestDataGenerationLibrary
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+
+*** Test Cases ***
+Add Spreadsheet (connect)
+    [Documentation]    A successful call returns the HTTP status 200 and the newly added entity id. The entity is added
+    [Setup]
+    ${base_folder}=    set variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${data_file_location}=    Set Variable    ${base_folder}\\spreadsheet2.ewbss
+    ${data_zip_location}=    Set Variable    ${base_folder}\\spreadsheet2.zip
+    ${experiment_name}=    Set Variable    AEN-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    ${doc_entity_id}=    Add SPREADSHEET_DOCUMENT (and Preview) With File Data    ${experiment_id}    ${data_file_location}    ${data_zip_location}    application/x-idbs-web-spreadsheet    IDBS_SPREADSHEET
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${document_version_id}    Get Entity Version ID    ${doc_entity_id}
+    ${entity_data}=    Get Entity Data    ${doc_entity_id}    ${document_version_id}    200
+    ${data_encoded}=    Base64 Encode String    ${entity_data}
+    ${experiment_name2}=    Set Variable    AEN-S007
+    ${experiment_id2}=    Create Experiment    ${project_id}    ${experiment_name2}
+    Lock Entity    ${experiment_id2}
+    ${doc_entity_id}=    Add SPREADSHEET_DOCUMENT (and Tidy)    ${experiment_id2}    ${data_file_location}    ${data_encoded}    application/x-idbs-web-spreadsheet    IDBS_SPREADSHEET
+    # Checking expectations
+    Commit Versioned Entity    ${experiment_id2}
+    Unlock Entity    ${experiment_id2}
+    [Teardown]

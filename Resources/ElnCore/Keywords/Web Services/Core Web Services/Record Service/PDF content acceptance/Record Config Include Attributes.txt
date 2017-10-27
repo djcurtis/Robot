@@ -1,0 +1,21 @@
+*** Settings ***
+Documentation     *Will not work as yet*
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup standard test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+
+*** Variables ***
+
+*** Test Cases ***
+default experiment, experiment attributes on
+    [Documentation]    This is to test that the record atributes are added to the end of the record PDF. We have not implemented this functionality yet.
+    [Tags]    EWB-WEB-PI002-W015-01
+    Comment    include experiment attributes
+    ${print_conf_xml}=    Load Print Config - Basic Options Record Level    true    true    true
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    Comment    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

@@ -1,0 +1,106 @@
+*** Settings ***
+Library           IDBSSelenium2Library
+Resource          general_resource.txt
+Resource          system_resource.txt
+Resource          properties_resource.txt
+
+*** Variables ***
+${restore record button}    ewb-record-action-bar-restore-record
+${menu version history button}    ewb-view-version-history-command
+${restore documents button}    ewb-record-action-bar-restore-documents
+${select document prefix}    document-header-
+${select document suffix}    -customWidget-selection
+${exit restore view button}    ewb-record-action-bar-restore-cancel
+
+*** Keywords ***
+Version History Navigator Go Back
+    Robust Click    ${exit restore view button}
+
+Version History Navigator Click Version
+    [Arguments]    ${version number}
+    [Documentation]    Clicks on a tree item with the given version number
+    Robust Click    xpath=//div[@data-version='${version number}']
+    Comment    Wait Until Keyword Succeeds    20s    1s    Check Version Number Value    ${version number}
+
+Version History Restore Active Version
+    [Documentation]    Clicks the Restore button on the active version of a record, and verifies the page switches to the restored version
+    Robust Click    ${restore record button}
+    Comment    Wait Until Page Contains    Restoring a previous version will remove any signatures    30s
+    : FOR    ${INDEX}    IN RANGE    2    #infrequently the system does not click the button in a timely manner or clicks it while the screen is still loading which prevents the dialog appearing at all, the FOR loop will try and reclick the button if it hasn't loaded fully.
+    \    ${status}=    Run Keyword and Ignore Error    Wait Until Page Contains    Restoring a previous version will remove any signatures    5s
+    \    Run Keyword If    ${status}!=('PASS', None)    Run Keyword and Ignore Error    Robust Click    ${restore record button}
+    \    Run Keyword If    ${status}==('PASS', None)    Exit For Loop
+    Click OK
+
+Version History Restore Selected Documents
+    [Documentation]    Clicks the Restore button on the active version of a record, and verifies the page switches to the restored version
+    Robust Click    ${restore documents button}
+    Page Should Contain    Restoring a previous version will remove any signatures
+    Robust Click    okButton
+
+Version History Navigator Contains Version
+    [Arguments]    ${version number}
+    Wait Until Element Is Visible    xpath=//div[@data-version='${version number}']    30s
+
+Open Version History Dialog
+    [Arguments]    ${Record_Name}
+    [Documentation]    Opens the version history dialog for a record identified by *${Record_Name}* via the navigator tree.
+    ...
+    ...    This keyword can only be used if the entity to open the dialog for is already visible in the navigator nree
+    ...
+    ...    *${Record_Name}* = The display name of the record in the navigator tree
+    Open Navigator Tool Menu    ${Record_Name}
+    Robust Click    ${menu version history button}
+    Wait Until Page Contains    Version History for ${Record_Name}    15 s
+
+Expand Historical Record
+    [Arguments]    ${Version_Number}
+    [Documentation]    In the record history view this keyword expands in the navigator tree the version of the record identified by *${Version_Number}*
+    ...
+    ...    *${Version_Number}* = The version number of the historical record you wish to expand.
+    Robust Click    xpath=//div[contains(@data-version,'${Version_Number}')]/table/tbody/tr/td/img
+
+Version Contains Item
+    [Arguments]    ${Record_Version}    ${Item_Type}    ${Item_Version}
+    [Documentation]    Ensures that an expanded historical version identified by *${Record_Version}* has an item with the item type *${Item_Type}* with the version number *${Item_Version}* in the navigator panel of the history view.
+    ...
+    ...    _This keyword is only of use if the historical version has been expanded first, use the *Expand Historical Record* keyword prior to using this keyword_
+    ...
+    ...    *${Record_Version}* = The version number of the record
+    ...    *${Item_Type}* = The item type of th eitem as displayed in the record, e.g.: Abstract, Web Link, Custom, etc.
+    ...    *${Item_Version}* = An integer number that matches the version number of the item
+    Wait Until Page Contains Element    xpath=//div[contains(@data-version,'${Record_version}')]//div[contains(@class,'gwt-Hyperlink ewb-entity-treenode-text')]/a[contains(text(),"(v. ${Item_Version}) ${Item_Type}: ")]
+
+Version Contains File
+    [Arguments]    ${Record_Version}    ${Item_Type}    ${Item_Version}    ${File_Name}
+    [Documentation]    Ensures that an expanded historical version identified by *${Record_Version}* has a file with the item type *${Item_Type}* with the version number *${Item_Version}* and the file name *${File_Name}* in the navigator panel of the history view.
+    ...
+    ...    _This keyword is only of use if the historical version has been expanded first, use the *Expand Historical Record* keyword prior to using this keyword_
+    ...
+    ...    *${Record_Version}* = The version number of the record
+    ...    *${Item_Type}* = The item type of th eitem as displayed in the record, e.g.: Abstract, Web Link, Custom, etc.
+    ...    *${Item_Version}* = An integer number that matches the version number of the item
+    ...    *${File_Name}* = The name of the file tha has been uploaded, e.g.: Word.docx
+    Page Should Contain Element    //div[contains(@data-version,'${Record_version}')]//div[contains(@class,'gwt-Hyperlink ewb-entity-treenode-text')]/a[text()="(v. ${Item_Version}) ${Item_Type}: ${File_Name}"]
+
+Select Historical Version
+    [Arguments]    ${Version}
+    [Documentation]    Clicks on the version in the View History dialog in the left hand navigator tree identified by *${Version}*
+    ...
+    ...    *${Version}* = The version number you wish to select
+    Robust Click    xpath=//div[contains(@data-version,'${Version}')]/table/tbody/tr/td[2]/div
+
+Select Document Version
+    [Arguments]    ${Index}
+    [Documentation]    Clicks on the document header in the record view identified by *${Index}*
+    ...
+    ...    *${Index}* = The document index you wish to select
+    Robust Click    ${select document prefix}${Index}${select document suffix}
+
+Click Version History Record Menu
+    Robust Click    xpath=//div[@id='application-header-toolButton']/img
+    Robust Click    ${menu version history button}
+    Wait Until Page Contains    Version History for    15 s
+
+Exit Version History View
+    Robust Click    ${exit restore view button}

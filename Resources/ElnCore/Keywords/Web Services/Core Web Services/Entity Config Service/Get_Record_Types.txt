@@ -1,0 +1,19 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/recordtypes
+Suite Setup
+Force Tags        Entity Config Service
+Library           Collections
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Library           XMLLibrary
+
+*** Test Cases ***
+Can get a list of record type names
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityTypeNameSequence
+    ${xml_response}=    Get Record Type Names
+    Check Xml Contains Element    check entityTypeName element exists    ${xml_response}    entityTypeName    elementNamespace=http://entity.services.ewb.idbs.com
+    ${list}=    Get Element Value From Xpath    ${xml_response}    {http://entity.services.ewb.idbs.com}entityTypeName
+    List Should Contain Value    ${list}    REPORT
+    List Should Contain Value    ${list}    EXPERIMENT
+    List Should Contain Value    ${list}    LOOKUP_SOURCE

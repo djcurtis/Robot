@@ -1,0 +1,30 @@
+*** Settings ***
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Library           IDBSHttpLibrary
+# Library           EntityAPILibrary
+
+*** Test Cases ***
+Check Can Use Template
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPITemplateValidationResponse
+    Comment    Create Template
+    ${template_id}=    EntityAPILibrary.Create Template    ${project_id}    CUT-S001
+    Lock Entity    ${template_id}
+    Add Web Link Entity    ${template_id}    http://www.google.com
+    Add Web Link Entity    ${template_id}    http://www.idbs.com
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    Log    validating template useage...    INFO
+    ${target_project_id}=    Create Project    ${group_id}    Target Project
+    ${response}=    Can Use Template    ${target_project_id}    ${template_id}    EXPERIMENT
+    ${json}=    Parse Json    ${response}
+    ${value}=    Get Json Value    ${response}    /value
+    Should Be Equal    ${value}    true
+    ${value}=    Get Json Value    ${response}    /status
+    Should Be Equal    ${value}    "SUCCESS"

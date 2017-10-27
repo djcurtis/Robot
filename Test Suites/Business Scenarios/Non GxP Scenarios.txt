@@ -1,0 +1,502 @@
+*** Settings ***
+Documentation     *Suite Description*
+...
+...               A test suite covering the business scenarios functionalities.
+...
+...               *Preconditions*
+...
+...               None - the suite sets up the required entity data prior to running the suite
+Suite Setup       Suite Setup
+Suite Teardown    Suite Teardown
+Test Setup
+Test Teardown
+Force Tags        WEEKLY    Web Client
+Default Tags
+Resource          ../../Resources/E-Workbook/Keywords/Web Client/Selenium/general_resource.txt
+Resource          ../../Resources/E-Workbook/Keywords/Common/common_resource.txt
+Library           IDBSSelenium2Library
+# Library           EntityAPILibrary
+Library           OracleLibrary
+Resource          ../../Resources/E-Workbook/Keywords/Web Client/Selenium/hierarchy_resource.txt
+Resource          ../../Resources/E-Workbook/Keywords/Web Client/Selenium/properties_resource.txt
+Resource          ../../Resources/E-Workbook/Keywords/Web Client/Selenium/record_resource.txt
+Resource          ../../Resources/E-Workbook/Keywords/Web Client/Selenium/task_view_resources.txt
+Resource          ../../Resources/E-Workbook/Keywords/Web Client/Selenium/display_pages.txt
+
+*** Variables ***
+${USER1}          USER010    # User used to add template and set up workflow
+${USER1_PASSWD}    USER0101    # user 1 password
+${USER2}          USER011    # User used to review and sign off
+${USER2_PASSWD}    USER0111    # user 2 password
+
+*** Test Cases ***
+Scenario 1
+    [Documentation]    *Scenario 1* \ - Non GXP Business Scenarios
+    ...
+    ...    This test covers a basic stickerbook use case based on non-GXP customers.
+    ...
+    ...    Workflow Configuration - Parallel
+    ...
+    ...    Reference: https://confluence.idbs.co.uk/display/PD/Non+GXP+Business+Scenario+1
+    [Tags]
+    [Setup]
+    #Login to web client
+    Open Browser To Login Page
+    Log In Via Login Dialog    ${USER1}    ${USER1_PASSWD}    #Used workflow actioner credentials
+    #Navigate to group and project done by interacting with the UI
+    Click Navigator Link    ${group_name}
+    Click Navigator Link    ${project_name}
+    Wait Five Seconds
+    Title Should Be    IDBS E-WorkBook - ${project_name}
+    #Create Template and Add Content
+    Set Suite Variable    ${template_name}    Template_1
+    Create Entity    Template    ${template_name}    ${Setup_Project}    CONTENT HEADER
+    Insert Placeholder items    SPREADSHEET    All Files (*.*)    0    #Inserting Placeholder items to Template
+    Insert Placeholder items    IMAGE    All Files (*.*)    1
+    Insert Placeholder items    FILE    Excel Worksheet (*.xls/.xlsx)    2
+    ${textitem_IntroID}=    Add Text Item
+    Stop Text Editor Edit Session    3    ${textitem_IntroID}
+    ${textitem_ConclsnID}=    Add Text Item
+    Stop Text Editor Edit Session    4    ${textitem_ConclsnID}
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    GXP TEST
+    #Creating experiment & inserting experiment keyword study
+    Create Experiment with Keywords    ${template_name}    ${experiment_name_1}
+    Wait Until Element Is Visible    ewb-insert-record-item-button
+    Add Files to Placeholder Item    0    ewb-create-file-item    ${CURDIR}../../../../Test Data/Web Client/Spreadsheet Files/    Insert File    sample.bss
+    Add Files to Placeholder Item    1    ewb-create-image-item    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/    Insert Image    PNGFile.PNG
+    Add Files to Placeholder Item    2    ewb-create-file-item    ${CURDIR}../../../../Test Data/Web Client/Display Page Test Data/Office Documents/2003/    Insert File    2003 2 sheets.xls
+    Insert IMAGE into Text item    3    ${CURDIR}../../../../Test Data/Web Client/Record Editing/200px-Pirate-ship.svg.png
+    Insert IMAGE into Text item    4    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/WebClientImageAnnotationsTestImage.jpg
+    #Insert PDF file
+    Add File Item    Other    ${CURDIR}../../../../Test Data/Web Client/Display Page Test Data/PDF/three page document.pdf    File
+    #Display pages for items
+    Display Pages    2
+    Display Pages    5
+    Robust Click    ewb-record-action-bar    #Used to click on 'Save As (ewb-record-action-bar)' to get focus to the version save menu item.
+    Robust Click    ewb-editor-command-version-save-record
+    #Used 'Click OK' and 'Authenticate Session' keyword to handle the active reforms message appearing during save
+    Click OK
+    Authenticate Session    ${USER1}    ${USER1_PASSWD}
+    ${experiment_id}=    Get Entity ID From Name    ${experiment_name_1}
+    Assign Tasks to Users    ${WORKFLOW_NAME_1}    ${experiment_id}
+    Parallel Workflow
+    Check Record Locked    ${experiment_id}
+    [Teardown]
+
+Scenario 2
+    [Documentation]    *Scenario 2* \ - Non GXP Business Scenarios
+    ...
+    ...    This test covers a basic stickerbook use case based on non-GXP customers.
+    ...
+    ...    Workflow Configuration - Sequential
+    ...
+    ...    Reference : https://confluence.idbs.co.uk/display/PD/Non+GXP+Business+Scenario+2
+    [Setup]
+    #Login to web client
+    Open Browser To Login Page
+    Log In Via Login Dialog    ${USER1}    ${USER1_PASSWD}    #Used workflow actioner credentials
+    Click Navigator Link    ${group_name}    #Navigate to group and project by interacting with the UI
+    Click Navigator Link    ${project_name}
+    Wait Five Seconds
+    Title Should Be    IDBS E-WorkBook - ${project_name}
+    Set Suite Variable    ${template_name}    Template_2
+    #Create Template and Add Content
+    ${template_Id}=    Create Entity    Template    ${template_name}    ${Setup_Project}    CONTENT HEADER
+    Insert Placeholder items    SPREADSHEET    All Files (*.*)    0    #Inserting Placeholder items to Template
+    Insert Placeholder items    IMAGE    All Files (*.*)    1
+    Insert Placeholder items    FILE    Word Document (*.doc/*.docx)    2
+    ${textitem_IntroID}=    Add Text Item
+    Stop Text Editor Edit Session    3    ${textitem_IntroID}
+    ${textitem_ConclsnID}=    Add Text Item
+    Stop Text Editor Edit Session    4    ${textitem_ConclsnID}
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 1 GXP TEST 2
+    #Creating experiment & inserting experiment keyword study
+    Create Experiment with Keywords    ${template_name}    ${experiment_name_2}
+    Add Files to Placeholder Item    0    ewb-create-file-item    ${CURDIR}../../../../Test Data/Web Client/Search Test Data/Spreadsheets/    Insert File    Chart Context Settings Test.bss
+    Add Files to Placeholder Item    1    ewb-create-image-item    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/    Insert Image    WebClientImageAnnotationsTestImage.jpg
+    Add Files to Placeholder Item    2    ewb-create-file-item    ${CURDIR}../../../../Test Data/Web Client/Search Test Data/Office Docs/    Insert File    2007 2 pages.docx
+    Display Pages    2
+    Wait Until Element Is Visible    ewb-insert-record-item-button
+    Insert IMAGE into Text item    3    ${CURDIR}../../../../Test Data/Web Client/Record Editing/200px-Pirate-ship.svg.png
+    Open Record Editing Header Tool Menu
+    Robust Click    ${version save record}
+    Click OK
+    Authenticate Session    ${USER1}    ${USER1_PASSWD}
+    Insert Image Item    BMP    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/BMPFile.BMP    BMPFile    BMP_IMAGE
+    Draft Save Record
+    Insert IMAGE into Text item    4    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/WebClientImageAnnotationsTestImage.jpg
+    Add File Item    PPT    ${CURDIR}../../../../Test Data/Web Client/Search Test Data/Office Docs/2003 multi slides.ppt    Powerpoint Document
+    Display Pages    6
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 5 GXP TEST 2
+    Insert IMAGE into Text item    3    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/GIFFile.gif
+    Insert IMAGE into Text item    4    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/GIFFile.gif
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 5 GXP TEST 2
+    ${experiment_id}=    Get Entity ID From Name    ${experiment_name_2}
+    Assign Tasks to Users    ${WORKFLOW_NAME_2}    ${experiment_id}
+    Sequential Workflow
+    Check Record Locked    ${experiment_id}
+
+Scenario 3
+    [Documentation]    *Scenario 3* \ - Non GXP Business Scenarios
+    ...
+    ...    This test covers a basic stickerbook use case based on non-GXP customers.
+    ...
+    ...    Workflow Configuration - Parallel
+    ...
+    ...    Reference : https://confluence.idbs.co.uk/display/PD/Non+GXP+Business+Scenario+3
+    #Login to web client
+    Open Browser To Login Page
+    Log In Via Login Dialog    ${USER1}    ${USER1_PASSWD}    #Used workflow actioner credentials
+    Click Navigator Link    ${group_name}    #Navigate to group and project by interacting with the UI
+    Click Navigator Link    ${project_name}
+    Wait Five Seconds
+    Title Should Be    IDBS E-WorkBook - ${project_name}
+    Set Suite Variable    ${template_name}    Template_3
+    #Create Template and Add Content
+    ${template_Id}=    Create Entity    Template    ${template_name}    ${Setup_Project}    CONTENT HEADER
+    ${textitem_IntroID}=    Add Text Item
+    Stop Text Editor Edit Session    0    ${textitem_IntroID}
+    Insert Placeholder items    SPREADSHEET    All Files (*.*)    1    #Inserting Placeholder items to Template
+    Insert Placeholder items    IMAGE    All Files (*.*)    2
+    Insert Placeholder items    FILE    Adobe PDF Files (*.pdf)    3
+    Comment    ${textitem_ConclsnID}=    Add Text Item
+    Comment    Stop Text Editor Edit Session    4    ${textitem_ConclsnID}
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 1 GXP TEST 2
+    #Creating experiment & inserting experiment keyword study
+    Create Experiment with Keywords    ${template_name}    ${experiment_name_3}
+    ${experiment_id}=    Get Entity ID From Name    ${experiment_name_3}
+    Insert IMAGE into Text item    0    ${CURDIR}../../../../Test Data/Web Client/Record Editing/200px-Pirate-ship.svg.png
+    Wait Until Element Is Visible    ewb-insert-record-item-button
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 2 GXP TEST 2
+    Add Files to Placeholder Item    1    ewb-create-file-item    ${CURDIR}../../../../Test Data/Web Client/Search Test Data/Spreadsheets/    Insert File    Chart Context Settings Test.bss
+    Add Files to Placeholder Item    2    ewb-create-image-item    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/    Insert Image    TIFFile.tif
+    Add Files to Placeholder Item    3    ewb-create-file-item    ${CURDIR}../../../../Test Data/Web Client/Display Page Test Data/PDF/    Insert File    three page document.pdf
+    Open Record Editing Header Tool Menu
+    Robust Click    ${version save record}
+    Click OK
+    Authenticate Session    ${USER1}    ${USER1_PASSWD}
+    Comment    Insert IMAGE into Text item    4    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/WebClientImageAnnotationsTestImage.jpg
+    Add File Item    BMP    ${CURDIR}../../../../Test Data/Web Client/Image Annotations/JPGFile.jpg    JPGFile
+    Add File Item    Excel    ${CURDIR}../../../../Test Data/Web Client/Display Page Test Data/Office Documents/2010/Excel 2010 - 10 sheets mix pages.xlsx    Excel Document
+    Draft Save Record
+    Comment    Display 1 Page from 1 Sheet    5    ${experiment_id}
+    Comment    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 5 GXP TEST 2
+    Add File Item    Excel    ${CURDIR}../../../../Test Data/Thick Client/Sync Tool/Prism 1300.pzf    Prism File
+    Version Save Record    ${USER1}    ${USER1_PASSWD}    Data Added    Version Save 5 GXP TEST 2
+    Robust Click    ewb-record-workflows
+    Robust Click    ewb-entity-command-publish
+    Assign Tasks to Users    ${WORKFLOW_NAME_3}    ${experiment_id}
+    Sequential Workflow
+    Check Record Locked    ${experiment_id}
+
+*** Keywords ***
+Insert IMAGE into Text item
+    [Arguments]    ${Doc_no}    ${img_path}
+    [Documentation]    *Insert IMAGE into Text item*
+    ...    \ \ \ \ \ \ \ \ \ - Insert image into the text items in the record
+    ...
+    ...
+    ...    Arguments:
+    ...
+    ...    ${Doc_no}: The header document number to add files
+    ...
+    ...    ${img_Path}: The path to the image to be inserted
+    Wait Until Document Present    ${Doc_no}
+    Robust Click    xpath=//div[@class="ewb-document-container-header"]/table/tbody/tr/td/div[@class="ewb-document-header-expander-hot-zone"]/img[@id="document-header-${Doc_no}-expanderButton"]
+    Click Edit Document Button    ${Doc_no}
+    Comment    Wait Until Element Is Visible    //*[@id="document-header-${Doc_no}-customWidget"]//*[@title="Apply Changes"]
+    ${image_path}=    Normalize Path    ${img_path}
+    File Should Exist    ${image_path}
+    Robust Click    xpath=//img[contains(@alt, 'Upload Local Images')]    image
+    ${insert_iframe}=    Set Variable    xpath=.//*/iframe[contains(@id, 'mce')]
+    Select Frame    ${insert_iframe}
+    Choose File    xpath=.//*/input[@id='file']    ${image_path}
+    sleep    10s    allow remote machine a chance to process
+    robust click    xpath=.//*/input[@id='insert']
+    Unselect Frame
+    # nightly runs can sometimes not click the insert button for an unknown reason. This check let's us fail early and helps to identify this situation
+    Wait Until Page Does Not Contain Element    ${insert_iframe}
+    Apply Inline Edit    ${Doc_no}
+    Draft Save Record
+    #Ensure the text item contains the inserted IMAGE
+    Check Text Item Contains An IMAGE    ${Doc_no}
+
+Add Files to Placeholder Item
+    [Arguments]    ${DocNumber}    ${InsertMenu}    ${FilePath}    ${titleVal}    ${FileName}
+    [Documentation]    *Adds the Placeholder items to the experiment*
+    ...
+    ...    1. Spreadsheet Placeholder
+    ...
+    ...    2. Image Placeholder
+    ...
+    ...    3. File Placeholder
+    ...
+    ...    Arguments:
+    ...
+    ...    ${DocNumber}: The header document number to add files
+    ...    ${InsertMenu}: The document header menu item id to be selected (varies for file types)
+    ...    ${titleVal}:Title of the insert pop up dialog to identify (varies for file types)
+    ...    ${FilePath}: The path to the file to be inserted
+    ...    ${FileName}: Exact file name
+    Scroll Element Into View    xpath=//div[@id='document-body-${DocNumber}-panel']
+    Open Document Header Tool Menu    ${DocNumber}
+    Robust Click    ${InsertMenu}
+    Dialog Should Be Present    ${titleVal}
+    #Remove class attribute - makes the actual input field visible - required for WebDriver
+    Execute Javascript    window.document.getElementById('ewb-web-file-input').removeAttribute('class');
+    Wait Five Seconds
+    ${file_path}=    Join Path    ${FilePath}${FileName}
+    Choose File    ewb-web-file-input    ${file_path}
+    Click OK
+    sleep    2s    #required for the placeholder item to refresh else test fails
+
+Create GxP Users
+    [Documentation]    *Create GxP Users*
+    ...
+    ...    Create users for the workflow process - Authenticate, Review and Sign-Off
+    Create User And Don't Fail If It Exists    USER010    USER0101    GxP Actioner    szareen@idbs.com    Testing
+    Assign User System Role    USER010    ALL_SYSTEM_PERMISSIONS
+    Assign User Entity Role    USER010    ALL_ENTITY_PERMISSIONS    1
+    Create User And Don't Fail If It Exists    USER011    USER0111    GxP Reviewer    szareen@idbs.com    Testing
+    Assign User System Role    USER011    ALL_SYSTEM_PERMISSIONS
+    Assign User Entity Role    USER011    ALL_ENTITY_PERMISSIONS    1
+
+Suite Setup
+    [Documentation]    *Suite Setup*
+    ...
+    ...    covers below scenarios
+    ...
+    ...    1. Adds the new Non GxP workflows to be used as part of the test runs
+    ...
+    ...    2. Creates users to be used for workflow authentication, review and sign off
+    ...
+    ...    3. Creates group and project
+    Set Suite Variable    ${experiment_name_1}    NonGxP_Exp1
+    Set Suite Variable    ${experiment_name_2}    NonGxP_Exp2
+    Set Suite Variable    ${experiment_name_3}    NonGxP_Exp3
+    Set Suite Variable    ${WORKFLOW_NAME_1}    Non GxP Workflow 1
+    Set Suite Variable    ${WORKFLOW_NAME_2}    Non GxP Workflow 2
+    Set Suite Variable    ${WORKFLOW_NAME_3}    Non GxP Workflow 3
+    #Add Non GxP Workflow
+    Task View Add Workflow Configurations
+    #Create the required users for workflow action, review and sign off
+    Create GxP Users
+    #Creating Group and Project
+    Set Suite Variable    ${group_name}    NonGxP_GROUP
+    Set Suite Variable    ${project_name}    NonGxP_PROJECT
+    ${Setup_Group}=    EntityAPILibrary.Create Group    1    ${group_name}
+    ${Setup_Project}=    EntityAPILibrary.Create Project    ${Setup_Group}    ${project_name}
+    Set Suite Variable    ${Setup_Group}
+    Set Suite Variable    ${Setup_Project}
+
+Parallel Workflow
+    [Documentation]    *Parallel Workflow*
+    ...
+    ...    \ - Author signs off the record
+    ...    - Witness reviews and signs off
+    ...    - Published PDF created on completion of tasks
+    #Author signs off the record
+    Sign All    ${USER1}    ${USER1_PASSWD}
+    Logout of Application
+    #Witness reviews and signs off
+    Log In Via Login Dialog    ${USER2}    ${USER2_PASSWD}
+    Robust Click    app-header-link-tasks-badge
+    Robust Click    ewb-tasks-standard-filter-new
+    Robust Click    xpath=//div[@id="ewb-tasks-list"]//div[@class="task-workflow-list-view-panel"]
+    Robust Click    ewb-tasks-sign-off-button
+    Sleep    0.5s
+    Click Sign All Button
+    Authenticate Session    ${USER2}    ${USER2_PASSWD}
+    Click OK
+
+Suite Teardown
+    [Documentation]    *Suite Teardown*
+    ...
+    ...    Deletes group and closes all open browsers
+    EntityAPILibrary.Delete Entity    ${Setup_Group}    As Intended    Test Comment
+    Close All Browsers
+
+Insert Placeholder items
+    [Arguments]    ${ItemType}    ${SubType}    ${Doc_Number}
+    [Documentation]    *Insert Placeholder items* \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ - \ \ Insert placeholder items to the template
+    ...
+    ...
+    ...    Arguments:
+    ...
+    ...    ${ItemType}: Placeholder Item Type
+    ...
+    ...    ${SubType} : Placeholder Sub Type
+    ...
+    ...    ${Doc_Number} : The document number to be inserted
+    ...
+    ...
+    ...    Example:
+    ...    ${ItemType}: SPREADSHEET/IMAGE/FILE
+    ...    ${SubType} : All Files (*.*)/Excel Worksheet (*.xls/.xlsx)
+    Wait Until Element Is Visible    ewb-insert-record-item-button
+    Open Insert Menu
+    Robust Click    ewb-create-placeholder-item
+    Robust Click    xpath=//div[@id="document-body-${Doc_Number}-panel"]//table/tbody/tr/td/select[@id="ewb-placeholder-data-type"]/option[@value="${ItemType}"]
+    Robust Click    xpath=//option[@value="${ItemType}"]
+    Robust Click    xpath=//div[@id="document-body-${Doc_Number}-panel"]//table/tbody/tr/td/select[@id="ewb-placeholder-file-type"]/option[@value="${SubType}"]
+    Robust Click    xpath=//option[@value="${SubType}"]
+    sleep    2s
+    Robust Click    xpath=//table[@id="document-header-${Doc_Number}-customWidget"]/tbody/tr/td/a[@title="Apply Changes"]
+
+Display Pages
+    [Arguments]    ${document_no}
+    [Documentation]    *Display Pages*
+    ...
+    ...    Display Pages of the document selected and draft save record
+    ...
+    ...
+    ...    Argument:
+    ...
+    ...    ${document_no} : document to select to display pages
+    Scroll Element Into View    xpath=//div[@id='document-body-${document_no}-panel']
+    Wait Until Document Present    ${document_no}
+    Open Document Header Tool Menu    ${document_no}
+    Robust Click    ewb-editor-command-edit-selected-previews
+    Robust Click    display-pages-select-all-button
+    Robust Click    okButton
+    Draft Save Record
+
+Create Experiment with Keywords
+    [Arguments]    ${template_name}    ${experiment_name}
+    [Documentation]    *Create Experiment with Keywords*
+    ...
+    ...    - Create experiment from template and Add keyword of study into creation dialog
+    ...
+    ...
+    ...
+    ...    Arguments:
+    ...
+    ...    ${template_name} : the template to choose for creating experiment
+    ...
+    ...    ${experiment_name} : exact experiment name to create. this is later used in the test
+    Go To Entity    ${Setup_Project}
+    Robust Click    xpath=//*[contains(@class,"ewb-new-entity-panel")]
+    Select Template Type in New Entity Dialog    Experiment
+    Dialog Should Be Present    Find Template
+    Expand Navigator Node    Root
+    Expand Navigator Node    ${group_name}
+    Expand Navigator Node    ${project_name}
+    Click Navigator Node    ${project_name}
+    Click Navigator Node    ${template_name}
+    Click OK
+    Robust Click    xpath=//input[@id="ewb-attribute-editor-title-input"]
+    Input Text No Clear    xpath=//input[@id="ewb-attribute-editor-title-input"]    ${experiment_name}
+    Robust Click    xpath=//*[@id="ewb-attribute-editor-keywords"]
+    Input Text No Clear    ewb-attribute-editor-keywords    Study
+    Robust Click    save-properties
+    Robust Click    ewb-record-action-bar
+    Robust Click    ewb-editor-command-close-record
+
+Check Text Item Contains An IMAGE
+    [Arguments]    ${experiment item index}
+    [Documentation]    *Checks that there is a text item in the experiment that contains an(any) image*
+    ...
+    ...    Argument:
+    ...    ${experiment item index} = Index of the item in the experiment you wish to check (so 0 for the first item, 1 for the secong & so-on)
+    Select Frame    xpath=.//*/div[@id='document-body-${experiment item index}-panel']//*/iframe[contains(@src, 'textitems/content')]
+    Element Should Be Visible    xpath=.//*/img[contains(@src, 'preview?entityVersionId')]
+    Unselect Frame
+
+Assign Tasks to Users
+    [Arguments]    ${workflow_name}    ${ExpID}
+    [Documentation]    *Assign Tasks to Users*
+    ...
+    ...    Selects the relevant workflows and assigns the tasks to actioner and reviewer
+    ...
+    ...    Arguments:
+    ...
+    ...    ${workflow_name}: exact workflow name to initiate for the record
+    ...
+    ...    ${ExpID}: Experiment ID to be used to configure workflow
+    #Workflow Authorise,Review and Sign off task
+    #Send tasks associated with workflow
+    Workflow Creation Select Create
+    Workflow Creation Step One Click Select    ${workflow_name}
+    Workflow Creation Type User Or Group    0    ${USER1}
+    Wait Until Page Contains Element    xpath=//span[text()='USER010 (USER010 Test PDFpermissions)']    30s
+    Workflow Creation Check User Suggestion Count    1
+    Robust Click    xpath=//span[text()='USER010 (USER010 Test PDFpermissions)']
+    Click away from Property Panel
+    Wait Until Keyword Succeeds    30s    0.1s    Workflow Creation Check User Suggestion Count    0
+    Workflow Creation Type User Or Group    1    ${USER2}
+    Wait Until Page Contains Element    xpath=//span[text()='USER011 (USER011 Test PDFpermissions)']    30s
+    Workflow Creation Check User Suggestion Count    1
+    Robust Click    xpath=//span[text()='USER011 (USER011 Test PDFpermissions)']
+    Click away from Property Panel
+    Wait Until Keyword Succeeds    30s    0.1s    Workflow Creation Check User Suggestion Count    0
+    Robust Click    ewb-workflows-creation-step-two-create
+    Sleep    0.5s
+    Click OK
+
+Sequential Workflow
+    [Documentation]    *Sequential Workflow*
+    ...
+    ...    \ - Author signs off the PDF immediately after sending off the workflow and completes the task
+    ...    - \ Witness reviews and signs off the PDF
+    #Author signs off the record
+    Wait Until Page Contains Element    ewb-web-sign-review-pdf-download
+    Robust Click    ewb-web-sign-review-pdf-download
+    Robust Click    okButton
+    Authenticate Session    ${USER1}    ${USER1_PASSWD}
+    Logout of Application
+    #Witness reviews and signs off
+    Log In Via Login Dialog    ${USER2}    ${USER2_PASSWD}
+    #fixed for test failures to open task view in robust way
+    Click E-WorkBook Header Link
+    Go To    ${WEB_CLIENT_HTTP_SCHEME}://${SERVER}:${WEB_CLIENT_PORT}/EWorkbookWebApp/#task/showTasks
+    Robust Click    app-header-link-tasks-label
+    Wait For Task View
+    Reload Page
+    Robust Click    ewb-tasks-standard-filter-new
+    Robust Click    xpath=//div[@id="ewb-tasks-list"]//div[@class="task-workflow-list-view-panel"]
+    Robust Click    ewb-tasks-sign-off-button
+    Sleep    0.5s
+    Wait Until Page Contains Element    ewb-web-sign-review-pdf-path
+    Robust Click    ewb-web-sign-review-pdf-download
+    Click OK
+    Authenticate Session    ${USER2}    ${USER2_PASSWD}
+
+Check Record Locked
+    [Arguments]    ${ExpID}
+    [Documentation]    *Check Record Locked*
+    ...
+    ...    verifies the record selected is locked by trying to insert items using insert button and checks lock message is seen
+    ...
+    ...
+    ...    Argument:
+    ...
+    ...    ${ExpID}: record id to verify is locked
+    Robust Click    ewb-tasks-update-button
+    Robust Click    navigator-link-label
+    Click Navigator Link    NonGxP_GROUP
+    Click Navigator Link    NonGxP_PROJECT
+    Wait Five Seconds
+    Go To Entity    ${ExpID}
+    #Check Entity is locked
+    Robust Click    ewb-insert-record-item-button
+    Click OK
+    Logout of Application
+
+Display 1 Page from 1 Sheet
+    [Arguments]    ${document_no}    ${experiment_id}
+    Scroll Element Into View    xpath=//div[@id='document-body-${document_no}-panel']
+    Wait Until Document Present    ${document_no}
+    Open Document Header Tool Menu    ${document_no}
+    Robust Click    ewb-editor-command-edit-selected-previews
+    #Get excel document details to select
+    ${excel_entiy_id}=    Get Entity ID From Name    Excel 2010 - 10 sheets mix pages.xlsx
+    ${excel_sheet_name_to_select}=    Set Variable    sheet3-10pages
+    Comment    The delay is needed to ensure that Select Pages panel is fully loaded before checking its content
+    Sleep    5
+    #Select the exact sheet with multiple pages
+    Click Element    ${excel_entiy_id}${sheet_expand_tag}${excel_sheet_name_to_select}
+    #Select Single page from multiple pages
+    Select Single Page    ${excel_entiy_id}    11
+    ${ret_val}=    Is Single Page Selected    ${excel_entiy_id}    11
+    Should Be True    '${ret_val}'=='True'
+    Click OK

@@ -1,0 +1,434 @@
+*** Settings ***
+Library           IDBSSwingLibrary
+Resource          ../common_spreadsheet_keywords.txt
+Resource          ../../Web Client/Selenium/quantrix_web_resource.txt
+Library           WMILibrary
+Library           LabelPrintingLibrary/
+Library           IDBSSelenium2Library
+Library           OracleLibrary
+Library           OperatingSystem
+Resource          ../../Web Client/Selenium/general_resource.txt
+Library           SSHLibrary
+Resource          ../../Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Library           QuantrixLibrary
+
+*** Variables ***
+${ENTITY_PREFIX}    LabelPrinting
+${experiment_id}    Label Printing
+${experiment_url}    https://${SERVER}:8443/EWorkbookWebApp/
+${label_print_dir}    C:\\LabelPrintAutomationFolder
+${config_order_key}    ${EMPTY}
+${label_file_extension}    labelprintautomationfile
+${label_remote_password}    ${SPREADSHEET_SERVER_ADMIN_PASSWORD}
+${label_remote_username}    ${SPREADSHEET_SERVER_ADMIN_USER}
+${remote_label_print_dir}    C:\\LabelPrintAutomationFolder
+${label_remote_os}    ${SPREADSHEET_SERVER_OS}
+
+*** Keywords ***
+Create Label Printing Directory
+    [Documentation]    Creates a Label Printing Directory on a remote spreadsheet server. Designed to work with either Unix or Windows.
+    Run Keyword If    '${label_remote_os}'=='Windows'    Create Label Printing Directory Windows
+    Run Keyword If    '${label_remote_os}'!='Windows'    Create Label Printing Directory Mac
+
+Delete Label Printing Directory
+    [Documentation]    Deletes the given label printing directory ${folder_name} on the given ${s_server} machine. Logs into the machine using ${username} and ${password} as credentials.
+    Run Keyword If    '${label_remote_os}'!='Windows'    Delete Label Printing Directory Mac
+    Run Keyword IF    '${label_remote_os}'=='Windows'    Delete Label Printing Directory Windows
+
+Open Label Printing Panel
+    [Documentation]    Opens the label printing panel.
+    Select From Designer Menu    Tools|Print Labels
+
+Add First Label Printing Configuration
+    [Arguments]    ${configuration_name}    ${driver_name}    ${number_of_fields}    ${data_table_name}=Table1
+    [Documentation]    Adds the first label printing configuration to a spreadsheet in spreadsheet designer. If a configuration exists, this keyword will overwrite the first configuration in the configurations list.
+    ...
+    ...    Arguments:
+    ...    - ${configuration_name} - This is what the configuration will be renamed to
+    ...    - ${driver_name} - The label printing driver that will be selected
+    ...    - ${number_of_fields} \ - Number of fields the label printing driver has - this is used to create and map any extra columns.
+    ...    - ${data_table_name}=Table1 - The name of the table that the fields will be mapped to - if you don't change any table names manually then leave it as default.
+    ...
+    ...    The keyword works as follows:
+    ...    - Waits for the configuration list to be visible
+    ...    - Selects the first option on the configuration list (with no other configurations, this will be add new)
+    ...    - Sets the name, driver and field mappings.
+    ...
+    ...    Note that the fields will be mapped in the following fashion. The first field will be mapped to the first column, the second field will be mapped to the second column, etc.
+    ...
+    ...    Example use:
+    ...
+    ...    Add First Label Printing Configuration \ \ \ | My Configuration \ \ \ | My Label Printing Driver \ \ \ | 2 \ \ \ | My Data Table
+    Wait Until Keyword Succeeds    10s    500ms    Component Should Be Visible    ConfigurationsListPanel.ConfigListTable
+    Click on Table Cell    ConfigurationsListPanel.ConfigListTable    0    0
+    Name Label Printing Configuration    ${configuration_name}
+    Select Label Driver    ${driver_name}
+    Expand Data Table    ${data_table_name}    ${number_of_fields}
+    Map Multiple Label Printing Fields    ${number_of_fields}
+
+Name Label Printing Configuration
+    [Arguments]    ${name}
+    [Documentation]    Names an open label printing configuration ${name}
+    Wait Until Keyword Succeeds    20s    2s    Component Should Be Visible    LabelPrintingEditConfigurationUI.configName
+    Clear Textfield    LabelPrintingEditConfigurationUI.configName
+    Type to Component    LabelPrintingEditConfigurationUI.configName    ${name}
+    Verify Configuration Has Saved    LabelPrintingEditConfigurationUI.configName    ${name}
+
+Select Label Driver
+    [Arguments]    ${driver_name}
+    [Documentation]    In Spreadsheet Designer, selects the Label Printing Driver called ${driver_name} for an open configuration.
+    Select From Combo Box    LabelPrintingEditConfigurationUI.driver.comboBox    ${driver_name}
+    Verify Configuration Combobox Has Saved    LabelPrintingEditConfigurationUI.driver.comboBox    ${driver_name}
+
+Map Label Printing Field
+    [Arguments]    ${column_index}=0    ${total_columns}=1
+    [Documentation]    Maps a single label printing field to the column at ${column_index}
+    ...
+    ...    If used in a for loop, the user can pass an additional argument for ${total_columns} to be mapped (defaults to 1).
+    Select First Cell in Matrix    Table1
+    Sleep    100ms
+    Send Keyboard Event    VK_UP
+    Sleep    100ms
+    Repeat Keyword    ${column_index}    Send Keyboard Event    VK_RIGHT
+    Log    Pressing button: LabelPrintingEditConfigurationUI.mapRange.button.${column_index}
+    Push Button    LabelPrintingEditConfigurationUI.mapRange.button.${column_index}
+    ${data_item_name}=    QuantrixLibrary.Get Category Item Name By Index    Table1    Data    ${column_index}
+    Verify Configuration has Saved    LabelPrintingEditConfigurationUI.dataRangeAddress.${column_index}    Table1::${data_item_name}
+
+Map Multiple Label Printing Fields
+    [Arguments]    ${total_columns}
+    [Documentation]    A for loop that maps as many label printing fields as ${total_columns}.
+    : FOR    ${index}    IN RANGE    ${total_columns}
+    \    Map Label Printing Field    ${index}    ${total_columns}
+
+Expand Data Table
+    [Arguments]    ${data_table_name}    ${number_of_fields}    ${number_of_rows}=3
+    [Documentation]    Expands the data table ${data_table_name} to accomodate the ${number_of_fields} (columns) and ${number_of_rows}.
+    #Rows
+    Select First Cell in Matrix    ${data_table_name}
+    Send Keyboard Event    VK_LEFT
+    Sleep    100ms
+    ${length}=    Evaluate    (int(${number_of_rows})-1)
+    : FOR    ${index}    IN RANGE    ${length}
+    \    Send Keyboard Event    VK_ENTER
+    \    Sleep    100ms
+    #Columns
+    Select First Cell in Matrix    ${data_table_name}
+    ${length}=    Evaluate    (int(${number_of_fields})-1)
+    Send Keyboard Event    VK_UP
+    Sleep    100ms
+    : FOR    ${index}    IN RANGE    ${length}
+    \    Send Keyboard Event    VK_ENTER
+    \    Sleep    100ms
+
+Populate the Data Table
+    [Arguments]    ${table_name}    ${entries}    ${fields}
+    [Documentation]    A monster of logic. In spreadsheet designer, uses nested FOR loops to fill the data table with entry#field#. Really quite clever.
+    ...
+    ...    Arguments:
+    ...    ${table_name} The data table name where the label data resides
+    ...    ${entries} The number of rows in the table to be filled with data
+    ...    ${fields} The number of columns in the table to be filled with data.
+    Select First Cell In Matrix    ${table_name}
+    ${repetitions}    Evaluate    int(${fields})-1
+    : FOR    ${index}    IN RANGE    ${entries}
+    \    Populate the Data Table 1a    ${index}    ${table_name}    ${fields}    ${entries}
+    \    Send Keyboard Event    VK_DOWN
+    \    Sleep    200ms
+    \    Repeat Keyword    ${repetitions}    Send Keyboard Event    VK_LEFT
+
+Populate the Data Table 1a
+    [Arguments]    ${entry_number}    ${table_name}    ${fields}    ${number_of_entries}
+    [Documentation]    The nested FOR loop for populating the data table. Notable for it's logic that will press the UP key when necessary to return to the right line after ENTER is pushed, but NOT doing this on the last line.
+    ...
+    ...    Arguments:
+    ...    ${entry_number} - The row index to be filled
+    ...    ${table_name} - The data table name
+    ...    ${fields} - The total number of data fields (columns)
+    ...    ${number_of_entries} - The total number of entries (rows) in the loop.
+    ${last_line}=    Evaluate    int(${number_of_entries})-1
+    : FOR    ${index}    IN RANGE    ${fields}
+    \    Set Current Cell Value    ${table_name}    entry${entry_number}field${index}
+    \    Run Keyword IF    ${entry_number} != ${last_line}    Send Keyboard Event    VK_UP
+    \    Sleep    200ms
+    \    Send Keyboard Event    VK_RIGHT
+    \    Sleep    200ms
+
+Add Label Printing Driver to Database
+    [Arguments]    ${driver_name}    ${config_order_key}    ${fields}=<fields><field>Lab</field><field>Volume</field></fields>    ${bartender_script}=<useCommanderScript>false</useCommanderScript>
+    [Documentation]    Inserts a Label printing configuration to the EWB database using a SQL command.
+    ...
+    ...    Required arguments:
+    ...    - ${driver_name} - What you want to name the driver
+    ...    - ${config_order_key} - Must be unique for each Label Printing Driver. Recommend starting at 50 and incrementing by 1 for each inserted driver.
+    ...    - ${fields} - The xml value for fields. Will default to <fields><field>Lab</field><field>Volume</field></fields>, which will create two fields called Lab and Volume respectively.
+    ...    - ${bartender_script} - If you want to use bartender script in your driver, type it in here. Defaults to not using bartender script. You will need to enter the use commander script tags as follows: '<useCommanderScript>true</useCommanderScript><commanderScrpt>[your script goes here]</commanderScrpt>'
+    Connect to Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    ${DB_SERVER}    ${ORACLE_SID}
+    Execute    INSERT INTO ${DB_PREFIX}_EWB_CORE.SYSTEM_SETTINGS (SETTINGS_NAME, ORDER_KEY, DATA_TYPE, STRING_DATA) VALUES ('Print Label Configuration/LabelNames', ${config_order_key}, 'STRING', '<?xml version="1.0" encoding="UTF-8" standalone="no"?><Label name="${driver_name}" type="BarTenderCommander">${fields}<writeHeader>false</writeHeader><filesuffix>${label_file_extension}</filesuffix><delimiter>;</delimiter><datalocation>${label_print_dir}</datalocation>${bartender_script}</Label>')
+    Execute    COMMIT
+    Disconnect From Database
+
+Remove Label Printing Driver From Database
+    [Arguments]    ${config_order_key}
+    [Documentation]    Uses the OracleLibrary to connect to the EWB database and DELETE the label printing driver with the order key of ${config_order_key}.
+    Connect to Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    ${DB_SERVER}    ${ORACLE_SID}
+    Execute    DELETE FROM ${DB_PREFIX}_EWB_CORE.SYSTEM_SETTINGS WHERE SETTINGS_NAME='Print Label Configuration/LabelNames' AND ORDER_KEY=${config_order_key}
+    Execute    COMMIT
+    Disconnect From Database
+
+Get Label Printing Output File
+    [Arguments]    ${new_name}=output_file
+    [Documentation]    Using the sensational LabelPrintingLibrary, grabs the file in the label printing output folder and renames it to whatever the user wants (defined in the argument ${new_name}=output_file). This is necessary since all label printing output files are given unique names on creation.
+    ${output_file}=    Join Path    ${label_print_dir}    *.${label_file_extension}
+    ${new_file}=    Join Path    ${label_print_dir}    ${new_name}
+    Rename Unknown File    ${output_file}    ${new_file}
+    [Return]    ${new_file}
+
+Close Label Printing Panel
+    [Documentation]    Closes an open label printing panel in spreadsheet designer. If a configuration is open it will close it first.
+    Run Keyword and Ignore Error    Push Button    LabelPrintingPanel.ConfigDetails.cancel.button
+    Select From Designer Menu    Tools|Print Labels
+
+Check Tokens Are Present
+    [Arguments]    @{tokens}
+    [Documentation]    Simple for loop to iterate through a list of tokens and check they are present in designer.
+    ...
+    ...    Takes a list of @{tokens}
+    ...
+    ...    Example use:
+    ...
+    ...    Check Tokens Are Present | token_identifier_1 | token_identifier_2 | token_identifier_3 | ...
+    : FOR    ${token}    IN    @{tokens}
+    \    Wait Until Keyword Succeeds    10s    1s    Component Should be Visible    ${token}
+
+Validate Combobox Value
+    [Arguments]    ${identifier}    ${expected}
+    [Documentation]    In Spreadsheet Designer, checks that a combobox has a given value.
+    ...
+    ...    Arguments:
+    ...    - ${identifier} - The identifier for the combobox
+    ...    - ${expected} - The expected selected value
+    ${validation}=    Get Selected Item From Combo Box    ${identifier}
+    Should Be Equal    ${validation}    ${expected}
+
+Type to Token Text Field
+    [Arguments]    ${locator}    ${text}
+    [Documentation]    In Spreadsheet Designer, types to a Token Text Field. Deletes any existing data within the field first.
+    ...
+    ...    Arguments:
+    ...    - ${locator} The locator for the field
+    ...    - ${text} The text to be typed
+    Click on Component    ${locator}    3
+    Send Keyboard Event    VK_DELETE    #Delete any existing data
+    Type to Component    ${locator}    ${text}
+
+Verify Configuration Has Saved
+    [Arguments]    ${changed_text_field}    ${value}
+    [Documentation]    In spreadsheet designer, verifies that a changed text field in an open label printing configuration has saved
+    ...
+    ...    Arguments:
+    ...    - ${changed_text_field} - The locator for the changed text field being verified
+    ...    - ${value} - The expected value to be verified
+    Push Button    LabelPrintingPanel.ConfigDetails.cancel.button
+    Wait Until Keyword Succeeds    10    500ms    Click on Table Cell    ConfigurationsListPanel.ConfigListTable    0    0
+    Sleep    200ms
+    ${validation}=    Get Text Field Value    ${changed_text_field}
+    Should Be Equal    ${validation}    ${value}
+
+Verify Configuration Combobox Has Saved
+    [Arguments]    ${changed_combobox_locator}    ${value}
+    [Documentation]    In spreadsheet Designer, verifys that a combobox value in a label printing configuration has saved.
+    ...
+    ...    Arguments:
+    ...    - ${changed_combobox_locator} - The locator for the combobox being verified.
+    ...    - ${value} - The expected value to be verified
+    Push Button    LabelPrintingPanel.ConfigDetails.cancel.button
+    Wait Until Keyword Succeeds    10    500ms    Click on Table Cell    ConfigurationsListPanel.ConfigListTable    0    0
+    Sleep    200ms
+    ${validation}=    Get Selected Item From Combo Box    ${changed_combobox_locator}
+    Should Be Equal    ${validation}    ${value}
+
+Open Label Printing Panel Web
+    [Documentation]    In the web spreadsheet editor, opens the label printing panel.
+    Select Drawer Tab    2
+    Robust Click    xpath=//*[@class="chevron-link-item labelprinting"]
+
+Get Label Printing Output File Web
+    [Arguments]    ${new_name}
+    [Documentation]    Using the exceptional LabelPrintingLibrary, finds the label printing output file in the relevant directory on a remote machine, renames it, copies it over to the local machine and returns the path to the local file.
+    ...
+    ...    Arguments:
+    ...
+    ...    - ${s_server} - The spreadsheet server where the output file resides.
+    ...    - ${username} - The OS login user for the spreadsheet server
+    ...    - ${password} - The OS login password for the spreadsheet server
+    ...    - ${new_name}- The string to which the output file will be renamed (output_file by default)
+    Run Keyword If    '${label_remote_os}'!='Windows'    Get Label Printing Output File Web Mac    ${new_name}
+    Run Keyword If    '${label_remote_os}'!='Windows'    Return From Keyword
+    ${file_path}=    Set Variable    ${remote_label_print_dir}${/}*.labelprintautomationfile
+    ${real_path}=    Get Remote File    ${SPREADSHEET_SERVER}    ${label_remote_username}    ${label_remote_password}    ${file_path}    ${label_print_dir}
+    ...    ${new_name}
+    [Return]    ${real_path}
+
+Click on Print All button web
+    [Documentation]    Clicks on the Print All button in the web and waits for confirmation of labels being printed. The button must be visible.
+    Robust Click    xpath=//*[@class="row btn btn-sm btn-primary printall-button"]
+    Wait For Label Print Confirmation Web
+
+Check Tokens Are Present Web
+    [Arguments]    @{tokens}
+    [Documentation]    Simple for loop to iterate through a list of tokens and check they are present in web
+    ...
+    ...    Takes a list of @{tokens}
+    ...
+    ...    Example use:
+    ...
+    ...    Check Tokens Are Present | token_name_1 | token_name_2 | token_name_3 | ...
+    : FOR    ${token}    IN    @{tokens}
+    \    Wait Until Keyword Succeeds    10s    1s    Element Should Be Visible    token-${token}
+
+Type to Token Text Field Web
+    [Arguments]    ${locator}    ${text}
+    [Documentation]    In the web editor, types to a Token Text Field. Deletes any existing data within the field first.
+    ...
+    ...    Arguments:
+    ...    - ${locator} - The locator for the text field
+    ...    - ${text} - The text to be typed
+    Clear Element Text    token-${locator}
+    Input Text    token-${locator}    ${text}
+
+Check Token Properties Are Present Web
+    [Arguments]    ${token_name}    @{properties}
+    [Documentation]    Simple for loop to iterate through a list of token properties and check they are present in web
+    ...
+    ...    Takes a ${token_name} and list of token @{properties}.
+    ...
+    ...    Example use:
+    ...
+    ...    Check Token Properties Are Present Web | token_name | token_property_1 | token_property_2 | ...
+    : FOR    ${property}    IN    @{properties}
+    \    Wait Until Keyword Succeeds    10s    1s    Element Should Be Visible    lp-property-${token_name}-${property}
+
+Select From Token Dropdown Menu Web
+    [Arguments]    ${token}    ${token_property}    ${menu_index}
+    [Documentation]    Keyword to select a value in one of the token dropdown menus. This keyword is for the key property. If you have multiple properties after the key property, use Select From Token Property Dropdown Menu instead for subsequent menus.
+    ...
+    ...    Arguments:
+    ...    - ${token} - The name of the token
+    ...    - ${token_property} - The name of the key property of the token
+    ...    - ${menu_index} - The dropdown menu item index
+    Robust Click    token-${token}
+    Robust Click    ${token}_${token_property}_${menu_index}
+
+Validate Token Combobox Value Web
+    [Arguments]    ${token}    ${expected}
+    [Documentation]    In the web, checks that a token dropdown menu for the key property has a given value. If it isn't the key property, use Validate Token Property Combobox Value Web instead.
+    ...
+    ...    Arguments:
+    ...    - ${token} - The name of the token that the key property belongs to.
+    ...    - ${expected} - The expected value to be found in the combobox
+    Element Should Contain    token-${token}    ${expected}
+
+Validate Token Property Combobox Value Web
+    [Arguments]    ${token}    ${token_property}    ${expected}
+    [Documentation]    In the web, checks that a token dropdown menu for a property holds a given value, provided that it is NOT the key property. If it is the key property, use Validate Token Combobox Value Web instead.
+    ...
+    ...    Arguments:
+    ...    - ${token} - The name of the token
+    ...    - ${token_property} - The name of the property
+    ...    - ${expected} - The expected value that the combobox holds
+    Element Should Contain    lp-property-${token}-${token_property}    ${expected}
+
+Select From Token Property Dropdown Menu Web
+    [Arguments]    ${token}    ${token_property}    ${menu_index}
+    [Documentation]    Selects from token property dropdown menus provided that they are not the key property. For the key property, use Select From Token Dropdown Menu Web.
+    ...
+    ...    Arguments:
+    ...    - ${token} - The name of the token
+    ...    - ${token_property} - The name of the property of the token
+    ...    - ${menu_index} - The dropdown menu item index
+    Robust Click    lp-property-${token}-${token_property}
+    Robust Click    ${token}_${token_property}_${menu_index}
+
+Click on Print Selected button web
+    [Documentation]    Clicks on the Print Selectedl button in the web and wait for the confirmation toastr. The button must be visible.
+    Robust Click    xpath=//*[@class="row btn btn-sm btn-default printselected-button"]
+    Wait for Label Print Confirmation Web
+
+Wait For Label Print Confirmation Web
+    [Documentation]    Waits until the label print file creation confirmation toastr appears, then logs that it has. Otherwise, fails with the error that it hasn't appeared.
+    Wait Until Element Is Visible    xpath=//*[@class="toastr-icon fa-icon toastr-tick-icon"]    40s    Confirmation Toastr was not shown - file was not created.
+    Log    File creation confirmation toaster has been shown
+
+Create Label Printing Directory Windows
+    [Documentation]    Using the WMI Library, creates a label printing directory in ${folder_name} on the given ${s_server}. Logs in to the remote machine using ${username} and ${password} for credentials.
+    ...
+    ...    Also checks the directory exists, because for some reason it was failing without this.
+    Log    Attempting to connect to ${SPREADSHEET_SERVER} as ${label_remote_username}/${label_remote_password}
+    Log    Label Printing Directory is: ${remote_label_print_dir}
+    WMILibrary.Open Connection    ${SPREADSHEET_SERVER}    ${label_remote_username}    ${label_remote_password}
+    WMILibrary.Create Directory    ${remote_label_print_dir}
+    WMILibrary.Check Directory Exists    ${remote_label_print_dir}
+    WMILibrary.Close Connection
+
+Create Label Printing Directory Mac
+    [Documentation]    Using the SSH Library, creates a label printing directory in ${folder_name} on the given ${s_server}. Logs in to the remote machine using ${username} and ${password} for credentials.
+    ...
+    ...    Also checks the directory exists, because for some reason it was failing without this.
+    Log    Attempting to connect to ${SPREADSHEET_SERVER} as ${label_remote_username}/${label_remote_password}
+    SSHLibrary.Open Connection    ${SPREADSHEET_SERVER}
+    SSHLibrary.Login    ${label_remote_username}    ${label_remote_password}
+    SSHLibrary.Execute Command    mkdir ${remote_label_print_dir}
+    SSHLibrary.Directory Should Exist    ${remote_label_print_dir}
+    Close Connection
+
+Get Label Printing Output File Web Mac
+    [Arguments]    ${new_name}
+    [Documentation]    Finds the label printing output file in the relevant directory on a remote Unix machine, renames it, copies it over to the local machine and returns the path to the local file.
+    ...
+    ...    Arguments:
+    ...
+    ...    - ${s_server} - The spreadsheet server where the output file resides.
+    ...    - ${new_name}- The string to which the output file will be renamed (output_file by default)
+    SSHLibrary.Open Connection    ${SPREADSHEET_SERVER}
+    SSHLibrary.Login    ${label_remote_username}    ${label_remote_password}
+    SSHLibrary.Get Directory    ${remote_label_print_dir}    ${label_print_dir}
+    SSHLibrary.Close Connection
+    ${temp}=    Join Path    ${label_print_dir}    *.${label_file_extension}
+    Rename Unknown File    ${temp}    ${new_name}
+
+Delete Label Printing Directory Mac
+    [Documentation]    Deletes the Label Printing Directory on a remote Unix spreadsheet server.
+    Log    Attempting to connect to ${SPREADSHEET_SERVER} as ${label_remote_username}/${label_remote_password}
+    SSHLibrary.Open Connection    ${SPREADSHEET_SERVER}
+    SSHLibrary.Login    ${label_remote_username}    ${label_remote_password}
+    SSHLibrary.Execute Command    rmdir -r ${remote_label_print_dir}
+    SSHLibrary.Close Connection
+
+Delete Label Printing Directory Windows
+    [Documentation]    Deletes the Label Printing directory on a remote Windows spreadsheet server.
+    Log    Attempting to connect to ${SPREADSHEET_SERVER} as ${label_remote_username}/${label_remote_password}
+    WMILibrary.Open Connection    ${SPREADSHEET_SERVER}    ${label_remote_username}    ${label_remote_password}
+    WMILibrary.Delete Directory    ${remote_label_print_dir}
+    WMILibrary.Close Connection
+
+Set Label Printing Directories For Web Tests
+    [Documentation]    Sets the Label Printing Remote Directory variable for the Spreadsheet server
+    #Spreadsheet Server
+    ${unix_dir}=    Set Variable    /LabelPrintAutomationFolder
+    ${windows_dir}=    Set Variable    C:/LabelPrintAutomationFolder
+    ${remote_label_print_dir}=    Set Variable If    '${label_remote_os}'!='Windows'    ${unix_dir}    ${windows_dir}
+    Set Suite Variable    ${remote_label_print_dir}
+    #Local Machine
+    ${label_print_dir}=    Set Variable If    '${OPERATING_SYSTEM}'!='Windows'    ${/}LabelPrintAutomationFolder    C:/LabelPrintAutomationFolder
+    OperatingSystem.Create Directory    ${label_print_dir}
+    Set Suite Variable    ${label_print_dir}
+
+Import Label Printing Dictionary
+    [Documentation]    Checks to see if a Label Printing dictionary can be found in the catalog and, if not, imports one.
+    ${xml}=    Join Path    ${CURDIR}    ..    ..    ..    Test Suites
+    ...    Web Client    EWB Web - Spreadsheet    Label Printing    Test Data    Label Printing.xml
+    ${json}=    JSON Format Find Request    Label Printing    /    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    ${null_response}=    Set Variable    {"catalog":null}
+    Run Keyword If    '${json}' == '${null_response}'    Import XML to Catalog via Web Service    ${xml}

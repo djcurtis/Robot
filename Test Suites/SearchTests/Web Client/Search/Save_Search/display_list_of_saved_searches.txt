@@ -1,0 +1,78 @@
+*** Settings ***
+Documentation     SH-744 jira story
+Suite Setup       setup
+Suite Teardown    Close Browser
+Test Setup        Delete All Searches Via API
+Test Teardown     testteardown
+Library           IDBSSelenium2Library
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Resource          ../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/UI/Navigator_Page/navigator_ui.txt
+Library           DateTime
+Library           SecurityAPILibrary
+
+*** Test Cases ***
+Verify List Displayed Correctly
+    [Documentation]    Verify List Displayed Correctly
+    ...    - verify blank 'My Searches' dialog
+    ...    - verify dialog with one search and 20 searches
+    ...    - verify 'Close' in all cases
+    [Tags]    SRCH-SAV-MY
+    Navigate Search Screen
+    Open My Searches Dialog
+    Verify Blank Saved Search Result
+    Close My Searches Dialog
+    Create Search Via API By Name    ${search1}
+    Reload Page
+    Open My Searches Dialog
+    Verify Number Of Searches In The list    1
+    Verify Name And Description By Index    0    ${search1}    ${EMPTY}
+    Close My Searches Dialog
+    : FOR    ${i}    IN RANGE    19
+    \    Create Search Via API By Name    ${search1}
+    Reload Page
+    Open My Searches Dialog
+    Verify Number Of Searches In The list    20
+    Close My Searches Dialog
+
+Verify Search Visible Only for Creator
+    [Documentation]    Verify Search Visible Only for Creator
+    ...    - Create dummy search by API for Administrator user
+    ...    - Create dummy user and verify it does not \ see the search
+    ...    - Verify Administrator user do see the search
+    [Tags]    SRCH-SAV-MY    BUILD_ACCEPTANCE
+    Create Search Via API By Name    ${search1}
+    SecurityAPILibrary.Create User    srch_01    Search User01    srch_011    assignable_roles=STANDARD_ROLES
+    Assign System Role To User    srch_01    EWB_WEB_CLIENT_USER
+    #Verify Administartor User can see the search
+    Navigate Search Screen
+    Open My Searches Dialog
+    Verify Number Of Searches In The list    1
+    #Verify dummy user cannot see the search
+    Logout
+    Supply Non Default User Credentials    srch_01    srch_011
+    Navigate Search Screen
+    Open My Searches Dialog
+    Verify Blank Saved Search Result
+
+Verify Search is not Visible in Navigator
+    [Documentation]    Verify Search is not Visible in Navigator
+    ...    - Create dummy search
+    ...    - Navigate to Navigator Screen
+    ...    - Verify the search not available
+    [Tags]    SRCH-SAV-MY    BUILD_ACCEPTANCE
+    Create Search Via API By Name    ${search1}
+    Navigate Navigator Screen
+    Verify No Search On The Navigator Screen    ${search1}
+
+*** Keywords ***
+setup
+    ${currentDate}=    Get Current Date
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    Set Suite Variable    ${search1}
+    Login To EWB
+
+testteardown
+    Delete All Searches Via API
+    Reload Page

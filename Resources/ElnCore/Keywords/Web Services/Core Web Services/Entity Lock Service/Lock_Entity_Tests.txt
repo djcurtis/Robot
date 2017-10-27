@@ -1,0 +1,104 @@
+*** Settings ***
+Documentation     This test suite targets the endpoint : /services/1.0/locks/entities/{entityId}/lock
+Suite Setup       Entity Locking Suite Setup
+Suite Teardown    Entity Locking Service Suite Teardown
+Force Tags        Entity Lock Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Library           XMLLibrary
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          entity_lock_service_test_suite_resource.txt    # common lock service setup and teardown
+
+*** Variables ***
+
+*** Test Cases ***
+Check Locking of an experiement succeeds
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityLockResponse.
+    [Setup]
+    ${experiment_name}=    Set Variable    LEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    Lock Entity    ${experiment_id}
+    Check Xml Contains Element    check result element exists    ${lock_response}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Element Value Contains    check result value is OK    ${lock_response}    ${IS_OK}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    ${unlock_response}=    Unlock Entity    ${experiment_id}
+
+Check cannot lock experiement with missing id
+    [Documentation]    
+    ...
+    ...    If the call parameter ‘entityId’ is missing, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_id}=    Set Variable
+    ${lock_response}=    Lock Entity    ${experiment_id}    404
+    Should Be Empty    ${lock_response}
+
+Check cannot lock experiement with bad id
+    [Documentation]    
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_id}=    Set Variable    badExperimentId
+    ${lock_response}=    Lock Entity    ${experiment_id}    404
+    Should Contain    ${lock_response}    Resource not found for given ID: Requested entity does not exist
+
+Check cannot lock experiement if user does not have right permissions
+    [Documentation]    
+    ...
+    ...    A client requires the EDIT_< ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    LEN-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    Lock Entity with specific user    ${experiment_id}    ${username}    ${password}
+    Should Contain    ${lock_response}    Authorization failure: The user must have at least one of the required permissions for EXPERIMENT: [EDIT_EXPERIMENT,SIGNOFF_TASK]
+
+Check Unlocking of an experiement succeeds
+    [Documentation]    
+    ...
+    ...    A successful callunlocks the entity and returns the HTTP status 204
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    Lock Entity    ${experiment_id}
+    ${unlock_response}=    Unlock Entity    ${experiment_id}
+    ${lock_info}=    Is Entity Locked    ${experiment_id}
+    Check Xml Contains Element    check response has result element    ${lock_info}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Element Value Contains    check response value is UNLOCKED    ${lock_info}    ${IS_UNLOCKED}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+
+Check cannot unlock experiement with missing id
+    [Documentation]    
+    ...
+    ...    If the call parameter ‘entityId’ is missing, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_id}=    Set Variable
+    ${lock_response}=    Unlock Entity    ${experiment_id}    404
+
+Check cannot unlock experiement with bad id
+    [Documentation]    
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_id}=    Set Variable    badExperimentId
+    ${lock_response}=    Unlock Entity    ${experiment_id}    404
+    Comment    Should Contain    ${lock_response}    Resource not found for given ID: Entity with the given id could not be found
+
+Check cannot unlock experiement if user does not have right permissions
+    [Documentation]    
+    ...
+    ...    A client requires the EDIT_< ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    UEN-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Assign User Entity Role    ${username}    EXPERIMENT_ADMIN    ${experiment_id}
+    Log    LOCKING Experiment    INFO
+    ${lock_response}=    Lock Entity with specific user    ${experiment_id}    ${username}    ${password}    200
+    ${response}=    Delete User Entity Role    ${username}    EXPERIMENT_ADMIN    ${experiment_id}
+    Log    Attempting to unlock Experiment    INFO
+    ${lock_response}=    Unlock Entity with specific user    ${experiment_id}    ${username}    ${password}
+    Log    UNLOCKING Experiment    INFO
+    ${response}=    Assign User Entity Role    ${username}    EXPERIMENT_ADMIN    ${experiment_id}
+    ${lock_response}=    Unlock Entity with specific user    ${experiment_id}    ${username}    ${password}    204
+
+*** Keywords ***

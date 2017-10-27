@@ -1,0 +1,147 @@
+*** Settings ***
+Documentation     This suite verifies a user can perform an Advanced Search in EWB web using "ancestral type" entities (Groups, Projects) and the search returns the correct results.
+...
+...               SH-951
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     reload page
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/UI/Search_Page/advanced_search_term.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Library           EntityAPILibrary
+Library           DateTime
+
+*** Test Cases ***
+Advanced Search By Group Name
+    [Documentation]    Advanced Search By Group Name
+    ...    - Execute search by Group name
+    ...    - Verify All experements are searched
+    ...    - Verify the same for different group name
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Group|Name|is|${groupNameA}
+    Click Search Button
+    Verify Number Of Search Result    2
+    Verify Search Result List Exact By Title    Experiment 2    Experiment 1
+    Reload Page
+    Perform Advanced Search    *e*    Group|Name|is|${groupNameB}
+    Click Search Button
+    Verify Number Of Search Result    1
+    Verify Search Result List Exact By Title    Experiment 3
+
+Advanced Search By Project And Group Name
+    [Documentation]    Advanced Search By Project And Group Name
+    ...    - Execute search by group name and not related project title
+    ...    - Verify blank result
+    ...    - change search condition to OR
+    ...    - verify all experiments for both group and project appear
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Group|Name|is|${groupNameB}    Project|Title|is|${projectAAName}
+    Click Search Button
+    Verify Blank Search Result
+    search_ui.Select Match Conditions    ANY
+    Click Search Button
+    Verify Number Of Search Result    3
+    Verify Search Result List Exact By Title    Experiment 3    Experiment 2    Experiment 1
+
+Advanced Search By Project Title
+    [Documentation]    Advanced Search By Project Title
+    ...    - Execute advanced search by project
+    ...    - verify displayed records are correct
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Project|Title|is|${projectAAName}
+    Click Search Button
+    Verify Number Of Search Result    2
+    Verify Search Result List Exact By Title    Experiment 2    Experiment 1
+    Reload page
+    Perform Advanced Search    *e*    Project|Title|is|${projectBBName}
+    Click Search Button
+    Verify Number Of Search Result    1
+    Verify Search Result List Exact By Title    Experiment 3
+
+Advanced Search By Group And Experiment
+    [Documentation]    Advanced Search by Group And Experiment
+    ...    - execute search by group and experiment title
+    ...    - verify correct search result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Group|Name|is|${groupNameA}    Experiment|Title|is|Experiment 1
+    Click Search Button
+    Verify Number Of Search Result    1
+    Verify Search Result List Exact By Title    Experiment 1
+
+Advanced Search By Project And Experiment
+    [Documentation]    Advanced Search By Project And Experiment
+    ...    - Execute search by project and non-related experiment
+    ...    - verify blank result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Project|Title|is|${projectBBName}    Experiment|Title|is|Experiment 2
+    Click Search Button
+    Verify Blank Search Result
+
+Advanced Search By Group And Content
+    [Documentation]    Advanced Search By Group And Content
+    ...    - execute search by group title and document name
+    ...    - verify correct experiment as result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    Document Test    Group|Name|is|${groupNameA}
+    Click Search Button
+    Verify Number Of Search Result    1
+    Verify Search Result List Exact By Title    Experiment 2
+
+Advanced Search by Project And Content
+    [Documentation]    Advanced Search By Project And Content
+    ...    - execute search by project name and test document for non-related experiment
+    ...    - verify result is blank
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    Document Test    Project|Title|is|${projectBBName}
+    Click Search Button
+    Verify Blank Search Result
+
+*** Keywords ***
+setup
+    [Documentation]    create following structure
+    ...    - Group A
+    ...    - >> Project A
+    ...    - >>>> Experiment 1
+    ...    - >>>> Experiment 2
+    ...    - >>>>>>Document Test
+    ...
+    ...    - Group B
+    ...    - >>Project 3
+    ...    - >>>>Experiment 3
+    ${currentDate}=    Get Current Date
+    #Create group A
+    ${groupNameA}=    Set Variable    Group A ${currentDate}
+    ${groupIdA}=    EntityAPILibrary.Create Group    1    ${groupNameA}
+    Set suite Variable    ${groupIdA}
+    Set Suite Variable    ${groupNameA}
+    ${projectAAName}=    Set Variable    Project A ${currentDate}
+    ${projectAA}=    EntityAPILibrary.Create Project    ${groupIdA}    ${projectAAName}
+    ${experimentA1}=    EntityAPILibrary.Create Experiment    ${projectAA}    Experiment 1    Completed
+    EntityAPILibrary.Version Save    ${experimentA1}    Data Added
+    ${experimentA2}=    EntityAPILibrary.Create Experiment    ${projectAA}    Experiment 2    Completed
+    EntityAPILibrary.Version Save    ${experimentA2}    Data Added
+    EntityAPILibrary.Create Text Document    ${experimentA2}    Document Test
+    #Create Group B
+    ${groupNameB}=    Set Variable    Group B ${currentDate}
+    ${groupIdB}=    EntityAPILibrary.Create Group    1    ${groupNameB}
+    Set suite Variable    ${groupIdB}
+    Set Suite Variable    ${groupNameB}
+    ${projectBBName}=    Set Variable    Project B ${currentDate}
+    ${projectBB}=    EntityAPILibrary.Create Project    ${groupIdB}    ${projectBBName}
+    ${experimentB3}=    EntityAPILibrary.Create Experiment    ${projectBB}    Experiment 3    Completed
+    EntityAPILibrary.Version Save    ${experimentB3}    Data Added
+    Set suite Variable    ${groupIdB}
+    Set suite Variable    ${projectAAName}
+    Set suite Variable    ${projectBBName}
+    Open Browser to EWB Login
+    User credentials
+
+teardown
+    [Documentation]    delete initially created groups
+    EntityAPILibrary.Unlock Entity And Children    ${groupIdA}
+    EntityAPILibrary.Unlock Entity And Children    ${groupIdB}
+    EntityAPILibrary.Delete Entity    ${groupIdA}    As intended    As intended
+    EntityAPILibrary.Delete Entity    ${groupIdB}    As intended    As intended
+    Close browser

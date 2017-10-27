@@ -1,0 +1,64 @@
+*** Settings ***
+Documentation     Verify Benzene Ring Button
+...               verify benzene ring button view on Search Screen
+...
+...               created for SH-1001 jira task
+Suite Setup       Login To EWB
+Suite Teardown    Close Browser
+Test Setup        Navigate Search Screen
+Test Teardown     Go To EWB Home
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/marvin_js.txt
+Resource          ../../../../Resources/UI/Search_Page/chemistry_search_prepreview.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Library           IDBSSelenium2Library
+
+*** Test Cases ***
+Verify Green Dot Not Present
+    [Documentation]    Verify Green Dot Not Present
+    ...    - verify case at the beginnig of the search
+    ...    - verify case with clicking cancel button on MarvinJS screen
+    ...
+    ...    SH-362
+    [Tags]    SRCH-CHEM    BROWSER_REGRESSION
+    Select Search By Option    Chemistry
+    Verify Benzene Ring Does Not Contain Green Dot
+    Open MarvinJS From Search Screen
+    Perform Chemistry Search By One Ring    Exact search    CycloHexane
+    Click MarvinJS Cancel Button
+    Verify Benzene Ring Does Not Contain Green Dot
+
+Verify Green Dot Present
+    [Documentation]    Verify Green Dot Present
+    ...    - verify case with performing Chemistry Search
+    ...    - verify clicking on benzene button with green dot moved to MarvinJS with some formula
+    ...
+    ...    SH-362
+    [Tags]    SRCH-CHEM    BROWSER_REGRESSION
+    Select Search By Option    Chemistry
+    Verify Benzene Ring Does Not Contain Green Dot
+    Open MarvinJS From Search Screen
+    Execute Chemistry Search By Non-connected Rings    Substructure search    Benzene|Benzene|Benzene|CycloPentane|CycloPentane|CycloPentane
+    Verify Benzene Ring Contains Green Dot
+    Open MarvinJS From Search Screen
+    Verify Not Empty MarvinJS Canvas
+
+Verify Clear Chemistry Search Cross Button
+    [Documentation]    Verify Clear Chemistry Search Cross Button
+    ...    - execute chemistry search
+    ...    - click cross button
+    ...    - verify missing green dot on the benzene ring
+    ...    - verify MarvinJS is blank
+    ...
+    ...    SH-364
+    [Tags]    SRCH-CHEM
+    Select Search By Option    Chemistry
+    Open MarvinJS From Search Screen
+    Execute Chemistry Search By Non-connected Rings    Substructure search    Benzene|Benzene|Benzene|CycloPentane|CycloPentane|CycloPentane
+    Click Clear Chemistry Search Cross Button
+    Verify Benzene Ring Does Not Contain Green Dot
+    Open MarvinJS From Search Screen
+    Verify Empty MarvinJS Canvas
+    Click MarvinJS Cancel Button
+    Verify Benzene Ring Does Not Contain Green Dot

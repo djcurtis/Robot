@@ -1,0 +1,163 @@
+*** Settings ***
+Documentation     Covers the application of signatures to experiments, inclusive of watermark and legal statement configuration when PDFs generated from the web client.
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup
+Test Teardown     Teardown signatures test case
+Resource          test utilities.txt
+Resource          ..\\..\\..\\..\\Libraries\\common_resource.txt
+Resource          ..\\..\\..\\..\\Libraries\\Core Web Services\\Record Service\\rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Library           OperatingSystem
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          add_image_items_to_experiments.txt
+
+*** Variables ***
+${small_watermark_file}    small watermark 32x19.jpg
+${wide_watermark_file}    wide watermark 1000x10.jpg
+${tall_watermark_file}    tall watermark 10x1000.jpg
+${small_legal_statement}    Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement
+${large_legal_statement}    Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement - Large legal statement -
+
+*** Test Cases ***
+Large legal statement no image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a large statement and no image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-01
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${large_legal_statement}    STRING
+    Delete System Setting    Signature/digitalSignatureImage
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+No legal statement no image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is no statement and no image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-02
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Delete System Setting    Signature/digitalSignatureImage
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Small legal statement no image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a small statement and no image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-03
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${small_legal_statement}    STRING
+    Delete System Setting    Signature/digitalSignatureImage
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Large legal statement with small image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a large statement and a small image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-04
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${large_legal_statement}    STRING
+    Insert System Digital Signature Image    ${input_folder}\\${small_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+No legal statement with small image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is no statement and a small image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-05
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Insert System Digital Signature Image    ${input_folder}\\${small_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Small legal statement with small image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a small statement and a small image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-06
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${small_legal_statement}    STRING
+    Insert System Digital Signature Image    ${input_folder}\\${small_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Large legal statement with wide image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a large statement and a wide image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-07
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${large_legal_statement}    STRING
+    Insert System Digital Signature Image    ${input_folder}\\${wide_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+No legal statement with wide image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is no statement and a wide image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-08
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Insert System Digital Signature Image    ${input_folder}\\${wide_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Small legal statement with wide image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a small statement and a wide image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-09
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${small_legal_statement}    STRING
+    Insert System Digital Signature Image    ${input_folder}\\${wide_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Large legal statement with tall image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a large statement and a tall image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-10
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${large_legal_statement}    STRING
+    Insert System Digital Signature Image    ${input_folder}\\${tall_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+No legal statement with tall image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is no statement and a tall image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-11
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Insert System Digital Signature Image    ${input_folder}\\${tall_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Small legal statement with tall image
+    [Documentation]    Test ensures that
+    ...    - The desktop client signature configuration is honoured when there is a small statement and a tall image
+    ...    - The generated PDF content is correct
+    [Tags]    EWB-WEB-PI002-W011-12
+    Replace System Setting    Signature/digitalSignatureLegalStatement    ${small_legal_statement}    STRING
+    Insert System Digital Signature Image    ${input_folder}\\${tall_watermark_file}
+    Setup simple signed item test case
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Defect - final line orphaned (visual representation)
+    [Setup]    Setup Just Signatures Empty Test Case
+    comment    The issue was the text right at the end of the pdf signature swould be orphaned when the page break was between the last signature and this text ("Visual representation of digital signature. Original on File")    So this test puts the signature right at the end so that the page would break here, using an image of the correct size in the item before. The size of the image was determined by trial and error. 657px high stayed on same page, 660px high is all moves to next page (as we want) - so 660px is the value used, and would lead to the text being orphaned if the defect regressed
+    Set Page Config    5    7    1    A4
+    ${doc_id}=    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\item image for spacing signature to edge.jpg    test JPG doc
+    Lock Entity    ${experiment_id}
+    Sign Entity    ${experiment_id}    ${doc_id}
+    Unlock entity    ${experiment_id}
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup Just Signatures Empty Test Case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${configuration_xml}=    Get File    ${test_data_folder}\\input\\signoffs only print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${configuration_xml}
+    Set Suite Variable    ${experiment_id}
+
+Teardown signatures test case
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Delete System Setting    Signature/digitalSignatureImage

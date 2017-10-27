@@ -1,0 +1,147 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint: /services/1.0/records/{entityId}/readonly
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Library           IDBSHttpLibrary
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+
+*** Test Cases ***
+Check Can Make a Record Read Only
+    [Documentation]    A successful call returns the HTTP status 204. The read only setting on the record is enabled.
+    ...
+    ...    Once read only, it should not be possible to add data (eg. a web-link)
+    ${experiment_name}=    Set Variable    SRO-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${response}=    Set Read Only    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm    403
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Make a Record Read Only Fails for Bad Id
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${bad_id}=    Set Variable    SRO-S002
+    ${response}=    Set Read Only    ${bad_id}    404
+    Response Body Should Contain    Resource not found for given ID: [entityId]
+
+Check Can Only Make a Record Read Only
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ...
+    ...    The valid record types are (by default) :
+    ...    - REPORT
+    ...    - EXPERIMENT
+    ...    - LOOKUP_SOURCE
+    ...    - and TEMPLATE if you set the flag to "include templates"!
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${project_id}
+    ${response}=    Set Read Only    ${project_id}    400
+    Response Body Should Contain    [entity] must be of record type
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${project_id}
+
+Check Cannot Make a Record Read Only if It is not locked
+    [Documentation]    If the entity is not locked, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    SRO-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Set Read Only    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: [entity] must be locked
+
+Check Cannot Make a Record Read Only in modified state
+    [Documentation]    If the entity version type is CACHE, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    SRO-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${response}=    Set Read Only    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: [entityId] must be in an unmodified state.
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Cannot Make a Record Read Only without PREVENT_RECORD_EDIT permission
+    [Documentation]    A client requires the PREVENT_RECORD_EDIT permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    SRO-S006_${unique_id}
+    ${role_response}=    Create Role    ${role_name}    ${role_name}    custom role for Delete comment testing    false
+    ${permission_response}=    Add Role Permission    ${role_name}    VIEW_EXPERIMENT
+    ${permission_response}=    Add Role Permission    ${role_name}    EDIT_EXPERIMENT
+    ${permission_response}=    Add Role Permission    ${role_name}    OPEN_EXPERIMENT
+    ${experiment_name}=    Set Variable    SRO-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    As a new user...    INFO
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${response}=    Set Read Only    ${experiment_id}    403
+    Comment    Response Body Should Contain    Authorization failure: The user does not have required permissions for EXPERIMENT: [PREVENT_RECORD_EDIT]
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}
+
+Check Can Disable Read Only Setting
+    [Documentation]    A successful call returns the HTTP status 204. The read only setting on the record is disabled.
+    ${experiment_name}=    Set Variable    DRO-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${read_only_set_response}=    Set Read Only    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm    403
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${read_only_disable_response}=    Clear Read Only    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Disable Read Only Fails for Bad Id
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${bad_id}=    Set Variable    DRO-S002
+    ${response}=    Clear Read Only    ${bad_id}    404
+    Response Body Should Contain    Resource not found for given ID: [entityId]
+
+Check Can Only Disable a Read Only Record
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ...
+    ...    The valid record types are (by default) :
+    ...    - REPORT
+    ...    - EXPERIMENT
+    ...    - LOOKUP_SOURCE
+    ...    - and TEMPLATE if you set the flag to "include templates"!
+    ${response}=    Clear Read Only    ${project_id}    400
+    Response Body Should Contain    [entity] must be of record type
+
+Check Can Only Disable Read Only Setting when UnLocked
+    [Documentation]    If the entity is locked , then the HTTP status code 403 \ \ is returned to the client
+    ${experiment_name}=    Set Variable    DRO-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${read_only_set_response}=    Set Read Only    ${experiment_id}
+    Comment    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${lock_info}=    Is Entity Locked    ${experiment_id}
+    ${read_only_disable_response}=    Clear Read Only    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: [entityId] must not be locked
+
+Check Cannot Disable a Record Read Only without ALLOW_RECORD_EDIT permission
+    [Documentation]    A client requires the PREVENT_RECORD_EDIT permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    DRO-S006_${unique_id}
+    ${role_response}=    Create Role    ${role_name}    ${role_name}    custom role for Delete comment testing    false
+    ${permission_response}=    Add Role Permission    ${role_name}    VIEW_EXPERIMENT
+    ${permission_response}=    Add Role Permission    ${role_name}    EDIT_EXPERIMENT
+    ${permission_response}=    Add Role Permission    ${role_name}    OPEN_EXPERIMENT
+    ${permission_response}=    Add Role Permission    ${role_name}    PREVENT_RECORD_EDIT
+    ${experiment_name}=    Set Variable    SRO-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    As a new user...    INFO
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${response}=    Set Read Only    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${read_only_disable_response}=    Clear Read Only    ${experiment_id}    403
+    Comment    Response Body Should Contain    Authorization failure: The user does not have required permissions for EXPERIMENT: [ALLOW_RECORD_EDIT]
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}

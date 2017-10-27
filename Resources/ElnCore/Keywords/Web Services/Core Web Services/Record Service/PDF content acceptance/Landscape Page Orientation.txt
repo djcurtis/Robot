@@ -1,0 +1,55 @@
+*** Settings ***
+Documentation     Covers pdf generation with default margins and landscape paper with varying paper sizes
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup simple test case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+
+*** Variables ***
+
+*** Test Cases ***
+landscape A3
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A3 page in landscape orientation with a default page configuration
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W007-001
+    Set Page Config    15    15    0    A3
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A4
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A4 page in landscape orientation with a default page configuration
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W007-002
+    Set Page Config    15    15    0    A4
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape A5
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an A5 page in landscape orientation with a default page configuration
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W007-003
+    Set Page Config    15    15    0    A5
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Letter
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of a Letter page in landscape orientation with a default page configuration
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W007-004
+    Set Page Config    15    15    0    Letter
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+landscape Executive
+    [Documentation]    Test ensures that
+    ...    - A PDF can be generated of an Executive page in landscape orientation with a default page configuration
+    ...    - The generated PDF looks correct
+    [Tags]                EWB-WEB-PI002-W007-005
+    Set Page Config    15    15    0    Executive
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***

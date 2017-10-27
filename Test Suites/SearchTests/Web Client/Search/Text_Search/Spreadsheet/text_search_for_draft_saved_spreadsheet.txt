@@ -1,0 +1,275 @@
+*** Settings ***
+Documentation     suite is from SH-1237 story
+Suite Setup       setup
+Suite Teardown    teardown
+Library           EntityAPILibrary
+Library           IDBSSelenium2Library
+Resource          ../../../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../../Libraries/IDBS Spreadsheet/common_spreadsheet_keywords.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/quantrix_web_resource.txt
+Resource          ../../../../../../Libraries/IDBS Spreadsheet/searching/embedded_search_keywords.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+
+*** Test Cases ***
+Verify Spreadsheet Is Searchable By Cell Value
+    [Documentation]    Verify Spreadsheet Is Searchable By Cell Value
+    ...
+    ...
+    ...    - This is data listed, which will be supplied to "Verify Text Search Result" keyword to execute
+    ...    - 'Verify Text Search Result' will be executed 6 time, what is row number
+    ...    - first column is free text to execute search with
+    ...    - the last columns is expected result list
+    [Template]    Verify Text Search Result
+    *11    Experiment 8    Experiment 7    Experiment 6    Experiment 5    Experiment 3    Experiment 2
+    ...    Experiment 1
+    cell*    Experiment 8    Experiment 7    Experiment 6    Experiment 5    Experiment 3    Experiment 2
+    ...    Experiment 1
+    cell    Experiment 8    Experiment 7    Experiment 6    Experiment 5    Experiment 3    Experiment 2
+    ...    Experiment 1
+    царь    Experiment 8    Experiment 7    Experiment 6    Experiment 5    Experiment 3    Experiment 2
+    ...    Experiment 1
+    "cell 21"    Experiment 8    Experiment 7    Experiment 6    Experiment 5    Experiment 3    Experiment 2
+    ...    Experiment 1
+    *cell*    Experiment 8    Experiment 7    Experiment 6    Experiment 5    Experiment 3    Experiment 2
+    ...    Experiment 1
+
+Verify Spreadsheet Is Not Searchable By Column And Row
+    [Documentation]    Verify Spreadsheet Is Not Searchable By Column And Row
+    ...
+    ...    - This is data listed, which will be supplied to "Verify Text Search Result Is Blank" keyword to execute
+    ...    - 'Verify Text Search Result Is Blank' will be executed 8 time, what is row count
+    ...    - first column is free text to execute search with
+    [Template]    Verify Text Search Result Is Blank
+    column one
+    one
+    *one
+    column*
+    row odin
+    odin
+    *odin
+    row*
+
+Verify Spreadsheet Is Not Searchable By Number And Symbols
+    [Documentation]    Verify Spreadsheet Is Not Searchable By Number And Symbols
+    ...
+    ...    - This is data listed, which will be supplied to "Verify Text Search Result Is Blank" keyword to execute
+    ...    - 'Verify Text Search Result Is Blank' will be executed 8 time, what is row count
+    ...    - first column is free text to execute search with
+    [Template]    Verify Text Search Result Is Blank
+    15
+    /<>
+    /+--
+    "11 21"
+
+Verify Spreadsheet Is Not Searchable By Previously Saved Version
+    [Documentation]    Verify Spreadsheet Is Not Searchable By Previously Saved Version
+    ...
+    ...    - verify that previously saved draft or version not searchable after changes
+    [Template]    Verify Text Search Result Is Blank
+    "experiment 1 version 1 spreadsheet"
+    "experiment 1 version 1 spreadsheet"
+    "experiment 3 draft spreadsheet"
+    "experiment 4 draft spreadsheet"
+    "experiment 8 draft 1 spreadsheet"
+    "experiment 8 draft 2 spreadsheet"
+
+*** Keywords ***
+setup
+    [Documentation]    group 2 - deleted
+    ...    - project 1
+    ...    - experiment 10 - spreadsheet draft saved
+    ...    group
+    ...    - project 1
+    ...    - experiment 1 - spreadsheet version save 1 - edit spresadsheat - draft save
+    ...    - experiment 2 - spreadsheet version save 1 - delete spreadsheat - draft save
+    ...    - experiment 3 - spreadsheet version save 1 - add new spreadsheet - draft save
+    ...    - experiment 4 - spreadsheet draft save - edit spresadsheat - draft save
+    ...    - experiment 5 - spreadsheet draft save - delete spreadsheet - draft save
+    ...    - experiment 6 - spreadsheet draft save - add new spreadsheet - draft save
+    ...    - experiment 7 - spreadsheet draft save
+    ...    - experiment 8 - cloned from experiment 7 - draft save
+    ...    - experiment 9 - spreadsheet draft save 1 - edit spreadsheet - draft save 2 - edit spreadsheet - draft save 3
+    ...    group 3
+    ...    - project 1 - deleted
+    ...    -experiment 9 - spreadsheet draft save
+    ${wait}=    Set Variable    10s
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    ${group2Id}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}2
+    ${group3Id}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}3
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    Set Suite Variable    ${group2Id}
+    Set Suite Variable    ${group3Id}
+    ${project1Id}=    EntityAPILibrary.Create Project    ${groupId}    project 1
+    ${project2Id}=    EntityAPILibrary.Create Project    ${group2Id}    project 1
+    ${project3Id}=    EntityAPILibrary.Create Project    ${group3Id}    project 1
+    # experiment 1 - spreadsheet version save 1 - edit spreadsheet - draft save
+    ${experiment1Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 1    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment1Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Designer Open Browser To Entity    ${experiment1Id}    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 1 version 1 spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    Sleep    ${wait}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    16
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #experiment 2 - spreadsheet version save 1 - add new spreadsheet - draft save
+    ${experiment2Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 2    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment2Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment2Id}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 2 version 1 spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    Sleep    ${wait}
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment2Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Reload page
+    Start Spreadsheet Lite Editor    2
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    15
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #experiment 3 - spreadsheet draft save - edit spreadsheet - draft save
+    ${experiment3Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 3    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment3Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment3Id}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 3 draft spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    16
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #experiment 4 - spreadsheet draft save - delete spreadsheet - draft save
+    ${experiment4Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 4    Started
+    ${intSpreadSheetId}=    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment4Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment4Id}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 4 draft spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Document    ${experiment4Id}    ${intSpreadSheetId}    test    test
+    #experiment 5 - spreadsheet draft save - add new spreadsheet - draft save
+    ${experiment5Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 5    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment5Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment5Id}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 5 draft spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment5Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Reload page
+    Start Spreadsheet Lite Editor    2
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    15
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #experiment 6 - spreadsheet draft save
+    ${experiment6Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 6    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment6Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment6Id}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    15
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #experiment 7 - cloned from experiment 6 - draft save
+    ${experiment7Id}=    EntityAPILibrary.Create Entity From Template    EXPERIMENT    ${project1Id}    ${experiment6Id}    Experiment 7    title:::Experiment 7
+    ...    statusName:::Started
+    Reload Page
+    Go To Entity    ${experiment7Id}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    16
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #experiment 8 - spreadsheet draft save 1 - edit spreadsheet - draft save 2 - edit spreadsheet - draft save 3
+    ${experiment8Id}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 8    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment8Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment8Id}
+    Reload Page
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 8 draft 1 spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    experiment 8 draft 2 spreadsheet
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    17
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    #group 3 project 1 - deleted experiment 9 - spreadsheet draft save
+    ${experiment9Id}=    EntityAPILibrary.Create Experiment    ${project2Id}    Experiment 9    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment9Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment9Id}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    15
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${project2Id}    As Intended    As Intended
+    #group 2 - deleted project 1 experiment 10 - spreadsheet draft saved
+    ${experiment10Id}=    EntityAPILibrary.Create Experiment    ${project3Id}    Experiment 10    Started
+    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experiment10Id}    ${CURDIR}/Test_Data/TwotwoSpreadsheet.ewbss
+    Go To Entity    ${experiment10Id}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    3    15
+    Exit Spreadsheet Lite Editor    180s
+    Draft Save Record
+    Sleep    ${wait}
+    EntityAPILibrary.Delete Entity    ${group3Id}    As Intended    As Intended
+    sleep    ${wait}
+    Navigate Search Screen
+    Perform Advanced Search    ${EMPTY}    Group|Name|starts with|${groupName}
+    Click Advanced Search Link
+
+teardown
+    [Documentation]    delete all created data
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    EntityAPILibrary.Unlock Entity And Children    ${group2Id}
+    EntityAPILibrary.Delete Entity    ${group2Id}    As intended    As intended
+    close browser

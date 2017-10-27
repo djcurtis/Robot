@@ -1,0 +1,352 @@
+*** Settings ***
+Documentation     It sets an entity data by replacing any existing data. The data provided MUST be a literal.
+...
+...               *end point:* POST /services/1.0/cache/entities/{entityId}/data/text
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags           Add Cache Entity
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Set text data
+    [Documentation]    A successful call returns the HTTP status 200 and entity version id. The entity text data is set
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S001
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # Checking expectations
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    200
+    ${entity_dto}=    Get Entity New    ${web_link_id}    ${web_link_version_id}    200    includeVersionInfo=true    includeAttributes=true
+    ...    includeDataInfo=true
+    # Checks attributes have one with value set to ${file_name}
+    @{attributes_values}=    XMLLibrary.Get Element Value    ${entity_dto}    ${ENTITY_XMLNS}    value
+    Should Contain    ${attributes_values}    ${file_name}
+    # Checks the entity data
+    ${entity_actual_data}=    Get Entity Data    ${web_link_id}    ${web_link_version_id}
+    Should Be Equal As Strings    ${entity_actual_data}    ${text_data}
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data to existing entity without data
+    [Documentation]    A successful call returns the HTTP status 200 and entity version id. Entities can be created without data. Data can be added later using set text data endpoint. This test was created after bug fixing.
+    [Setup]
+    ${landing_page_name}=    Set Variable    SET-S001
+    # Landing Page does not have any data when created
+    ${landing_page_id}=    Create Landing Page In Default Project    ${landing_page_name}
+    ${data_type}=    Set Variable    LANDING_PAGE
+    ${file_type}=    Set Variable    .xml
+    ${mime_type}=    Set Variable    application/xml;charset=utf-8
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    <?xml version="1.0" encoding="utf-8"?><landingPage xmlns="http://landingpages.services.ewb.idbs.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" templateId="2cols" description="" iconUrl="" id="2cols"><rootContainer xsi:type="LinearContainer"><dimensions><height unit="PCT" value="100"/><width unit="PCT" value="100"/></dimensions><properties/><children><container xsi:type="LinearContainer"><dimensions><height unit="PCT" value="100"/><width unit="PCT" value="50"/></dimensions><properties/></container><container xsi:type="LinearContainer"><dimensions><height unit="PCT" value="100"/><width unit="PCT" value="50"/></dimensions><properties/></container></children></rootContainer></landingPage>
+    # Checking expectations
+    Lock Entity    ${landing_page_id}
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${landing_page_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    200
+    Unlock Entity    ${landing_page_id}
+    [Teardown]
+
+Set text data with missing fileType
+    [Documentation]    If the call parameter ‘fileType’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S002
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    ${EMPTY}
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # empty file type
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with missing dataType
+    [Documentation]    If the call parameter ‘dataType’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S003
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    ${EMPTY}
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # Empty data type
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with missing mimeType
+    [Documentation]    If the call parameter ‘mimeType’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S004
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    ${EMPTY}
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # Empty mime type
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with missing data
+    [Documentation]    If the call parameter ‘data’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S005
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    ${EMPTY}
+    # Checking expectations
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with not existing entity
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S006
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # Empty entity id leads to an unknown URL
+    ${web_link_id}=    Set Variable    ${EMPTY}
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    404
+    # nt existing entity id
+    ${web_link_id}=    Set Variable    WrongEnityId
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    404
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with no lock
+    [Documentation]    If the container entity is not locked by the request user, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S007
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    Save As Draft Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    # Checking expectations
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    403
+    [Teardown]
+
+Set text data with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S008
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # Checking expectations
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with sequential edit
+    [Documentation]    If the entity is sequentially editable and the edit order is violated, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S009
+    @{web_link_ids}=    Create Sequential Editable Experiment Witn 2 Web Links    ${experiment_name}    ${experiment_name}
+    # Gets link 2 info
+    ${web_link_2_id}=    Set Variable    @{web_link_ids}[1]
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    # Checking expectations
+    Lock Entity    ${experiment_id}
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_2_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    403
+    Unlock Entity    ${experiment_id}
+
+Set text data when published
+    [Documentation]    If the entity is published, then its publishing state is set to ‘Unpublished’
+    [Setup]
+    ${experiment_name}=    Set Variable    SET-S010
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    WEB_LINK
+    ${file_type}=    Set Variable    .url
+    ${mime_type}=    Set Variable    application/x-url
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    testUpdatedData
+    Commit Versioned Entity    ${experiment_id}
+    Publish Record    ${experiment_id}
+    # Checking expectations
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    200
+    ${entity_dto}=    Get Entity New    ${web_link_id}    ${web_link_version_id}    200    includeVersionInfo=true    includeAttributes=true
+    ...    includeDataInfo=true
+    # Checks attributes have one with value set to ${file_name}
+    @{attributes_values}=    XMLLibrary.Get Element Value    ${entity_dto}    ${ENTITY_XMLNS}    value
+    Should Contain    ${attributes_values}    Unpublished
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set text data with legal different file extension and oversized
+    [Documentation]    If the entity data is updated with new data with a different file extension and a file validation rule enforcing the max file size is violated, then the HTTP status code 413 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Rule Max File Size 1KB
+    ${experiment_name}=    Set Variable    SET-S011
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    JPG_IMAGE
+    ${file_type}=    Set Variable    .jpg
+    ${mime_type}=    Set Variable    image/jpg
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    FakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KB
+    # Checking expectations
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    413
+    Unlock Entity    ${experiment_id}
+    [Teardown]    Disable Rule Max File Size 1KB
+
+Set text data with illegal different file extension
+    [Documentation]    If the entity data is updated with new data with an illegal file extension (no dot (.) prefixed extension name and file validation rule is enabled, extension name length less than 3 characters, etc.), then the HTTP status code 415 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Rule Max File Size 1KB
+    ${experiment_name}=    Set Variable    SET-S012
+    ${web_link_id}=    Create Experiment With 1 Web Link    ${experiment_name}
+    ${data_type}=    Set Variable    JPG_IMAGE
+    ${file_type}=    Set Variable    .jp
+    ${mime_type}=    Set Variable    image/jpg
+    ${file_name}=    Set Variable    testFileName
+    ${text_data}=    Set Variable    LegalFakeData
+    # Checking expectations
+    ${web_link_version_id}=    Set Cache Entity Data Text    ${web_link_id}    ${data_type}    ${file_type}    ${mime_type}    ${file_name}
+    ...    ${text_data}    415
+    Unlock Entity    ${experiment_id}
+    [Teardown]    Disable Rule Max File Size 1KB
+
+*** Keywords ***
+Create Experiment With 1 Web Link
+    [Arguments]    ${experiment_title}
+    [Documentation]    Creates a CACHE experiment with 1 Web Link children. The experiment is locked.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment web link ids. Also, it sets the suit variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_title}
+    Lock Entity    ${experiment_id}
+    # Adds web links
+    ${web_link_id}=    Add Web Link Entity    ${experiment_id}    www.idbs.com
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    ${web_link_id}
+
+Create Sequential Editable Experiment Witn 2 Web Links
+    [Arguments]    ${title}    ${name}
+    [Documentation]    Creates a sequentially editable template with with two Web Link children. Creates an experiment from the template and save it as VESION. Experiment is not kept locked.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment web link ids. Also, it sets the suite variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    # Creates template
+    ${template_dto}=    Build Template DTO    ${name}-TEM    ${title}-TEM
+    ${template_id}=    Add Entity With Custom DTO    ${project_id}    ${template_dto}
+    Lock Entity    ${template_id}
+    # Adds web links
+    Add Web Link Entity    ${template_id}    www.idbs.com/1
+    Add Web Link Entity    ${template_id}    www.idbs.com/2
+    Set Template Sequentially Editable    ${template_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Creates experiment from template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${title}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Get experiment Web Link ids
+    ${sapi_entity_ definition}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true    includeAttributes=true
+    ${sapi_entity_sequence}=    XMLLibrary.Get Element Xml    ${sapi_entity_ definition}    http://entity.services.ewb.idbs.com    entity
+    @{web_link_ids}=    XMLLibrary.Get Element Value    ${sapi_entity_sequence}    http://entity.services.ewb.idbs.com    entityId
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    @{web_link_ids}    # The ids of children Web Link items
+
+Create Landing Page In Default Project
+    [Arguments]    ${title}
+    [Documentation]    Creates a CACHE Landing Page in default project
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the landing page title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment web link ids. Also, it sets the suit variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    ${landing_page_dto}=    Build Landing Page DTO    ${title}
+    # Adds landing page
+    ${landing_page_id}=    Add Entity With Custom DTO    ${project_id}    ${landing_page_dto}
+    [Return]    ${landing_page_id}

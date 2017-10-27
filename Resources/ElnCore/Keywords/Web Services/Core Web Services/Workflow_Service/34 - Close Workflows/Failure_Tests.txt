@@ -1,0 +1,33 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows/{workflowid}/close* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+Non Requesting User
+    [Documentation]    Call as user without permissions to use the endpoint, should get 403 response
+    [Tags]       EWB-WEB-ICM-PI004-W005-01
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    Set Suite Variable    ${SERVICES USERNAME}    WorkflowWSUser7
+    Set Suite Variable    ${SERVICES PASSWORD}    WorkflowWSUser71
+    Close Workflow Tasks And Expect Error    ${sign off workflow id}    403
+
+Invalid Workflow Id
+    [Documentation]    Call for a invalid workflow id, should get 404 response
+    [Tags]       EWB-WEB-ICM-PI004-W005-02
+    Close Workflow Tasks And Expect Error    IDONTEXIST    404
+
+Workflow With No Closeable Tasks
+    [Documentation]    Call for a workflow with no closable tasks, should get 400 response
+    [Tags]       EWB-WEB-ICM-PI004-W005-03
+    ${task 1 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 2 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 3 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task setup json}=    Set Variable    {"taskSetup": [${task 1 json},${task 2 json},${task 3 json}]}
+    ${workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 4    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task setup json}
+    Close Workflow Tasks And Expect Error    ${workflow id}    400

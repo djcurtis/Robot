@@ -1,0 +1,12 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:\n
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+03-01 - Properties GET single property
+    [Documentation]    Removed endpoint functionality - no longer required
+    [Tags]    ignore
+    ${new element id}=    Create Root Element    TERM    PropertiesGET1    PropertiesGET1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term properties}=    Get Term Properties    ${new element id}

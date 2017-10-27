@@ -1,0 +1,319 @@
+*** Settings ***
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Library           ../../../Libraries/CatalogWebserviceGUIDLibrary/
+Library           String
+Library           Test Data Generation Library
+Library           OperatingSystem
+Library           TestDataGenerationLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+000 - Create Dictionary
+    [Documentation]    Creates a dictionary called Long String Auto 2 under Root.
+    ...
+    ...    Dictionary used for 001 - 007 tests of ASS-NELP1031-T002.2
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${LS2 Dict}=    Create Root Element    DICTIONARY    Long String Auto 2    Service checks for long string properties (automated)    true
+    ${LS2 Dict}=    Set Suite Variable    ${LS2 Dict}
+    # Create Short Strings
+    # 999 Characters
+    ${999_string}=    Generate Random String    999    [LETTERS][NUMBERS]
+    ${999string}=    Set Suite Variable    ${999_string}
+    # 1000 Characters
+    ${1000_string}=    Generate Random String    1000    [LETTERS][NUMBERS]
+    ${1000string}=    Set Suite Variable    ${1000_string}
+    # 1001 Characters
+    ${1001 _string}=    Generate Random String    1001    [LETTERS][NUMBERS]
+    ${1001 string}=    Set Suite Variable    ${1001 _string}
+    # Create Long Strings
+    # File of approx 9.5MB
+    Generate File Of Fixed Size    ${OUTPUT_DIR}/ninemeg.txt    9961472
+    ${9meg_string}=    Get File    ${OUTPUT_DIR}/ninemeg.txt
+    ${9megstring}=    Set Suite Variable    ${9meg_string}
+    # Create Defined Short Strings
+    # 499 Characters
+    ${499_string}=    Generate Random String    499    [LETTERS][NUMBERS]
+    ${499string}=    Set Suite Variable    ${499_string}
+    # 500 Characters
+    ${500_string}=    Generate Random String    500    [LETTERS][NUMBERS]
+    ${500string}=    Set Suite Variable    ${500_string}
+    # 501 Characters
+    ${501 _string}=    Generate Random String    501    [LETTERS][NUMBERS]
+    ${501string}=    Set Suite Variable    ${501 _string}
+
+001 - Concrete Key
+    [Documentation]    Creates a concrete term and a single defined STRING property with a valid text value. The property is then changed to long(<= 1000000000 characters) and short(<=1000 characters) STRING constraint lengths.
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${properties1}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Element    ${LS2 Dict}    TERM    LS01 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties1}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    true
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}
+    Update Element    ${Term LS1}    TERM    LS01 - Concrete    Concrete Non- Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ...    constraint=<= 10000000
+    ${properties3}=    Create Properties JSON    ${property 3}
+    Update Element And Expect Error    ${Term LS1}    TERM    400    LS01 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${properties4}=    Create Properties JSON    ${property 4}
+    Update Element    ${Term LS1}    TERM    LS01 - Concrete    Concrete Non- Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ...    constraint=<= 10000000
+    ${properties5}=    Create Properties JSON    ${property 5}
+    Update Element And Expect Error    ${Term LS1}    TERM    400    LS01 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties5}
+
+002 - Concrete General
+    [Documentation]    Creates a concrete term and a non-key STRING property. The property is then changed to defined(<=500 characters), long(<= 1000000000 characters) and short(<=1000 characters) STRING constraint lengths and back again.
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 1a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties1}=    Create Properties JSON    ${property 1}    ${property 1a}
+    ${Term LS1} =    Create Non-Root Element    ${LS2 Dict}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties1}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2a}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}    ${property 2a}
+    Update Element    ${Term LS1}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 3a}=    Create Property JSON    Short string General    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties3}=    Create Properties JSON    ${property 3}    ${property 3a}
+    Update Element    ${Term LS1}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 4a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties4}=    Create Properties JSON    ${property 4}    ${property 4a}
+    Update Element    ${Term LS1}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 5a}=    Create Property JSON    Short string General    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties5}=    Create Properties JSON    ${property 5}    ${property 5a}
+    Update Element    ${Term LS1}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true    ${properties5}
+    # Change property length
+    ${property 6}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 6a}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties6}=    Create Properties JSON    ${property 6}    ${property 6a}
+    Update Element    ${Term LS1}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true    ${properties6}
+    # Change property length
+    ${property 7}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 7a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties7}=    Create Properties JSON    ${property 7}    ${property 7a}
+    Update Element    ${Term LS1}    TERM    LS02 - Concrete    Concrete Non- Inheritance    true    ${properties7}
+
+003 - Concrete Inherited Key
+    [Documentation]    Creates a concrete term and a single short STRING property with a valid text value. The property is then changed to long(<= 1000000000 characters) and defined(<=500 characters) STRING constraint lengths.
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${properties1}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS2 Dict}    TERM    LS04 - Concrete Inherited    Concrete Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties1}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    true
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}
+    Update Element    ${Term LS1}    TERM    LS04 - Concrete Inherited    Concrete Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ...    constraint=<= 10000000
+    ${properties3}=    Create Properties JSON    ${property 3}
+    Update Element And Expect Error    ${Term LS1}    TERM    400    LS04 - Concrete Inherited    Concrete Inheritance    true
+    ...    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${properties4}=    Create Properties JSON    ${property 4}
+    Update Element    ${Term LS1}    TERM    LS04 - Concrete Inherited    Concrete Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ...    constraint=<= 10000000
+    ${properties5}=    Create Properties JSON    ${property 5}
+    Update Element And Expect Error    ${Term LS1}    TERM    400    LS04 - Concrete Inherited    Concrete Inheritance    true
+    ...    ${properties5}
+
+004 - Concrete Inherited General
+    [Documentation]    Creates a concrete inherited term and a non-key STRING property. The property is then changed to defined(<=500 characters), long(<= 1000000000 characters) and short(<=1000 characters) STRING constraint lengths and back again.
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 1a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties1}=    Create Properties JSON    ${property 1}    ${property 1a}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS2 Dict}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties1}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2a}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}    ${property 2a}
+    Update Element    ${Term LS1}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 3a}=    Create Property JSON    Short string General    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties3}=    Create Properties JSON    ${property 3}    ${property 3a}
+    Update Element    ${Term LS1}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 4a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties4}=    Create Properties JSON    ${property 4}    ${property 4a}
+    Update Element    ${Term LS1}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 5a}=    Create Property JSON    Short string General    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties5}=    Create Properties JSON    ${property 5}    ${property 5a}
+    Update Element    ${Term LS1}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true    ${properties5}
+    # Change property length
+    ${property 6}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 6a}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties6}=    Create Properties JSON    ${property 6}    ${property 6a}
+    Update Element    ${Term LS1}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true    ${properties6}
+    # Change property length
+    ${property 7}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 7a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties7}=    Create Properties JSON    ${property 7}    ${property 7a}
+    Update Element    ${Term LS1}    TERM    LS05 - Concrete Inherited    Concrete Inheritance    true    ${properties7}
+
+005 - Abstract
+    [Documentation]    Creates an abstract term and a STRING property. The property is then changed to defined(<=500 characters), long(<= 1000000000 characters) and short(<=1000 characters) STRING constraint lengths and back again.
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS2 Dict}    TERM    LS07 - Abstract    Abstract Non-Inheritance    true
+    ...    ${properties}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}
+    Update Abstract Term    ${Term LS1}    true    LS07 - Abstract    Abstract Non-Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties3}=    Create Properties JSON    ${property 3}
+    Update Abstract Term    ${Term LS1}    true    LS07 - Abstract    Abstract Non-Inheritance    true    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    false    false
+    ${properties4}=    Create Properties JSON    ${property 4}
+    Update Abstract Term    ${Term LS1}    true    LS07 - Abstract    Abstract Non-Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties5}=    Create Properties JSON    ${property 5}
+    Update Abstract Term    ${Term LS1}    true    LS07 - Abstract    Abstract Non-Inheritance    true    ${properties5}
+    # Change property length
+    ${property 6}=    Create Property JSON    Short string Key    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties6}=    Create Properties JSON    ${property 6}
+    Update Abstract Term    ${Term LS1}    true    LS07 - Abstract    Abstract Non-Inheritance    true    ${properties6}
+    # Change property length
+    ${property 7}=    Create Property JSON    Short string Key    STRING    Short    false    false
+    ${properties7}=    Create Properties JSON    ${property 7}
+    Update Abstract Term    ${Term LS1}    true    LS07 - Abstract    Abstract Non-Inheritance    true    ${properties7}
+
+006 - Abstract Inherited
+    [Documentation]    Creates an abstract term the inherits from Asset and a STRING property. The property is then changed to defined(<=500 characters), long(<= 1000000000 characters) and short(<=1000 characters) STRING constraint lengths and back again.
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS2 Dict}    TERM    LS08 - Abstract    Abstract Inheritance    true
+    ...    ${properties}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}
+    Update Abstract Term    ${Term LS1}    true    LS08 - Abstract    Abstract Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties3}=    Create Properties JSON    ${property 3}
+    Update Abstract Term    ${Term LS1}    true    LS08 - Abstract    Abstract Inheritance    true    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    false    false
+    ${properties4}=    Create Properties JSON    ${property 4}
+    Update Abstract Term    ${Term LS1}    true    LS08 - Abstract    Abstract Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties5}=    Create Properties JSON    ${property 5}
+    Update Abstract Term    ${Term LS1}    true    LS08 - Abstract    Abstract Inheritance    true    ${properties5}
+    # Change property length
+    ${property 6}=    Create Property JSON    Short string Key    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties6}=    Create Properties JSON    ${property 6}
+    Update Abstract Term    ${Term LS1}    true    LS08 - Abstract    Abstract Inheritance    true    ${properties6}
+    # Change property length
+    ${property 7}=    Create Property JSON    Short string Key    STRING    Short    false    false
+    ${properties7}=    Create Properties JSON    ${property 7}
+    Update Abstract Term    ${Term LS1}    true    LS08 - Abstract    Abstract Inheritance    true    ${properties7}
+
+007 - Defect test QC16132
+    [Documentation]    Creates a concrete term and a single short STRING property with a valid text value. The property is then changed to long(<= 10485760 characters) and defined(<=500 characters) STRING constraint lengths.
+    ...
+    ...    The value (<= 10485760 characters) is beyond the limit and is failed. Doing so with the webservice in quick succession breaks the database. This is to test the fix
+    # Create Term and property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 1a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties1}=    Create Properties JSON    ${property 1}    ${property 1a}
+    ${Term LS1} =    Create Non-Root Element    ${LS2 Dict}    TERM    LS09 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties1}
+    # Change property length
+    ${property 2}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    true
+    ${property 2a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ...    constraint=<= 500
+    ${properties2}=    Create Properties JSON    ${property 2}    ${property 2a}
+    Update Element    ${Term LS1}    TERM    LS09 - Concrete    Concrete Non- Inheritance    true    ${properties2}
+    # Change property length
+    ${property 3}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ${property 3a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ...    constraint=<= 10485760
+    ${properties3}=    Create Properties JSON    ${property 3}    ${property 3a}
+    Update Element And Expect Error    ${Term LS1}    TERM    400    LS09 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties3}
+    # Change property length
+    ${property 4}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 4a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties4}=    Create Properties JSON    ${property 4}    ${property 4a}
+    Update Element    ${Term LS1}    TERM    LS09 - Concrete    Concrete Non- Inheritance    true    ${properties4}
+    # Change property length
+    ${property 5}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ${property 5a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ...    constraint=<= 10485760
+    ${properties5}=    Create Properties JSON    ${property 5}    ${property 5a}
+    Update Element And Expect Error    ${Term LS1}    TERM    400    LS09 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties5}
+    # Change property length
+    ${property 6}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ${property 6a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ...    constraint=<= 500
+    ${properties6}=    Create Properties JSON    ${property 6}    ${property 6a}
+    Update Element    ${Term LS1}    TERM    LS09 - Concrete    Concrete Non- Inheritance    true    ${properties6}
+    # Change property length
+    ${property 7}=    Create Property JSON    Short string Key    STRING    Long    true    true
+    ${property 7a}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties7}=    Create Properties JSON    ${property 7}    ${property 7a}
+    Update Element    ${Term LS1}    TERM    LS09 - Concrete    Concrete Non- Inheritance    true    ${properties7}
+    # Add Catalogue
+    ${Defect Dict}=    Create Root Element    DICTIONARY    LS Defect Check    Service checks for long string defect (automated)    true
+    # Add Term
+    ${properties}=    Create Properties JSON With Single Property    Key Property    STRING    Key    true    true
+    ${Defect Term} =    Create Non-Root Element    ${Defect Dict}    TERM    Defect Term    Concrete Non-Inheritance    true
+    ...    ${properties}
+    # Add Tuple
+    Create Tuple    ${Defect Term}    Key Property    Test    Test    true    true
+    # Delete
+    Delete Element    ${Defect Dict}

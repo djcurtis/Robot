@@ -1,0 +1,88 @@
+*** Settings ***
+Documentation     Script for SH-1352 - data verification to be run after:
+...               - the data creation scripts have been run on a pre-EWB 10.2.1 system
+...               - the EWB system has been upgraded to 10.2.1
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+Del1 | V_a1b1 - Delete item - Vsave
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel1Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel1Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel1Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeDel1Ab1
+
+Del2 | V_a1b1 - Delete item - Dsave
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel2Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel2Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel2Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeDel2Ab1
+
+Del3 | V_a1b1 - Delete item - Cache
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel3Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel3Ab0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeDel3Aa1    1    MigrationToolAttrItemExpDel3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeDel3Ab1    1    MigrationToolAttrItemExpDel3
+
+Del4 | D_adbd - Delete item - Vsave
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel4Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel4Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel4Aad
+    Execute Free Text Search And Verify No Result    itemAttributeDel4Abd
+
+Del5 | D_adbd - Delete item - Dsave
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel5Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel5Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel5Aad
+    Execute Free Text Search And Verify No Result    itemAttributeDel5Abd
+
+Del6 | D_adbd - Delete item - Cache
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel6Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel6Ab0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeDel6Aad    1    MigrationToolAttrItemExpDel6
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeDel6Abd    1    MigrationToolAttrItemExpDel6
+
+Del7 | V_a1b1 - Delete record
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel7Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel7Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel7Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeDel7Ab1
+
+Del8 | D_adbd - Delete record
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel8Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel8Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel8Aad
+    Execute Free Text Search And Verify No Result    itemAttributeDel8Abd
+
+Del9 | V_a1b1 - Delete project
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel9Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel9Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel9Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeDel9Ab1
+
+Del10 | D_adbd - Delete project
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeDel10Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeDel10Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeDel10Aad
+    Execute Free Text Search And Verify No Result    itemAttributeDel10Abd

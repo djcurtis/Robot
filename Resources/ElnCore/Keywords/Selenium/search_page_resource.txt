@@ -1,0 +1,153 @@
+*** Settings ***
+Documentation     This resource file contains search UI specific keywords
+Library           IDBSSelenium2Library
+Library           CheckLibrary
+
+*** Variables ***
+${search page control}    EWB-PagerControls-Above-Page1
+${search page previous}    EWB-PagerControls-Above-PagePrevious
+${search page next}    EWB-PagerControls-Above-PageNext
+${search page 1}    EWB-PagerControls-Above-Page1
+${search page 2}    EWB-PagerControls-Above-Page2
+${search page 3}    EWB-PagerControls-Above-Page3
+${search page 4}    EWB-PagerControls-Above-Page4
+${search page 5}    EWB-PagerControls-Above-Page5
+${search page control bottom}    EWB-PagerControls-Below-Page1
+${search page previous bottom}    EWB-PagerControls-Below-PagePrevious
+${search page next bottom}    EWB-PagerControls-Below-PageNext
+${search page 1 bottom}    EWB-PagerControls-Below-Page1
+${search page 2 bottom}    EWB-PagerControls-Below-Page2
+${search page 3 bottom}    EWB-PagerControls-Below-Page3
+${search page 4 bottom}    EWB-PagerControls-Below-Page4
+${search page 5 bottom}    EWB-PagerControls-Below-Page5
+${invalid page number flag}    TRUE
+
+*** Keywords ***
+Check No Pager Controls
+    [Documentation]    Checks that there are no pager controls displayed.
+    Page Should Not Contain Element    ${search page control}
+    Page Should Not Contain Element    ${search page 1}
+    Page Should Not Contain Element    ${search page 2}
+    Page Should Not Contain Element    ${search page 3}
+    Page Should Not Contain Element    ${search page previous}
+    Page Should Not Contain Element    ${search page next}
+
+Check Five Search Pages Returned
+    [Documentation]    Checks that 5 pages of results are returned by validating
+    ...    the pager elements present.
+    Page Should Contain Element    ${search page 1}
+    Page Should Contain Element    ${search page 2}
+    Page Should Contain Element    ${search page 3}
+    Page Should Contain Element    ${search page 4}
+    Page Should Contain Element    ${search page 5}
+
+Check Next Page Control Present
+    [Documentation]    Checks that the "Next" page control is present.
+    Page Should Contain Element    ${search page next}
+
+Check Next Page Control Not Present
+    [Documentation]    Checks that the "Next" page control is not present.
+    ...    Note: the "Next" page control is actually always present but hidden.
+    Page Should Contain Element    //div[contains(@id,'${search page next}') and contains(@class,'ewb-search-page-hide')]
+
+Check Previous Page Control Present
+    [Documentation]    Checks that the "Prev" page control is present.
+    Page Should Contain Element    ${search page previous}
+
+Check Previous Page Control Not Present
+    [Documentation]    Checks that the "Prev" page control is not present.
+    ...    Note: the "Prev" page control is actually always present but hidden.
+    Page Should Contain Element    //div[contains(@id,'${search page previous}') and contains(@class,'ewb-search-page-hide')]
+
+Check Page Number
+    [Arguments]    ${page number}    ${number of results}
+    [Documentation]    Checks the pager header based on the ${page number} and ${number of results}.
+    Pager Check    ${page number}
+
+Page One Results Header Check
+    [Arguments]    ${no of results}
+    [Documentation]    Checks the search results header for page 1
+    ...    *(Should not be called directly from a test script - this keyword is
+    ...    built into search paging checks)*
+    Set Global Variable    ${invalid page number flag}    FALSE
+    Comment    Page Should Contain    1 to 10 of    ${no of results} results
+    ${page_number_class}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[@id='EWB-PagerControls-Above-Page1']@class
+    Check String Contains    Check pager is selected by class name    ${page_number_class}    ewb-search-page-current
+    ${number of selected pages}=    Get Matching Xpath Count    //div[@id='EWB-PagerControls-Above-Page1' and contains(@class, 'ewb-search-page-current')]
+    Check Number Equals    Check only one selected page number on results page    ${number of selected pages}    2    1
+
+Page Two Results Header Check
+    [Arguments]    ${no of results}
+    [Documentation]    Checks the search results header for page 2
+    ...    *(Should not be called directly from a test script - this keyword is
+    ...    built into search paging checks)*
+    Set Global Variable    ${invalid page number flag}    FALSE
+    Page Should Contain    11 to 20 of    ${no of results} results
+
+Page Three Results Header Check
+    [Arguments]    ${no of results}
+    [Documentation]    Checks the search results header for page 3
+    ...    *(Should not be called directly from a test script - this keyword is
+    ...    built into search paging checks)*
+    Set Global Variable    ${invalid page number flag}    FALSE
+    Page Should Contain    21 to 30 of    ${no of results} results
+
+Page Four Results Header Check
+    [Arguments]    ${no of results}
+    [Documentation]    Checks the search results header for page 4
+    ...    *(Should not be called directly from a test script - this keyword is
+    ...    built into search paging checks)*
+    Set Global Variable    ${invalid page number flag}    FALSE
+    Page Should Contain    31 to 40 of    ${no of results} results
+
+Page Five Results Header Check
+    [Arguments]    ${no of results}
+    [Documentation]    Checks the search results header for page 5
+    ...    *(Should not be called directly from a test script - this keyword is
+    ...    built into search paging checks)*
+    Set Global Variable    ${invalid page number flag}    FALSE
+    Page Should Contain    41 to 50 of    ${no of results} results
+
+Page Number Variable Invalid
+    [Documentation]    Fails the test case run due to an invalid page number variable
+    ...    being specified within the test script.
+    ...    *(Should not be called directly from a test script - this keyword is
+    ...    built into search paging checks)*
+    Fail    Invalid page number variable specified - valid variables are 1 - 5 inclusive
+
+Check Ten Results Per Page Returned
+    [Documentation]    Checks that there are exactly 10 results being returned on a page
+    ...    of search results (assumes a full page of results).
+    Page Should Contain Element    Results1Link
+    Page Should Contain Element    Results2Link
+    Page Should Contain Element    Results3Link
+    Page Should Contain Element    Results4Link
+    Page Should Contain Element    Results5Link
+    Page Should Contain Element    Results6Link
+    Page Should Contain Element    Results7Link
+    Page Should Contain Element    Results8Link
+    Page Should Contain Element    Results9Link
+    Page Should Contain Element    Results10Link
+    Page Should Not Contain Element    Results11Link
+    Page Should Not Contain Element    Results12Link
+    Page Should Not Contain Element    Results13Link
+    Page Should Not Contain Element    Results14Link
+    Page Should Not Contain Element    Results15Link
+
+Pager Check
+    [Arguments]    ${page_number}
+    [Documentation]    Checks the pagers (top and bottom) within the search results to ensure the correct page is highlighted
+    ...
+    ...    *Arguments*
+    ...
+    ...    _page_number_ - the page currently selected
+    Page Should Contain Element    EWB-PagerControls-Above-Page${page_number}    Page ${page_number} does not exist.
+    Page Should Contain Element    EWB-PagerControls-Below-Page${page_number}    Page ${page_number} does not exist.
+    ${page_number_class}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[@id='EWB-PagerControls-Above-Page${page_number}']@class
+    Check String Contains    Check pager is selected by class name    ${page_number_class}    ewb-search-page-current
+    ${number of selected pages}=    Get Matching Xpath Count    //div[@id='EWB-PagerControls-Above-Page${page_number}' and contains(@class, 'ewb-search-page-current')]
+    Check Number Equals    Check only one selected page number on results page    ${number of selected pages}    1    1
+    ${page_number_class}=    IDBSSelenium2Library.Get Element Attribute    xpath=//div[@id='EWB-PagerControls-Below-Page${page_number}']@class
+    Check String Contains    Check pager is selected by class name    ${page_number_class}    ewb-search-page-current
+    ${number of selected pages}=    Get Matching Xpath Count    //div[@id='EWB-PagerControls-Below-Page${page_number}' and contains(@class, 'ewb-search-page-current')]
+    Check Number Equals    Check only one selected page number on results page    ${number of selected pages}    1    1

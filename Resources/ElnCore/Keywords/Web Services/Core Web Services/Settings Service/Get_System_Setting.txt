@@ -1,0 +1,57 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET \ /services/1.0/settings/systemsettings/{key}
+Force Tags        System Settings
+Library           XMLLibrary
+Resource          ../../../Libraries/Core Web Services/Settings Service/rest_settings_service_resource.txt
+
+*** Test Cases ***
+Check can get system setting for specific key
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPISettingValueList
+    ${key}=    Set Variable    InforSense.host
+    ${system_setting}=    Get System Setting    ${key}    STRING
+    Check Xml Element Value Equals    check that the Inforsense host is set to localhost    ${system_setting}    localhost    value    elementNamespace=http://settings.services.ewb.idbs.com
+
+Get system setting fails for invalid data type
+    [Documentation]    If the value supplied for the parameter ‘type’ is not with the ones defined by SAPISettingsDataType, then the HTTP status code 404 is returned to the client.
+    ...
+    ...    valid types are:
+    ...
+    ...    AUTO_ID
+    ...    BINARY
+    ...    BOOLEAN
+    ...    CHEMISTRY
+    ...    IMAGE
+    ...    INTEGER
+    ...    NUMBER
+    ...    STRING
+    ...    TIMESTAMP
+    ${key}=    Set Variable    InforSense.host
+    ${system_setting}=    Get System Setting    ${key}    BOOLEAN
+    Check Xml Does Not Contain Element    check that there are no values set    ${system_setting}    value    elementNamespace=http://settings.services.ewb.idbs.com
+
+Check can get system setting with default data type
+    [Documentation]    If parameter ‘type’ is not supplied, its default value (STRING) is used. Hence, the value of returned setting data type is STRING.
+    ...
+    ...    So here, the port (number) is returned as the string '11008' as opposed to a numeric representation of '11,008'
+    ${key}=    Set Variable    InforSense.port
+    ${system_setting}=    Get System Setting    ${key}    NUMBER
+    Check Xml Element Value Equals    check that the Inforsense host is set to localhost    ${system_setting}    11,008    value    elementNamespace=http://settings.services.ewb.idbs.com
+    Check Xml Element Value Equals    check that the Inforsense host is set to localhost    ${system_setting}    NUMBER    dataType    elementNamespace=http://settings.services.ewb.idbs.com
+
+Check get system setting fails with unencoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${key}=    Set Variable    Stoichiometry Configuration/gramsUnit
+    ${system_setting}=    Get System Setting    ${key}    STRING    404
+
+Check can get system setting with encoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${key}=    Set Variable    Stoichiometry%20Configuration%252fgramsUnit
+    ${system_setting}=    Get System Setting    ${key}    STRING
+    Check Xml Element Value Equals    check that the Inforsense host is set to localhost    ${system_setting}    g    value    elementNamespace=http://settings.services.ewb.idbs.com
+
+Check can get system setting fails with incorrect encoded key
+    [Documentation]    The value of parameter ‘key’ must comply with HTML URL Encoding. For instance the symbol ‘/’ forward slash must be escaped as ‘%2F’ and the symbol ‘\’ back slash must be escaped as %5C. If the encoding is incorrect, then the HTTP status code 404 is returned to the client.
+    ${key}=    Set Variable    Stoichiometry Configuration/gramsUnit
+    ${system_setting}=    Get System Setting    ${key}    STRING    404

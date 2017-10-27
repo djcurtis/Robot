@@ -1,0 +1,2 @@
+*** Variables ***
+${GROUP_NAME}     Migration_Tool

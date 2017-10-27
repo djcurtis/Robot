@@ -1,0 +1,54 @@
+*** Settings ***
+Documentation     This resource contains keywords designed to support the usage of the browser in different locales
+Resource          general_resource.txt
+Library           RobotRemoteAgent
+Library           IDBSSelenium2Library
+
+*** Variables ***
+${GERMAN_LOCALE}    de
+${ENGLISH_LOCALE}    ${EMPTY}
+
+*** Keywords ***
+Create Firefox profile for language
+    [Arguments]    ${locale}
+    [Documentation]    This will create a new firefox profile directory that will have the specified locale set as the preferred language
+    ...
+    ...    *Arguments*
+    ...
+    ...    _locale_ the locale code, for example: \ de, fr (see constants in this library)
+    ...
+    ...    *Returrns*
+    ...
+    ...    the path to the newly created firefox profile directory
+    ${locale_profile_dir}=    set variable    ${OUTPUT_DIR}/firefox_${locale}
+    # clear out anything that might already exist as we can't guarantee it's state.
+    run keyword and ignore error    Remove Directory    ${locale_profile_dir}    recursive
+    Copy Directory    ${FIREFOX_PROFILE_DIR}    ${locale_profile_dir}
+    ${preferences}=    Get File    ${locale_profile_dir}/prefs.js
+    ${new_prefs}=    Replace String    ${preferences}    "intl.accept_languages", "en-gb,en"    "intl.accept_languages", "${locale},en-gb,en"
+    run keyword unless    '${locale}' == '${EMPTY}'    Create File    ${locale_profile_dir}/prefs.js    ${new_prefs}
+    [Return]    ${locale_profile_dir}
+
+open firefox with locale to entity
+    [Arguments]    ${locale_profile_dir}    ${entity_id}    ${entity_name}
+    [Documentation]    Opens the firefox browser using a specific profile to the specified entity
+    ...
+    ...    *Arguments*
+    ...
+    ...    _locale_profile_dir_ - the firefox profile folder to use
+    ...
+    ...    _entity_id_ - the id of the entity
+    ...
+    ...    _entity_name_ - the name of the entity (used for title bar checking to ensure the browser has loaded properly)
+    ${agent_path}=    RobotRemoteAgent.Get Java Agent Option
+    ${environment_vars}=    Create Dictionary    JAVA_TOOL_OPTIONS    ${agent_path}    _JAVA_OPTIONS    ${EMPTY}
+    ${url}=    Create Entity URL    ${group_id}
+    ${alias}=    Open Browser    ${url}    firefox    ff_profile_dir=${locale_profile_dir}    environment_variables=${environment_vars}
+    Run Keyword And Ignore Error    Maximize Browser Window
+    Set Selenium Speed    ${DELAY}
+    Title Should Be    IDBS E-WorkBook
+    Input Username    ${VALID USER}
+    Input Password    ${VALID PASSWD}
+    sleep    1s
+    Submit Credentials
+    Wait Until Title Is    IDBS E-WorkBook - ${entity_name}    30s

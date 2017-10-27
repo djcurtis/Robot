@@ -1,0 +1,245 @@
+*** Settings ***
+Library           OracleLibrary
+Library           IDBSSelenium2Library
+Resource          properties_resource.txt
+Resource          ../../common_resource.txt
+Resource          general_resource.txt
+Resource          hierarchy_resource.txt
+
+*** Variables ***
+${EditButton}     xpath=//a[@class="ewb-document-header-button-primary"]
+${ExitButton}     xpath=//a[contains(@class,"command-return")]
+${SaveButton}     xpath=//button[contains(@class,"save-button")]
+${ChemistryEditor}    xpath=//iframe[contains(@class,'custom-item-panel-fullscreen-edit')]
+${ChemistryView}    xpath=//div[contains(@class, 'ewb-document-body-container')]//iframe[contains(@class,'gwt-Frame')]
+${MarvinJSFrame}    marvinjs
+${MarvinJSEditor}    xpath=//body[@class='mjs-body']
+${MarvinJSCanvas}    xpath=//canvas[contains(@class,"mjs-canvas")]
+${MarvinJSChainButton}    xpath=//div[@title="Chain"]
+${ChemistryPreview}    xpath=//img[contains(@class,"chemistry-item")]
+${MarvinJSPyrroleButton}    xpath=//div[@title="Pyrrole"]
+
+*** Keywords ***
+Insert Chemistry Item From Menu
+    [Arguments]    ${save}=no
+    [Documentation]    *Description*
+    ...    Inserts a new chemistry from the insert menu
+    ...
+    ...    *Arguments*
+    ...    - ${save} = Whether to draft save after inserting the item ("draft" to save)
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The record must be opened for editing
+    ...
+    ...    *Example*
+    ...    | Insert Chemistry Item From Menu
+    # check number of items in the record    # use that to determine the id of the item we are creating.    # bear in mind xpath is 1-base (i.e. count), and the item id's are 0-base
+    ${xpath count} =    Get Matching Xpath Count    //span[contains(@class, 'ewb-document-header-type')]
+    ${expected_item_id}=    set variable    document-header-${xpath count}-itemTypeLabel
+    # insert new item
+    Open Insert Menu
+    Robust Click    CUSTOM-PANEL-CREATE-DOC-IDBS_CHEMISTRY
+    # check that the chemistry editor presents
+    Wait Until Page Contains Element    ${ChemistryEditor}
+    Select Marvin Editor
+    Confirm MarvinJS Is Present
+    Exit From Chemistry Editor
+    # check that the item is present in record
+    Wait Until Page Contains Element    ${expected_item_id}    60s
+    Run Keyword If    "${save}"=="draft"    Draft Save Record
+
+Confirm Chemistry Item Has Edit Button
+    [Documentation]    *Description*
+    ...    Confirms that the currently selected chemistry item has an 'Edit' button
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - A document item must be selected
+    ...
+    ...    *Example*
+    ...    | Confirm Chemistry Item Has Edit Button
+    Wait Until Page Contains Element    ${EditButton}    10s
+
+Start Chemistry Editor
+    [Documentation]    *Description*
+    ...    Edits the currently selected chemistry item in an open record
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - A document item must be selected
+    ...
+    ...    *Example*
+    ...    | Start Chemistry Editor
+    Robust Click    ${EditButton}
+    Wait Until Page Contains Element    ${ChemistryEditor}
+    Select Frame    ${ChemistryEditor}
+
+Exit From Chemistry Editor
+    [Documentation]    *Description*
+    ...    Exits from the chemistry editor
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Exit From Chemistry Editor
+    Unselect Frame
+    Select Frame    ${ChemistryEditor}
+    Robust Click    ${ExitButton}
+    Wait Until Page Does Not Contain Element    ${ChemistryEditor}    10s
+    Unselect Frame
+
+Select Marvin Editor
+    [Documentation]    *Description*
+    ...    Selects the frame containing MarvinJS, this *MUST* be called before attempting
+    ...    any marvin operations
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Select Marvin Editor
+    Unselect Frame
+    Select Frame    ${ChemistryEditor}
+    Wait Until Page Contains Element    ${MarvinJSFrame}
+    Select Frame    ${MarvinJSFrame}
+
+Confirm MarvinJS Is Present
+    [Documentation]    *Description*
+    ...    Confirms that the marvinjs editor is installed
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Confirm MarvinJS Is Present
+    Wait Until Page Contains Element    ${MarvinJSEditor}    10s
+
+Confirm Save Button Saves The Structure
+    [Documentation]    *Description*
+    ...    Confirms that clicking the 'Save' button causes the chemistry structure to be saved
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Confirm Save Button Saves The Structure
+    Unselect Frame
+    Select Frame    ${ChemistryEditor}
+    Robust Click    ${SaveButton}
+    Wait Until Page Contains    Saved at
+
+Confirm Save Button Does Nothing With No Changes
+    [Documentation]    *Description*
+    ...    Confirms that clicking the 'Save' button does nothing if the structure isn't changed
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Confirm Save Button Does Nothing With No Changes
+    Unselect Frame
+    Select Frame    ${ChemistryEditor}
+    Robust Click    ${SaveButton}
+    Sleep    2s
+    Wait Until Page Does Not Contain    Saved at
+
+Confirm That The Structure Is Automatically Saved
+    [Documentation]    *Description*
+    ...    Confirms that the auto save feature works
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Confirm That The Structure Is Automatically Saved
+    Unselect Frame
+    Select Frame    ${ChemistryEditor}
+    # Wait at least 1 minute for the auto save to kick in
+    Sleep    70s
+    Wait Until Page Contains    Saved at
+
+Add Item To MarvinJS
+    [Documentation]    *Description*
+    ...    Adds an item to the marvinjs canvas
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - The chemistry editor must be open
+    ...
+    ...    *Example*
+    ...    | Add Item To MarvinJS
+    Robust Click    ${MarvinJSPyrroleButton}
+    Robust Click    ${MarvinJSCanvas}
+
+Confirm That Chemistry Preview Is Present
+    [Documentation]    *Description*
+    ...    Confirms that a chemistry preview image is present
+    ...
+    ...    *Arguments*
+    ...    None
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    - An item must have been added via the chemistry editor, and the editor must have been closed
+    ...
+    ...    *Example*
+    ...    | Confirm That Chemistry Preview Is Present
+    Select Frame    ${ChemistryView}
+    Wait Until Page Contains Element    ${ChemistryPreview}

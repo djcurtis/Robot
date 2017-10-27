@@ -1,0 +1,35 @@
+*** Settings ***
+Documentation     Script for SH-1351 - data verification to be run after:
+...               - the data creation scripts have been run on a pre-EWB 10.2.0 system
+...               - the EWB system has been upgraded to 10.2.1
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+V1 | [Va1b1]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordV1
+    Execute Free Text Search And Verify Data By Name And Count    recordAttributeV1a1    1    MigrationToolAttrRecordV1a
+    Execute Free Text Search And Verify Data By Name And Count    MigrationToolAttrRecordV1a    1    MigrationToolAttrRecordV1a
+
+V2 | [Va1b1]->[Va2b2]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordV2
+    Execute Free Text Search And Verify No Result    recordAttributeV2a1
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordV2a
+    Execute Free Text Search And Verify Data By Name And Count    recordAttributeV2a2    1    MigrationToolAttrRecordV2b
+    Execute Free Text Search And Verify Data By Name And Count    MigrationToolAttrRecordV2b    1    MigrationToolAttrRecordV2b
+
+V3 | [Va1b1]->[Dadbd]->[Va2b2]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordV3
+    Execute Free Text Search And Verify No Result    recordAttributeV3a1
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordV3a
+    Execute Free Text Search And Verify No Result    recordAttributeV3ad
+    Execute Free Text Search And Verify No Result    MigrationToolAttrRecordV3b
+    Execute Free Text Search And Verify Data By Name And Count    recordAttributeV3a2    1    MigrationToolAttrRecordV3c
+    Execute Free Text Search And Verify Data By Name And Count    MigrationToolAttrRecordV3c    1    MigrationToolAttrRecordV3c

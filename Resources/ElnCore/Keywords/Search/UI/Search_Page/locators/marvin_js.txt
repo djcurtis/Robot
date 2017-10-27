@@ -1,0 +1,12 @@
+*** Settings ***
+Documentation     Locators for MarvinJS chemistry search screen
+
+*** Variables ***
+${marvinJSTitle}    //span[text()='Chemistry Search']
+${marvinJSCanvas}    //canvas
+${marvinJSFrame}    marvinjs
+${marvinJSSearchButton}    css=#marvinSearch
+${substructureSearchRB}    xpath=//input[@value='substructure']
+${exactSearchRB}    xpath=//input[@value='full_fragment']
+${marvinJSCancelButton}    //button[contains(text(),'Cancel')]
+${clearAllButton}    //div[@title='Clear (Ctrl+Del)']

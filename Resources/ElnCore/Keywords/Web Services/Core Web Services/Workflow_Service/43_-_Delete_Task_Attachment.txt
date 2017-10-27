@@ -1,0 +1,48 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/{taskid}/attachments/{attachmentid}* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          task_service_common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Library           IDBSHttpLibrary
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+
+*** Test Cases ***
+Check can delete task attachment
+    [Documentation]    A successful call returns the HTTP status 204
+    ${new task id}=    Create and Accept Task
+    ${new attachment id}=    Attach To Task    ${new task id}    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\TaskFlow Services\\SimpleFile.txt    SimpleFile.txt
+    ${response}=    Get Task Attachment    ${new task id}    ${new attachment id}
+    Response Body Should Contain    ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    ${response}=    Delete Task Attachment    ${new task id}    ${new attachment id}
+
+Delete task attachment fails if no task id is supplied
+    [Documentation]    If the task id is not supplied then the HTTP status code 400 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${new attachment id}=    Attach To Task    ${new task id}    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\TaskFlow Services\\SimpleFile.txt    SimpleFile.txt
+    ${response}=    Delete Task Attachment And Expect Error    ${EMPTY}    ${new attachment id}    404
+
+Delete task attachment fails if no attachment id is supplied
+    [Documentation]    If the attachment id is not supplied then the HTTP status code 405 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${new attachment id}=    Attach To Task    ${new task id}    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\TaskFlow Services\\SimpleFile.txt    SimpleFile.txt
+    ${response}=    Delete Task Attachment And Expect Error    ${new task id}    ${EMPTY}    405
+
+Delete task attachment fails if no task id is not found
+    [Documentation]    If the referenced task id could not be located then the HTTP status code 404 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${new attachment id}=    Attach To Task    ${new task id}    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\TaskFlow Services\\SimpleFile.txt    SimpleFile.txt
+    ${response}=    Delete Task Attachment And Expect Error    WrongTaskId    ${new attachment id}    404
+
+Delete task attachment fails if attachment id is not found
+    [Documentation]    If the referenced attachment id could not be located then the HTTP status code 404 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${new attachment id}=    Attach To Task    ${new task id}    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\TaskFlow Services\\SimpleFile.txt    SimpleFile.txt
+    ${response}=    Delete Task Attachment And Expect Error    ${new task id}    WrongAttachmentId    404
+
+Check cannot delete task attachment if user does not have permission
+    [Documentation]    If the user is NOT the responsible user, the requester or an assigned user then the HTTP status code 403 is returned to the client.
+    ${new task id}=    Create and Accept Task
+    ${new attachment id}=    Attach To Task    ${new task id}    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\TaskFlow Services\\SimpleFile.txt    SimpleFile.txt
+    Set Test Variable    ${SERVICES USERNAME}    WorkflowWSUser5
+    Set Test Variable    ${SERVICES PASSWORD}    WorkflowWSUser51
+    ${response}=    Delete Task Attachment And Expect Error    ${new task id}    ${new attachment id}    403

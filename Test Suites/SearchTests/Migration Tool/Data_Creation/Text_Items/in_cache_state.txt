@@ -1,0 +1,183 @@
+*** Settings ***
+Documentation     Test case names have the format:
+...
+...               (entity save state) | [itemA(save state) itemB(save state)] -> [itemA(save state) itemB(save state)]
+...               -> represent a save state change action such as version/draft save, or no save
+...
+...               Script for SH-1225 - data creation script to be run:
+...               - on a EWB 10.1.3 system
+...
+...               (this script is written to work with the corresponding data verification scripts)
+Suite Setup       setup suite
+Library           Collections
+Library           DateTime
+Library           EntityAPILibrary
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../migration_tool_variables.txt
+
+*** Test Cases ***
+C | [Ad]->[Ac]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create initial draft text entity
+    ...    - edit text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC1    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    uniqueC1A0
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId}    uniqueC1AC
+
+C | [Ad Bd]->[Ac Bd]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create initial draft text entity (x2)
+    ...    - edit one text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC2    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC2A0
+    Edit Text Document And Draft Save    ${experimentId}    ${documentIdB}    uniqueC2B0
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC2AC
+
+C | [Av]->[Ac]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity
+    ...    - Version save experiment
+    ...    - edit text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC3    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    uniqueC3A1
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId}    uniqueC3AC
+
+C | [Av Bv]->[Ac Bv]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity (x2)
+    ...    - Version save experiment
+    ...    - edit first text entity
+    ...    - not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC4    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC4A1
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdB}    uniqueC4B1
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC4AC
+
+C | [Av]->[Ad]->[Ac]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity
+    ...    - Version save experiment
+    ...    - edit text entity
+    ...    - draft save experiment
+    ...    - edit text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC5    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItem
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    uniqueC5A1
+    Sleep    ${wait}
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    uniqueC5A2
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentId}    uniqueC5AC
+
+C | [Av]->[Ad Bd]->[Ac Bd]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity
+    ...    - Version save experiment
+    ...    - create second text entity
+    ...    - edit first text entity
+    ...    - draft save experiment
+    ...    - edit first text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC6    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdA}    uniqueC6A1
+    Sleep    ${wait}
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC6A2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentIdB}    uniqueC6B0
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC6AC
+
+C | [Av]->[Ad Bd]->[Ac Bc]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity
+    ...    - Version save experiment
+    ...    - create second text entity
+    ...    - edit first text entity
+    ...    - draft save experiment
+    ...    - edit both text entities
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC7    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdA}    uniqueC7A1
+    Sleep    ${wait}
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC7A2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentIdB}    uniqueC7B0
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC7AC
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdB}    uniqueC7BC
+
+C | [Av Bv]->[Ad Bv]->[Ac Bc]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity (x2)
+    ...    - Version save experiment
+    ...    - edit first text entity
+    ...    - draft save experiment
+    ...    - edit both text entities
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC8    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC8A1
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdB}    uniqueC8B1
+    Sleep    ${wait}
+    Edit Text Document And Draft Save    ${experimentId}    ${documentIdA}    uniqueC8A2
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC8AC
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdB}    uniqueC8BC
+
+C | [Av Bv Cv]->[Ad Bd Cv]->[Ac Bd Cv]
+    [Documentation]    Script to:
+    ...    - create experiment
+    ...    - create text entity (x3)
+    ...    - Version save experiment
+    ...    - edit first and second text entities
+    ...    - draft save experiment
+    ...    - edit first text entity
+    ...    - Not save experiment
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ExperimentC9    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemA
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemB
+    ${documentIdC}=    EntityAPILibrary.Create Text Document    ${experimentId}    textItemC
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC9A1
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdB}    uniqueC9B1
+    Edit Text Document And Version Save    ${experimentId}    ${documentIdC}    uniqueC9C1
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC9A2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentIdB}    uniqueC9B2
+    Sleep    ${wait}
+    Edit Text Document And Do Not Save    ${experimentId}    ${documentIdA}    uniqueC9AC
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    0s
+    Set Suite Variable    ${wait}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${GROUP_NAME}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Project_C
+    Set Suite Variable    ${projectId}

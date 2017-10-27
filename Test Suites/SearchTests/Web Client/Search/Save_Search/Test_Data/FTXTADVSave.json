@@ -1,0 +1,40 @@
+{
+	"entityType": "WEB_SEARCH",
+	"entityName": "FTXTADV_Name",
+	"attributes": {
+		"attribute": [{
+			"name": "name",
+			"values": {
+				"value": ["FTXTADV_Name"]
+			}
+		},
+		{
+			"name": "description",
+			"values": {
+				"value": [""]
+			}
+		},
+		{
+			"name": "orderKey",
+			"values": {
+				"value": [""]
+			}
+		},
+		{
+			"name": "isDefault",
+			"values": {
+				"value": [false]
+			}
+		}]
+	},
+	"data": {
+		"data": {
+			"dataText": "{\"text\":{\"text\":\"*SearchSave\"},\"structured\":{\"searchTerms\":[{\"id\":\"/Flexible%20Hierarchy/Solutions/Experiment#title /Experiment%20Dictionaries/Experiment%20Titles#title\",\"term\":\"Title\",\"type\":\"string\",\"enabled\":true,\"operator\":\"is\",\"value\":\"FreeTextSearchSave\"},{\"id\":\"/Flexible%20Hierarchy/Core/Record#statusName /Experiment%20Dictionaries/Experiment%20Statuses#status\",\"term\":\"Status\",\"type\":\"string\",\"enabled\":true,\"operator\":\"is\",\"value\":\"Completed\"},{\"id\":\"/Flexible%20Hierarchy/Solutions/Template#keywords\",\"term\":\"Keywords\",\"type\":\"string\",\"enabled\":true,\"operator\":\"is\",\"value\":\"Unique\"}],\"matchMode\":\"matchAny\"}}"
+		},
+		"dataInfo": {
+			"mimeType": "application/json",
+			"dataType": "WEB_SEARCH",
+			"fileType": ".search.json"
+		}
+	}
+}

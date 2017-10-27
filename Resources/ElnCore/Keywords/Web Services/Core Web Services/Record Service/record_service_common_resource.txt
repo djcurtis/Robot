@@ -1,0 +1,91 @@
+*** Settings ***
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           OperatingSystem
+Library           String
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          PDF content acceptance/test utilities.txt
+Resource          ../../../Libraries/Web Services/REST_RecordService/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+
+*** Variables ***
+${LIMITED_PERMISSIONS_USERNAME}    auto_ws_user    # common user name for web service testing
+${PASSWORD}       password    # password for ws user
+@{PERMISSIONS}    INITIATE_PUBLISHING    OPEN_PDF    CREATE_PDF    VIEW_PDF    VIEW_PDF_FOLDER    VIEW_EXPERIMENT    EDIT_EXPERIMENT
+...               OPEN_EXPERIMENT
+
+*** Keywords ***
+Record Service Suite Setup
+    [Documentation]    Create a default group/project for the Record Service test cases to be run under
+    Run Keyword And Ignore Error    Create User    ${LIMITED_PERMISSIONS_USERNAME}    ${PASSWORD}    Test User    testing@idbs.com    Testing
+    Run Keyword And Ignore Error    Assign User System Role    ${LIMITED_PERMISSIONS_USERNAME}    ALL_SYSTEM_PERMISSIONS
+    ${response}=    Create Hierarchy For Experiments    EWB-SAPI-SSP-RES
+    Create path variables
+    Test Utilities.Set suite path variables
+
+Record Service Suite Teardown
+    [Documentation]    Tidy up test suite cases
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${group_id}    As Intended    Test Suite Completed
+
+Create path variables
+    ${pdf_content_test_data_root_folder}=    Join Path    ${CURDIR}    ..    ..    ..    Test Data
+    ...    Core Web Services    Record Service
+    Set Global Variable    ${pdf_content_test_data_root_folder}
+    ${pdf_content_expected_root_folder}=    Join Path    ${CURDIR}    ..    ..    ..    Expected Results
+    ...    Core Web Services    Record Service
+    Set Global Variable    ${pdf_content_expected_root_folder}
+
+Create Publishable Experiment
+    [Arguments]    ${experiment_name}    ${project_id}
+    [Documentation]    Helper keyword that creates a publishable experiment
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    [Return]    ${experiment_id}
+
+Create Published Experiment PDF
+    [Arguments]    ${experiment_name}    ${project_id}
+    [Documentation]    Creates a new publishable experiment with a PDF
+    ${experiment_id}=    Create Publishable Experiment    ${experiment_name}    ${project_id}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${pdf_id}=    Publish Record    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    [Return]    ${experiment_id}
+
+Create Custom PDF Role
+    [Arguments]    ${role_name}
+    [Documentation]    custom role created for PDF permissions checking
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    ${role_name}_${unique_id}
+    ${role_response}=    Create Role    ${role_name}    ${role_name}    custom role for PDF testing    false
+    : FOR    ${permission}    IN    @{PERMISSIONS}
+    \    Add Role Permission    ${role_name}    ${permission}
+    [Return]    ${role_name}
+
+Delete Custom PDF Role
+    [Arguments]    ${role_name}
+    [Documentation]    Deletes the custom role created for PDF permissions checking
+    : FOR    ${permission}    IN    @{PERMISSIONS}
+    \    Run Keyword And Ignore Error    Remove Role Permission    ${role_name}    ${permission}
+    Run Keyword And Ignore Error    SecurityAPILibrary.Delete Role    ${role_name}
+    [Return]    ${role_name}
+
+Record Service Test Setup
+    [Documentation]    Create an experiment, add some basic content (eg. web link) and publish the experiment.
+    ...
+    ...    Create a custom role for limited permission checking
+    ${experiment_id}=    Create Published Experiment PDF    GPP-Experiment    ${project_id}
+    Set Suite Variable    ${experiment_id}
+    ${name}=    Set Variable    CUSTOM_GPP_ROLE
+    ${role_name}=    Create Custom PDF Role    ${name}
+    Set Suite Variable    ${role_name}
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+
+Record Service Test Teardown
+    [Documentation]    Delete custom role
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}

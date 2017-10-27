@@ -1,0 +1,573 @@
+*** Settings ***
+Documentation     This test suite covers the testing of the business logic validation surrounding users applied system permissions when using the security service operations.
+...
+...               Note this test does not clean up after itself, debuging by running these test more than once is difficult. Teardown needed
+Test Setup        Business Logic Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+0-1 - Roles Setup
+    Create Role    Create Users    Create Users    Create Users    true
+    Add Role Permission    Create Users    CREATE_USERS
+    Create Role    Create Groups    Create Groups    Create Groups    true
+    Add Role Permission    Create Groups    CREATE_GROUPS
+    Create Role    Create Roles    Create Roles    Create Roles    true
+    Add Role Permission    Create Roles    CREATE_ROLES
+    Create Role    Delete Groups    Delete Groups    Delete Groups    true
+    Add Role Permission    Delete Groups    DELETE_GROUPS
+    Create Role    Delete Roles    Delete Roles    Delete Roles    true
+    Add Role Permission    Delete Roles    DELETE_ROLES
+    Create Role    Update Users    Update Users    Update Users    true
+    Add Role Permission    Update Users    EDIT_USERS
+    Create Role    Update Roles    Update Roles    Update Roles    true
+    Add Role Permission    Update Roles    EDIT_ROLES
+    Create Role    Enable Users    Enable Users    Enable Users    true
+    Add Role Permission    Enable Users    ENABLE_USERS
+    Create Role    Reset Password    Reset Password    Reset Password    true
+    Add Role Permission    Reset Password    RESET_USER_PASSWORD
+    Create Role    View Roles    View Roles    View Roles    true
+    Add Role Permission    View Roles    VIEW_ROLES
+    Create Role    Edit Role Grant    Edit Role Grant    Edit Role Grant    true
+    Add Role Permission    Edit Role Grant    EDIT_ROLE_GRANT
+    Create Role    View Role Grant    View Role Grant    View Role Grant    true
+    Add Role Permission    View Role Grant    VIEW_ROLE_GRANT
+    Create Role    Entity Admin Role    Entity Admin Role    Entity Admin Role    true
+    Add Role Permission    Entity Admin Role    ENTITY_ADMINISTRATION
+
+1-1 - Create Groups
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Create User Group and Expect Error    GroupPerm1    GroupPerm1    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Create Groups
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Create User Group    GroupPerm2    GroupPerm2
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User Group Creation    GroupPerm2    GroupPerm2
+
+1-2 - Update Groups
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Create User Group    GroupPerm3    GroupPerm3
+    Add User Group Admin    GroupPerm3    ${security_service_user1}
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Update User Group And Expect Error    GroupPerm3    UpdatedDescription    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User Group Creation    GroupPerm3    GroupPerm3
+    Create User Group    GroupPerm4    GroupPerm4
+    Add User Group Admin    GroupPerm4    ${security_service_user1}
+    Assign User System Role    ${security_service_user1}    Create Groups
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Update User Group    GroupPerm4    UpdatedDescription
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User Group Creation    GroupPerm4    UpdatedDescription
+
+1-3 - Delete Groups
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Assign User System Role    ${security_service_user1}    Create Groups
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Create User Group    GroupPerm5    GroupPerm5
+    Create User Group    GroupPerm6    GroupPerm6
+    Request Setup
+    Next Request Should Not Succeed
+    DELETE    ${SECURITY ADMINISTRATION GROUP ENDPOINT}/GroupPerm5
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User Group Creation    GroupPerm5    GroupPerm5
+    Assign User System Role    ${security_service_user1}    Delete Groups
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Delete User Group    GroupPerm6
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Check User Group Not Present    GroupPerm6
+
+2-1 - Create Users
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Create User and Expect Error    UserPerm1    pass1    UserPerm1    sectesting@idbs.com    Testing    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Create Users
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Run Keyword And Ignore Error    Create User    UserPerm2    pass1    UserPerm2    sectesting@idbs.com    Testing
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User    UserPerm2    UserPerm2    sectesting@idbs.com    Testing
+
+2-2 - Update Users
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    Create User And Validate    UserPerm3    pass1    UserPerm3    sectesting@idbs.com    Testing
+    Run Keyword And Ignore Error    Create User And Validate    UserPerm4    pass1    UserPerm4    sectesting@idbs.com    Testing
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Update User And Expect Error    UserPerm3    UserPerm3Update    sectesting@idbs.com    Testing    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User    UserPerm3    UserPerm3    sectesting@idbs.com    Testing
+    Assign User System Role    ${security_service_user1}    Update Users
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Update User    UserPerm4    UserPerm4Update    sectesting@idbs.com    Testing
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate User    UserPerm4    UserPerm4Update    sectesting@idbs.com    Testing
+
+2-3 - Disable and Enable Users
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Disable User And Expect Error    ${security_service_user2}    DisabledPermissionCheck    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Enable Users
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Disable User    ${security_service_user2}    DisabledPermissionCheck
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Delete User System Role    ${security_service_user1}    Enable Users
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Enable User And Expect Error    ${security_service_user2}    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Enable Users
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Enable User    ${security_service_user2}
+
+2-4 - Reset User Password
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    Create User And validate    UserPermReset    pass1    UserPermReset    sectesting@idbs.com    Testing
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Reset Users Password And Expect Error    UserPermReset    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Reset Password
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Reset Users Password    UserPermReset
+
+3-1 - Create Entity Role
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Create Role And Expect Error    EntityPerm1    EntityPerm1    EntityPerm1    false    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Create Roles
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Create Role    EntityPerm2    EntityPerm2    EntityPerm2    false
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate Role    EntityPerm2    EntityPerm2    EntityPerm2    false
+
+3-2 - Update Entity Role
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    Create Role And Validate    EntityPerm3    EntityPerm3    EntityPerm3    false
+    Run Keyword And Ignore Error    Create Role And Validate    EntityPerm4    EntityPerm4    EntityPerm4    false
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Update Role And Expect Error    EntityPerm3    UpdatedDescription    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate Role    EntityPerm3    EntityPerm3    EntityPerm3    false
+    Assign User System Role    ${security_service_user1}    Update Roles
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Update Role    EntityPerm4    UpdatedDescription
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Validate Role    EntityPerm4    EntityPerm4    UpdatedDescription    false
+
+3-3 - Delete Entity Role
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Create Role And Validate    EntityPerm5    EntityPerm5    EntityPerm5    false
+    Create Role And Validate    EntityPerm6    EntityPerm6    EntityPerm6    false
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Set Request Body    {"comments":"deleted"}
+    Next Request Should Not Succeed
+    POST    ${SECURITY ADMINISTRATION ROLE ENDPOINT}/EntityPerm5
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Check Role Present    EntityPerm5
+    Assign User System Role    ${security_service_user1}    Delete Roles
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Delete Role    EntityPerm6    deleted
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Check Role Not Present    EntityPerm6
+
+4-1 - Retrieve All Entity Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ROLE ENDPOINT}?systemRole=false
+    Response Status Code Should Equal    403
+    ${RESPONSE BODY} =    Get Response Body
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    View Roles
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION ROLE ENDPOINT}?systemRole=false
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+
+4-2 - Retrieve All System Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ROLE ENDPOINT}?systemRole=true
+    Response Status Code Should Equal    403
+    ${RESPONSE BODY} =    Get Response Body
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    View Roles
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION ROLE ENDPOINT}?systemRole=true
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+
+5-1 - View User Assignable Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles
+    Response Status Code Should Equal    403
+    ${RESPONSE BODY} =    Get Response Body
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    View Role Grant
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+
+5-2 - Assign/Remove User Assignable Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    POST    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles/ALL_SYSTEM_PERMISSIONS
+    Response Status Code Should Equal    403
+    ${RESPONSE BODY} =    Get Response Body
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles
+    ${RESPONSE BODY} =    Get Response Body
+    ${assigned roles}=    Get JSON Value    ${RESPONSE BODY}    /roles
+    ${parsed roles}=    Parse JSON    ${assigned roles}
+    Length Should Be    ${parsed roles}    0
+    Assign User System Role    ${security_service_user1}    Edit Role Grant
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    POST    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles/ALL_SYSTEM_PERMISSIONS
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles
+    ${RESPONSE BODY} =    Get Response Body
+    ${assigned roles}=    Get JSON Value    ${RESPONSE BODY}    /roles
+    ${parsed roles}=    Parse JSON    ${assigned roles}
+    Length Should Be    ${parsed roles}    1
+    Delete User System Role    ${security_service_user1}    Edit Role Grant
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    DELETE    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles/ALL_SYSTEM_PERMISSIONS
+    Response Status Code Should Equal    403
+    ${RESPONSE BODY} =    Get Response Body
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles
+    ${RESPONSE BODY} =    Get Response Body
+    ${assigned roles}=    Get JSON Value    ${RESPONSE BODY}    /roles
+    ${parsed roles}=    Parse JSON    ${assigned roles}
+    Length Should Be    ${parsed roles}    1
+    Assign User System Role    ${security_service_user1}    Edit Role Grant
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    DELETE    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles/ALL_SYSTEM_PERMISSIONS
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}/assignableroles
+    ${RESPONSE BODY} =    Get Response Body
+    ${assigned roles}=    Get JSON Value    ${RESPONSE BODY}    /roles
+    ${parsed roles}=    Parse JSON    ${assigned roles}
+    Length Should Be    ${parsed roles}    0
+
+6-1 - Delete User Role Assigned To User
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Create Role    Delete Role 1    Delete Role 1    Delete Role 1    true
+    Assign User System Role    ${security_service_user1}    Delete Role 1
+    Delete Role And Expect Error    Delete Role 1    Deleted    400
+    Delete User System Role    ${security_service_user1}    Delete Role 1
+    Delete Role    Delete Role 1    Deleted
+
+6-2 - Delete Entity Role Assigned To User
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Create Role    Delete Role 2    Delete Role 2    Delete Role 2    false
+    Assign User Entity Role    ${security_service_user1}    Delete Role 2    1
+    Delete Role And Expect Error    Delete Role 2    Deleted    400
+    Delete User Entity Role    ${security_service_user1}    Delete Role 2    1
+    Delete Role    Delete Role 2    Deleted
+
+7-1 - Add/Remove Entity Roles with ENTITY_ADMINISTRATION permission
+    Create Role    7-1    7-1    7-1    false
+    Create Role    7-2    7-2    7-2    false
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user2}    ALL_SYSTEM_PERMISSIONS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Assign User Entity Role And Expect Error    ${security_service_user2}    7-1    2    403
+    Delete User Entity Role And Expect Error    ${security_service_user2}    7-2    2    403
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Assign User System Role    ${security_service_user1}    Entity Admin Role
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Assign User Entity Role    ${security_service_user2}    7-1    2
+    Delete User Entity Role    ${security_service_user2}    7-2    2
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+
+7-2 - View Entity Roles User Assignments
+    Create Role    View Entity Roles 1    View Entity Roles 1    View Entity Roles 1    true
+    Create Role    View Entity Roles 2    View Entity Roles 2    View Entity Roles 2    false
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Assign User System Role    ${security_service_user1}    View Entity Roles 1
+    Assign User Entity Role    ${security_service_user1}    ALL_ENTITY_PERMISSIONS    1
+    Assign User Entity Role    ${security_service_user2}    View Entity Roles 2    2
+    Add Role Permission    View Entity Roles 1    VIEW_GROUPS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Add Role Permission    View Entity Roles 1    ENTITY_ADMINISTRATION
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "userName":"${security_service_user2}","roleName":"View Entity Roles 2"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Add Role Permission    View Entity Roles 1    VIEW_USERS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "userName":"${security_service_user2}","roleName":"View Entity Roles 2"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Remove Role Permission    View Entity Roles 1    VIEW_USERS
+    Add Role Permission    View Entity Roles 1    VIEW_ROLES
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "userName":"${security_service_user2}","roleName":"View Entity Roles 2"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Remove Role Permission    View Entity Roles 1    ENTITY_ADMINISTRATION
+    Add Role Permission    View Entity Roles 1    VIEW_USERS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "userName":"${security_service_user2}","roleName":"View Entity Roles 2"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Add Role Permission    View Entity Roles 1    ENTITY_ADMINISTRATION
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=${security_service_user2}
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+    Should Contain    ${RESPONSE BODY}    "roleName":"View Entity Roles 2","roleDisplayName":"View Entity Roles 2","groupName":null,"userName":"${security_service_user2}"
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?userid=invalidusernamehere
+    ${RESPONSE BODY} =    Get Response Body
+    Response Status Code Should Equal    400
+    Next Request Should Succeed
+
+7-3 - View Entity Roles User Group Assignments
+    Create User Group    ViewGroup1    ViewGroup1
+    Create Role    View Entity Roles 4    View Entity Roles 4    View Entity Roles 4    true
+    Create Role    View Entity Roles 3    View Entity Roles 3    View Entity Roles 3    false
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Assign User System Role    ${security_service_user1}    View Entity Roles 4
+    Assign User Entity Role    ${security_service_user1}    ALL_ENTITY_PERMISSIONS    1
+    Assign User Group Entity Role    ViewGroup1    View Entity Roles 3    2
+    Add Role Permission    View Entity Roles 4    VIEW_USERS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?groupid=ViewGroup1
+    ${RESPONSE BODY} =    Get Response Body
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Add Role Permission    View Entity Roles 4    ENTITY_ADMINISTRATION
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?groupid=ViewGroup1
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "roleName":"View Entity Roles 3","groupName":"ViewGroup1"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Add Role Permission    View Entity Roles 4    VIEW_GROUPS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?groupid=ViewGroup1
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "roleName":"View Entity Roles 3","groupName":"ViewGroup1"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Remove Role Permission    View Entity Roles 4    VIEW_GROUPS
+    Add Role Permission    View Entity Roles 4    VIEW_ROLES
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?groupid=ViewGroup1
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "roleName":"View Entity Roles 3","groupName":"ViewGroup1"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Remove Role Permission    View Entity Roles 4    ENTITY_ADMINISTRATION
+    Add Role Permission    View Entity Roles 4    VIEW_GROUPS
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    Next Request Should Not Succeed
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?groupid=ViewGroup1
+    ${RESPONSE BODY} =    Get Response Body
+    Should Not Contain    ${RESPONSE BODY}    "roleName":"View Entity Roles 3","groupName":"ViewGroup1"
+    Response Status Code Should Equal    403
+    Next Request Should Succeed
+    Set Test Variable    ${SERVICES USERNAME}    Administrator
+    Set Test Variable    ${SERVICES PASSWORD}    Administrator
+    Add Role Permission    View Entity Roles 4    ENTITY_ADMINISTRATION
+    Set Test Variable    ${SERVICES USERNAME}    ${security_service_user1}
+    Set Test Variable    ${SERVICES PASSWORD}    ${security_service_user1_password}
+    Request Setup
+    GET    ${SECURITY ADMINISTRATION ASSIGNMENTS ENDPOINT}/2?groupid=ViewGroup1
+    ${RESPONSE BODY} =    Get Response Body
+    Log    ${RESPONSE BODY}
+    Should Contain    ${RESPONSE BODY}    "roleName":"View Entity Roles 3","roleDisplayName":"View Entity Roles 3","groupName":"ViewGroup1","userName":null
+
+*** Keywords ***
+Business Logic Setup
+    Services Setup
+    Request Setup
+    Comment    POST    ${SECURITY ADMINISTRATION USER ENDPOINT}/${security_service_user1}/roles/ALL_SYSTEM_PERMISSIONS
+    Comment    Validate User System Permission Present    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    Enable User    ${security_service_user2}
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Create Users
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Create Groups
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Create Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Update Users
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Update Groups
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Update Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Delete Groups
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Delete Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Enable Users
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Reset Password
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    View Roles
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Edit Role Grant
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    View Role Grant
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Entity Administrator
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    View Entity Roles 1
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    View Entity Roles 4
+    Run Keyword And Ignore Error    Delete User System Role    ${security_service_user1}    Entity Admin Role

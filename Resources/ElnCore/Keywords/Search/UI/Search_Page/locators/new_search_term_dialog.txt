@@ -1,0 +1,25 @@
+*** Settings ***
+Documentation     Locators for 'New search term" dialog.
+...               (Additional > Plus from Search screen)
+
+*** Variables ***
+${newSearchTermDialog}    css=#dialog
+${advancedDoneButton}    //*[@id="dialog"]//button[text()="Done"]
+${operatorDropDown}    //div[@class='query-term-operator']//select
+${valueTextField}    css=.configuration .query-term-value > input
+${catalogLink}    //a[text()='Catalog' and contains(@class, 'jstree-anchor')]
+${valueDropDown}    css=.query-term-value select
+${simpleValueTextField}    css=.query-term-text-input
+${chooseTemplateLink}    css=.showNavigator
+${navigatorDialog}    css=.navigatorDialog
+${queryTermName}    css=.query-term-name
+${queryPropertyName}    css=.query-property-name
+${queryTermOperatorLabel}    css=.query-term-operator
+${chooseTemplateButton}    xpath=//button[contains(text(),'Choose')]
+${findCatalogProperty}    css=#find-term-input
+${termSuggestionList}    //ul[@id='term-suggestions-list']//a
+${itemName}       css=#term-properties-header .title
+${itemDescription}    css=#term-selector-term-description
+${properyList}    xpath=//li[@class='term-property-row']
+
+*** Keywords ***

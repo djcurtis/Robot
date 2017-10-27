@@ -1,0 +1,107 @@
+*** Settings ***
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Delete All Searches Via API
+Test Teardown     reload Page
+Resource          ../../../../Resources/UI/Search_Page/advanced_search_term.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/save_search_dialog.txt
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Library           DateTime
+
+*** Test Cases ***
+Verfiy Search Term Could Be Disabled And Enabled
+    [Documentation]    Verify Search Term Could Be Disabled And Enabled
+    ...
+    ...    Created form SH-459 story
+    ...    - Execute Advanced Search
+    ...    - Verify Blank Result
+    ...    - Disable One search tile
+    ...    - Verify correct result
+    [Tags]    SRCH-ADV
+    Navigate Search Screen
+    Perform Advanced Search    ${EMPTY}    Template|Title|is|AdvancedSearchSave    Template|Title|is|FreeTextAdvancedSearchSave    Experiment|Title|is|RestoreSaveSearch    Group|Name|is|${groupName}
+    Click Search Button
+    Verify Blank Search Result
+    Disable Advanced Search Terms    Title|is|AdvancedSearchSave    Title|is|FreeTextAdvancedSearchSave
+    Click Search Button
+    Verify Search Result List Exact By Title    RestoreSaveSearch
+    Enable Advanced Search Terms    Title|is|FreeTextAdvancedSearchSave
+    Disable Advanced Search Terms    Title|is|RestoreSaveSearch
+    Click Search Button
+    Verify Search Result List Exact By Title    FreeTextAdvancedSearchSave
+
+Verify Show And Hide Advanced Search Link
+    [Documentation]    Verify Show And Hide Advanced Search Link
+    ...
+    ...    Created form SH-245 story
+    ...
+    ...    Verif Advanced link text changed to 'Hide Advanced' and to 'Advanced' bu one click.
+    [Tags]    SRCH-ADV
+    Navigate Search Screen
+    Verify Advanced Search Link Text    Advanced (0)
+    Click Advanced Search Link
+    Verify Advanced Search Link Text    Hide Advanced (0)
+    Click Advanced Search Link
+    Verify Advanced Search Link Text    Advanced (0)
+
+Verify Number Of Advanced Search Criterias
+    [Documentation]    Verify Number Of Advanced Search Criterias
+    ...
+    ...    Created for SH-246 story
+    ...
+    ...    - verify number with just created search (hide and expanded advanced search)
+    ...    - verify number after search tile removed
+    ...    - verify number after search tile disabled
+    [Tags]    SRCH-ADV
+    Navigate Search Screen
+    Verify Advanced Search Link Text    Advanced (0)
+    Perform Advanced Search    text    Report|Keywords|is|status_1    Report|Keywords|is|status_2    Report|Keywords|is|status_3    Report|Keywords|is|status_4
+    Verify Advanced Search Link Text    Hide Advanced (4)
+    Click Advanced Search Link
+    Verify Advanced Search Link Text    Advanced (4)
+    Click Advanced Search Link
+    Delete Advanced Search Item    Keywords|is|status_3
+    Verify Advanced Search Link Text    Hide Advanced (3)
+    Click Advanced Search Link
+    Verify Advanced Search Link Text    Advanced (3)
+    Click Advanced Search Link
+    Disable Advanced Search Terms    Keywords|is|status_1
+    Verify Advanced Search Link Text    Hide Advanced (2)
+    Click Advanced Search Link
+    Verify Advanced Search Link Text    Advanced (2)
+    Click Advanced Search Link
+    Enable Advanced Search Terms    Keywords|is|status_1
+    Verify Advanced Search Link Text    Hide Advanced (3)
+    Click Advanced Search Link
+    Verify Advanced Search Link Text    Advanced (3)
+
+*** Keywords ***
+setup
+    [Documentation]    - create Ms. Robot with project as Administrator user
+    ...    - open browser and login with test credentials
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Restore Saves
+    ${recordId}=    EntityAPILibrary.Create Experiment    ${projectId}    RestoreSaveSearch    Completed
+    EntityAPILibrary.Version Save    ${recordId}    Data Added
+    ${ProjectID1}=    EntityAPILibrary.Create Template    ${projectId}    FreeTextAdvancedSearchSave    Planned    keywords:::Unique
+    EntityAPILibrary.Version Save    ${projectId}    Data Added
+    ${ProjectID2}=    EntityAPILibrary.Create Template    ${projectId}    FreeTextSearchSave    Planned    keywords:::Unique
+    EntityAPILibrary.Version Save    ${projectId}    Data Added
+    ${ProjectID3}=    EntityAPILibrary.Create Template    ${projectId}    AdvancedSearchSave    Completed    keywords:::Unique
+    EntityAPILibrary.Version Save    ${projectId}    Data Added
+    Open Browser to EWB Login
+    User credentials
+
+teardown
+    [Documentation]    - delete Mr. Roboto as Administrator user
+    ...    - close browser
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    close browser

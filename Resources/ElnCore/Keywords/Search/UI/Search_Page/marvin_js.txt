@@ -1,0 +1,150 @@
+*** Settings ***
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          locators/marvin_js.txt
+Resource          locators/search_ui.txt
+Resource          locators/chemistry_search_prepreview.txt
+
+*** Keywords ***
+Open MarvinJS From Search Screen
+    [Documentation]    Open MarvinJS From Search Screen
+    ...    - perform openning by clicking on benzene ring on Search screen
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    wait until page contains element    ${chemistryBenzeneButton}
+    Robust Click    ${chemistryBenzeneButton}
+    Wait Until Page Contains Element    ${marvinJSFrame}    30s
+    sleep    5s
+    select frame    ${marvinJSFrame}
+    Wait Until Page Contains Element    ${marvinJSCanvas}    30s
+
+Execute Chemistry Search By One Ring
+    [Arguments]    ${searchOptions}    ${molecule}
+    [Documentation]    Execute Chemistry Search By One Ring
+    ...    - select search option ${searchOptions}
+    ...    - draw one ring by its name ${molecule} (for example, Benzene)
+    ...    - click search
+    Perform Chemistry Search By One Ring    ${searchOptions}    ${molecule}
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${marvinJSSearchButton}
+    Wait Until Page Does Not Contain Element    ${searchDisplayedSpinner}    30s
+    Wait Until Element Is Visible    ${chemistryBenzeneButton}
+
+Perform Chemistry Search By One Ring
+    [Arguments]    ${searchOptions}    ${molecule}
+    [Documentation]    Perform Chemistry Search By One Ring
+    ...    - select search option ${searchOptions}
+    ...    - draw one ring by its name ${molecule} (for example, Benzene)
+    ${itemXPath}    set variable    xpath=//div[@title="${molecule}"]
+    unselect frame
+    select frame    ${searchFrame}
+    Run Keyword If    '${searchOptions}'=='Substructure search'    Robust Click    ${substructureSearchRB}
+    Run Keyword If    '${searchOptions}'=='Exact search'    Robust Click    ${exactSearchRB}
+    select frame    ${marvinJSFrame}
+    Robust Click    ${itemXPath}
+    Robust Click    ${marvinJSCanvas}
+    unselect frame
+    unselect frame
+
+Click MarvinJS Cancel Button
+    [Documentation]    Click MarvinJS Cancel Button
+    unselect frame
+    select frame    ${searchFrame}
+    Click Element    ${marvinJSCancelButton}
+    Wait until Element is visible    ${chemistryBenzeneButton}    30s
+
+Verify Empty MarvinJS Canvas
+    [Documentation]    Verify Empty MarvinJS Canvas
+    ...    - verify canvas is empty by verifying MarvinJS Logo is present
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    Wait until page contains element    ${marvinJSFrame}
+    select frame    ${marvinJSFrame}
+    ${canvasClass}    IDBSSelenium2Library.Get Element Attribute    ${marvinJSCanvas}@class
+    Should Contain    ${canvasClass}    mjs-logo
+    unselect frame
+    unselect frame
+
+Verify Not Empty MarvinJS Canvas
+    [Documentation]    Verify Not Empty MarvinJS Canvas
+    ...    - verify canvas is not empty by verifying MarvinJS Logo is absent
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    Wait Until Page contains element    ${marvinJSFrame}
+    select frame    ${marvinJSFrame}
+    Wait Until Page Contains Element    ${marvinJSCanvas}    30s
+    ${canvasClass}    IDBSSelenium2Library.Get Element Attribute    ${marvinJSCanvas}@class
+    Should Not Contain    ${canvasClass}    mjs-logo
+    unselect frame
+    unselect frame
+
+Click MarvinJS Search Button
+    [Documentation]    Click MarvinJS Search Button
+    unselect frame
+    select frame    ${searchFrame}
+    Click Element    ${marvinJSSearchButton}
+
+Clear MarvinJS Canvas
+    [Documentation]    Clear MarvinJS Canvas
+    ...    - perform clean by clicking clear all button
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    select frame    ${marvinJSFrame}
+    Robust Click    ${clearAllButton}
+
+Execute Chemistry Search By Non-connected Rings
+    [Arguments]    ${searchOptions}    ${molecules}    # ${searchOptions} - select exact and substructure search; ${molecules} - rings to be drawn, separated by "|", for example Benzene|Benzene
+    [Documentation]    Execute Chemistry Search By Non-connected Rings
+    ...    - draw rings from ${molecules} in MarvinJS canvas
+    ...    - rings are not related with each other
+    ...    - click search button
+    @{molecule}    split string    ${molecules}    |
+    : FOR    ${molecule}    IN    @{molecule}
+    \    Perform Chemistry Search By One Ring    ${searchOptions}    ${molecule}
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${marvinJSSearchButton}
+    Wait Until Page Does Not Contain Element    ${searchDisplayedSpinner}    30s
+    Wait Until Element Is Visible    ${chemistryBenzeneButton}
+
+Execute Chemistry Search By Non-connected Rings And Elements
+    [Arguments]    ${searchOptions}    ${rings}    ${elements}    # ${searchOptions} - select exact and substructure search; ${rings} - rings to be drawn, separated by "|", for example Benzene|Benzene; ${elements} - elements to be drawn, separated by "|", for example Cl|Bz
+    [Documentation]    Execute Chemistry Search By Non-connected Rings And Elements
+    ...    - draw rings from ${molecules} and ${elements} in MarvinJS canvas
+    ...    - ringsand elements are not related with each other
+    ...    - click search button
+    @{rings}    split string    ${rings}    |
+    : FOR    ${ring}    IN    @{rings}
+    \    Perform Chemistry Search By One Ring    ${searchOptions}    ${ring}
+    @{elements}    split string    ${elements}    |
+    : FOR    ${element}    IN    @{elements}
+    \    Perform Chemistry Search By One Element    ${searchOptions}    ${element}
+    unselect frame
+    unselect frame
+    select frame    ${searchFrame}
+    Robust Click    ${marvinJSSearchButton}
+    Wait Until Page Does Not Contain Element    ${searchDisplayedSpinner}    30s
+    Wait Until Element Is Visible    ${chemistryBenzeneButton}
+
+Perform Chemistry Search By One Element
+    [Arguments]    ${searchOptions}    ${element}
+    [Documentation]    Perform Chemistry Search By One Element
+    ...    - select search option ${searchOptions}
+    ...    - draw one element by its name ${element} (for example, Cl)
+    ${itemXPath}    set variable    xpath=//span[text()="${element}"]
+    unselect frame
+    select frame    ${searchFrame}
+    Run Keyword If    '${searchOptions}'=='Substructure search'    Robust Click    ${substructureSearchRB}
+    Run Keyword If    '${searchOptions}'=='Exact search'    Robust Click    ${exactSearchRB}
+    select frame    ${marvinJSFrame}
+    Robust Click    ${itemXPath}
+    Robust Click    ${marvinJSCanvas}
+    unselect frame
+    unselect frame

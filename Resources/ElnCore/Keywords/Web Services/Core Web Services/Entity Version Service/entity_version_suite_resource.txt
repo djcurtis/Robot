@@ -1,0 +1,98 @@
+*** Settings ***
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           IDBSHttpLibrary
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/HTTP Common/http_common_resource.txt
+
+*** Variables ***
+${username}       auto_ws_user    # common user name for web service testing
+${password}       password    # password for ws user
+@{PERMISSIONS}    VIEW_HISTORY_EXPERIMENT    VIEW_EXPERIMENT    EDIT_EXPERIMENT    OPEN_EXPERIMENT
+
+*** Keywords ***
+Entity Version Suite Setup
+    [Documentation]    Creates a basic hierarchy for the suite tests
+    ${response}=    Create Hierarchy For Experiments    EWB-SAPI-SSP-EVS
+    Run Keyword And Ignore Error    Create User    ${username}    ${password}    Test User    testing@idbs.com    Testing
+
+Entity Version Suite Teardown
+    [Documentation]    Tidy up test suite cases
+    Log    Deleting group    Info
+    Comment    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${group_id}    As Intended    Test Suite Completed
+
+Create Versioned Experiment
+    [Arguments]    ${experiment_name}
+    [Documentation]    Helper keyword that creates a versioned experiment.
+    ...
+    ...    3 versions are created with an incremental url web link.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _experiment_name_ the name of the experiment to create
+    ...
+    ...    *Returns*
+    ...
+    ...    _experiment_id_ the id of the newly created experiment
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${link}=    Add Web Link Entity    ${experiment_id}    http://version1.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version2.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${response}=    Set Cache Entity Data Text    ${link}    WEB_LINK    .url    application/x-url    ${EMPTY}
+    ...    http://version3.com
+    ${commit}=    Commit Versioned Entity    ${experiment_id}
+    ${unlock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    [Return]    ${experiment_id}
+
+Create Custom EVS Role
+    [Arguments]    ${role_name}
+    [Documentation]    Creates a custom role for permission checking
+    ...
+    ...    *Arguments*
+    ...
+    ...    _role_name_ the name of the role to create
+    ...
+    ...    *Returns*
+    ...
+    ...    _unique_role_name_ \ a unique form of the role name (ie. name_timestamp)
+    ${unique_id}=    Get Time    epoch
+    ${unique_role_name}=    Set Variable    ${role_name}_${unique_id}
+    ${role_response}=    Create Role    ${unique_role_name}    ${unique_role_name}    Custom Role for Entity Version testing    false
+    : FOR    ${permission}    IN    @{PERMISSIONS}
+    \    Add Role Permission    ${unique_role_name}    ${permission}
+    [Return]    ${unique_role_name}
+
+Get Child Entities
+    [Arguments]    ${entity_id}
+    [Documentation]    Gets a list of children for a given entity
+    ...
+    ...    *Arguments*
+    ...
+    ...    _entity_id_ the id of the parent entity
+    ...
+    ...    *Returns*
+    ...
+    ...    _children_ the list of child entities of the parent (passed in)
+    XML HTTP Header Setup
+    GET    /ewb/services/1.0/entities/${entity_id}?includeChildren=true
+    ${entity_dto}=    Get Response Body
+    ${children}=    Get Element Xml    ${entity_dto}    http://entity.services.ewb.idbs.com    children
+    [Return]    ${children}
+
+Delete Custom EVS Role
+    [Arguments]    ${role_name}
+    [Documentation]    Deletes the custom role created for permission checking
+    ...
+    ...    *Arguments*
+    ...
+    ...    _role_name_ the name of the role to be deleted
+    : FOR    ${permission}    IN    @{PERMISSIONS}
+    \    Run Keyword And Ignore Error    Remove Role Permission    ${role_name}    ${permission}
+    Run Keyword And Ignore Error    SecurityAPILibrary.Delete Role    ${role_name}

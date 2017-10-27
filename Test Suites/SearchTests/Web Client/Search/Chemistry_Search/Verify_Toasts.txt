@@ -1,0 +1,33 @@
+*** Settings ***
+Documentation     Verify Toasters. All toastes whick related with chemistry search
+...
+...               created for SH-1001 jira task
+Suite Setup       Login To EWB
+Suite Teardown    Close Browser
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/marvin_js.txt
+Resource          ../../../../Resources/UI/Search_Page/chemistry_search_prepreview.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Library           IDBSSelenium2Library
+
+*** Test Cases ***
+Verify No Data To Search By Toast
+    [Documentation]    Verify No data To Search By Toast
+    ...    - open MarvinJS Screen, enter nothing to search By
+    ...    - click search button
+    ...    - verify toast present
+    ...    - add something to search and clear canvas
+    ...    - click search button
+    ...    - verify toast present
+    [Tags]    SRCH-CHEM
+    Navigate Search Screen
+    Select Search By Option    Chemistry
+    Open MarvinJS From Search Screen
+    Click MarvinJS Search Button
+    Verify Toast Message    Please enter a structure to search for
+    Wait Until Page Does Not Contain Element    ${toastMessagePopup}
+    Perform Chemistry Search By One Ring    Exact search    Benzene
+    Clear MarvinJS Canvas
+    Click MarvinJS Search Button
+    Verify Toast Message    Please enter a structure to search for

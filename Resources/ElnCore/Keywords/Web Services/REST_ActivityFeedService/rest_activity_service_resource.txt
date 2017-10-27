@@ -1,0 +1,125 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains keywords applicable to the REST security administration web service.
+...               This file is loaded by the common_resource.txt file which is automatically loaded when running tests through the Robot Framework.
+...               *Version: E-WorkBook Web Client 9.4.0*
+Library           IDBSHttpLibrary
+Library           String
+Resource          ../../common_resource.txt
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+
+*** Variables ***
+${USER_FEED_ENDPOINT_START}    /ewb/services/1.0/feeds/users/
+${PUBLISHING_FEED_ENDPOINT_START}    /ewb/services/1.0/feeds/publishing
+
+*** Keywords ***
+Add User to Following List
+    [Arguments]    ${user}    ${user to follow}
+    [Documentation]    *Follow User*
+    ...
+    ...    Updates {user}'s following list to add {user to follow}
+    HTTP Header Setup
+    POST    ${USER_FEED_ENDPOINT_START}${user}/following/users/${user to follow}
+    Response Status Code Should Equal    204
+
+Remove User from Following List
+    [Arguments]    ${user}    ${user to unfollow}
+    HTTP Header Setup
+    DELETE    ${USER_FEED_ENDPOINT_START}${user}/following/users/${user to unfollow}
+    Response Status Code Should Equal    204
+
+Following List Should Contain User
+    [Arguments]    ${user}    ${user to test for}
+    [Documentation]    *Following List Should Contain User*
+    ...
+    ...    Verifies that a user exists in the following list
+    XML HTTP Header Setup
+    GET    ${USER_FEED_ENDPOINT_START}${user}/following/users
+    Response Status Code Should Equal    200
+    ${body}=    Get Response Body
+    Should Contain    ${body}    <username>${user to test for}</username>
+
+Following List Should Not Contain User
+    [Arguments]    ${user}    ${user to test for}
+    [Documentation]    *Following List Should Not Contain User*
+    ...
+    ...    Verifies that a user does not exist in the following list
+    XML HTTP Header Setup
+    GET    ${USER_FEED_ENDPOINT_START}${user}/following/users
+    Response Status Code Should Equal    200
+    ${body}=    Get Response Body
+    Should Not Contain    ${body}    <username>${user to test for}</username>
+
+Add Entity to Following List
+    [Arguments]    ${user}    ${entity to follow}
+    [Documentation]    *Follow Entity*
+    ...
+    ...    Updates {user}'s following list to add {entity to follow}
+    HTTP Header Setup
+    ${url}=    Evaluate    "${USER_FEED_ENDPOINT_START}${user}/following/entities/${entity to follow}"
+    POST    ${url}
+    Response Status Code Should Equal    204
+
+Remove Entity from Following List
+    [Arguments]    ${user}    ${entity to unfollow}
+    HTTP Header Setup
+    DELETE    ${USER_FEED_ENDPOINT_START}${user}/following/entities/${entity to unfollow}
+    Response Status Code Should Equal    204
+
+Following List Should Contain Entity
+    [Arguments]    ${user}    ${entity to test for}
+    [Documentation]    *Following List Should Contain Entity*
+    ...
+    ...    Verifies that an entity exists in the following list
+    XML HTTP Header Setup
+    GET    ${USER_FEED_ENDPOINT_START}${user}/following/entities
+    Response Status Code Should Equal    200
+    ${body}=    Get Response Body
+    Should Contain    ${body}    <entityId>${entity to test for}</entityId>
+
+Following List Should Not Contain Entity
+    [Arguments]    ${user}    ${entity to test for}
+    [Documentation]    *Following List Should Not Contain Entity*
+    ...
+    ...    Verifies that an entity does not exist in the following list
+    XML HTTP Header Setup
+    GET    ${USER_FEED_ENDPOINT_START}${user}/following/entities
+    Response Status Code Should Equal    200
+    ${body}=    Get Response Body
+    Should Not Contain    ${body}    <entityId>${entity to test for}</entityId>
+
+Add Tag to Following List
+    [Arguments]    ${user}    ${tag to follow}
+    [Documentation]    *Follow Tag*
+    ...
+    ...    Updates {user}'s following list to add {tag to follow}
+    HTTP Header Setup
+    POST    ${USER_FEED_ENDPOINT_START}${user}/following/tags/${tag to follow}
+    Response Status Code Should Equal    204
+
+Remove Tag from Following List
+    [Arguments]    ${user}    ${tag to unfollow}
+    HTTP Header Setup
+    DELETE    ${USER_FEED_ENDPOINT_START}${user}/following/tags/${tag to unfollow}
+    Response Status Code Should Equal    204
+
+Following List Should Contain Tag
+    [Arguments]    ${user}    ${tag to test for}
+    [Documentation]    *Following List Should Contain Tag*
+    ...
+    ...    Verifies that a tag exists in the following list
+    XML HTTP Header Setup
+    GET    ${USER_FEED_ENDPOINT_START}${user}/following/tags
+    Response Status Code Should Equal    200
+    ${body}=    Get Response Body
+    Should Contain    ${body}    ${tag to test for}
+
+Following List Should Not Contain Tag
+    [Arguments]    ${user}    ${tag to test for}
+    [Documentation]    *Following List Should Not Contain Tag*
+    ...
+    ...    Verifies that a tag does not exist in the following list
+    XML HTTP Header Setup
+    GET    ${USER_FEED_ENDPOINT_START}${user}/following/tags
+    Response Status Code Should Equal    200
+    ${body}=    Get Response Body
+    Should Not Contain    ${body}    ${tag to test for}

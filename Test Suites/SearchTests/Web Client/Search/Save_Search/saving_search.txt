@@ -1,0 +1,99 @@
+*** Settings ***
+Documentation     This test suite checks the Saving Search functionality using the UI.
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     Go To EWB Home
+Default Tags      BROWSER_REGRESSION
+Library           IDBSHttpLibrary
+Library           IDBSSelenium2Library
+Resource          ../../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Resource          ../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Library           DateTime
+
+*** Variables ***
+
+*** Test Cases ***
+Save Text And Advanced Search
+    [Documentation]    Save Text And Advanced Search
+    ...    - Navigate Search Screen
+    ...    - Perform Advanced Search
+    ...    - Verify Search saved via UI
+    [Tags]    SRCH-SAV-MY    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Perform Advanced Search    text    Experiment|Keywords|is|word1
+    Save Search Via UI    Search 1    Description 1
+
+Restore Free Text Search
+    [Documentation]    Restore Free text Search
+    ...    - Save text search via api
+    ...    - Restore search
+    ...    - Verify restoring correctly
+    [Tags]    SRCH-SAV-MY    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Create Search Via API    ${CURDIR}/Test_Data/FTXTSave.json
+    Restore Saved Search    FTXT_Name    0
+    Verify Number Of Advanced Search Items    0    0
+    Verify Search Text Field    FreeTextSearchSave
+    Click Advanced Search Link
+    Add New Advanced Search From Search Screen    Group|Name|is|${groupName}
+    Click Search Button
+    Verify Result List Size    1
+
+Restore Advanced Search
+    [Documentation]    Restore Advanced \ Search
+    ...    - Save advanced search via api
+    ...    - Restore search
+    ...    - Verify restoring correctly
+    [Tags]    SRCH-SAV-MY    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Create Search Via API    ${CURDIR}/Test_Data/ADVSave.json
+    Restore Saved Search    ADV_Name    0
+    Verify Advanced Search Items    Name|is|AdvancedSearchSave    Status|is|Completed    Version Type (D/V)|is|Draft
+    Verify Search Text Field    ${EMPTY}
+    Add New Advanced Search From Search Screen    Group|Name|is|${groupName}
+    Click Search Button
+    Verify Result List Size    1
+
+Restore Free Text And Advanced Search
+    [Documentation]    Restore Free text And Advanced Search
+    ...    - Save text&advanced \ search via api
+    ...    - Restore search
+    ...    - Verify restoring correctly
+    [Tags]    SRCH-SAV-MY    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Create Search Via API    ${CURDIR}/Test_Data/FTXTADVSave.json
+    Restore Saved Search    FTXTADV_Name    0
+    Verify Advanced Search Items    Title|is|FreeTextSearchSave    Status|is|Completed    Keywords|is|Unique
+    Verify Search Text Field    *SearchSave
+    Add New Advanced Search From Search Screen    Group|Name|is|${groupName}
+    Click Search Button
+    Verify Result List Size    3
+
+*** Keywords ***
+setup
+    [Documentation]    - create Ms. Robot with project as Administrator user
+    ...    - open browser and login with test credentials
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Restore Saves
+    ${record}=    EntityAPILibrary.Create Experiment    ${projectId}    RestoreSaveSearch    Completed
+    EntityAPILibrary.Version Save    ${record}    Data Added
+    ${record}=    EntityAPILibrary.Create Template    ${projectId}    FreeTextAdvancedSearchSave    Planned    keywords:::Unique
+    EntityAPILibrary.Version Save    ${record}    Data Added
+    ${record}=    EntityAPILibrary.Create Template    ${projectId}    FreeTextSearchSave    Planned    keywords:::Unique
+    EntityAPILibrary.Version Save    ${record}    Data Added
+    ${record}=    EntityAPILibrary.Create Template    ${projectId}    AdvancedSearchSave    Completed    keywords:::Unique
+    EntityAPILibrary.Version Save    ${record}    Data Added
+    Open Browser to EWB Login
+    User credentials
+
+teardown
+    [Documentation]    - delete Mr. Roboto as Administrator user
+    ...    - close browser
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    Delete All Searches Via API
+    close browser

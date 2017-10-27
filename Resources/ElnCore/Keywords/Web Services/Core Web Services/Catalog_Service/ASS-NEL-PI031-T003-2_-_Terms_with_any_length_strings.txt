@@ -1,0 +1,245 @@
+*** Settings ***
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Library           ../../../Libraries/CatalogWebserviceGUIDLibrary/
+Library           String
+Library           Test Data Generation Library
+Library           OperatingSystem
+Library           TestDataGenerationLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+000 - Create Dictionary
+    [Documentation]    Creates a dictionary called Long String Auto 3 under Root.
+    ...
+    ...    Dictionary used for 001 - 010 tests of ASS-NELP1031-T003.2
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${LS3 Dict} =    Create Root Element    DICTIONARY    Long String Auto 3    Service checks for long string properties (automated)    true
+    ${LS3 Dict} =    Set Suite Variable    ${LS3 Dict}
+    # Create Short Strings
+    # 999 Characters
+    ${999_string}=    Generate Random String    999    [LETTERS][NUMBERS]
+    ${999string}=    Set Suite Variable    ${999_string}
+    # 1000 Characters
+    ${1000_string}=    Generate Random String    1000    [LETTERS][NUMBERS]
+    ${1000string}=    Set Suite Variable    ${1000_string}
+    # 1001 Characters
+    ${1001 _string}=    Generate Random String    1001    [LETTERS][NUMBERS]
+    ${1001 string}=    Set Suite Variable    ${1001 _string}
+    # Create Long Strings
+    # File of approx 9.5MB
+    Generate File Of Fixed Size    ${OUTPUT_DIR}/ninemeg2.txt    9961472
+    ${9meg_string}=    Get File    ${OUTPUT_DIR}/ninemeg2.txt
+    ${9megstring}=    Set Suite Variable    ${9meg_string}
+    # Create Defined Short Strings
+    # 499 Characters
+    ${499_string}=    Generate Random String    499    [LETTERS][NUMBERS]
+    ${499string}=    Set Suite Variable    ${499_string}
+    # 500 Characters
+    ${500_string}=    Generate Random String    500    [LETTERS][NUMBERS]
+    ${500string}=    Set Suite Variable    ${500_string}
+    # 501 Characters
+    ${501 _string}=    Generate Random String    501    [LETTERS][NUMBERS]
+    ${501string}=    Set Suite Variable    ${501 _string}
+
+001 - Concrete Key
+    [Documentation]    Creates a concrete term with a single key property, default constraint. Strings of lengths 999, 1000, 1001 & 9.5Mb worth of characters are then saved against the property via the tuple web service. Characters that exceed the default limit of 1000 characters are rejected.
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short    true    true
+    ${Term LS1} =    Create Non-Root Element    ${LS3 Dict}    TERM    LS01 - Concrete    Concrete Non-Inheritance    true
+    ...    ${properties}
+    # Add Values
+    Create Tuple    ${Term LS1}    Short string Key    ${999string}    ${999string}    true    true
+    Create Tuple    ${Term LS1}    Short string Key    ${1000string}    ${1000string}    true    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${1001 string}    ${1001 string}    true
+    ...    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${9megstring}    ${9megstring}    true
+    ...    false
+    # Delete
+    Delete Element    ${Term LS1}
+
+002 - Concrete Key (Defined)
+    [Documentation]    Creates a concrete term with a single key property, 500 character constraint. Strings of lengths 499, 500, 501 & 9.5Mb worth of characters are then saved against the property via the tuple web service. Characters that exceed the default limit of 500 characters are rejected.
+    # Create Property
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short (Defined)    true    true
+    ...    constraint=<= 500
+    ${Term LS1} =    Create Non-Root Element    ${LS3 Dict}    TERM    LS02 - Concrete    Concrete Non-Inheritance    true
+    ...    ${properties}
+    # Add Values
+    Create Tuple    ${Term LS1}    Short string Key    ${499string}    ${499string}    true    true
+    Create Tuple    ${Term LS1}    Short string Key    ${500string}    ${500string}    true    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${501string}    ${501string}    true
+    ...    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${9megstring}    ${9megstring}    true
+    ...    false
+    # Delete
+    Delete Element    ${Term LS1}
+
+003 - Concrete General
+    [Documentation]    Creates a concrete term with a key and general property, default constraint. Strings of lengths 999, 1000, 1001 & 9.5Mb worth of characters are then saved against the general property via the tuple web service. Characters that exceed the default limit of 1000 characters are rejected.
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Element    ${LS3 Dict}    TERM    LS03 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties}
+    # Add Values
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value1    value1    true    true
+    ...    Short string General    ${999string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value2    value2    true    false
+    ...    Short string General    ${1000string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value3    value3    true
+    ...    false    Short string General    ${1001 string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value4    value4    true
+    ...    false    Short string General    ${9megstring}
+    # Delete
+    Delete Element    ${Term LS1}
+
+004 - Concrete General (Defined)
+    [Documentation]    Creates a concrete term with a key and general property, 500 character constraint. Strings of lengths 499, 500, 501 & 9.5Mb worth of characters are then saved against the general property via the tuple web service. Characters that exceed the default limit of 500 characters are rejected.
+    # Create Property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=<= 500
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Element    ${LS3 Dict}    TERM    LS04 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties}
+    # Add Values
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    Value1    Value1    true    true
+    ...    Short string General    ${499string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    Value2    Value2    true    false
+    ...    Short string General    ${500string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    Value3    Value3    true
+    ...    false    Short string General    ${501string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    Value4    Value4    true
+    ...    false    Short string General    ${9megstring}
+    # Delete
+    Delete Element    ${Term LS1}
+
+005 - Concrete General Long
+    [Documentation]    Creates a concrete term with a key and general property, 10,000,000 character constraint. Strings of lengths 499, 500, 501, 999, 1000, 1001 & 9.5Mb worth of characters are then saved against the general property via the tuple web service. Characters that exceed the limit of 1000 characters are rejected.
+    # Create Property
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Element    ${LS3 Dict}    TERM    LS05 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties}
+    # Add Values
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value1    value1    true    true
+    ...    Long string General    ${499string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value2    value2    true    false
+    ...    Long string General    ${500string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value3    value3    true    false
+    ...    Long string General    ${501string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value4    value4    true    false
+    ...    Long string General    ${999string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value5    value5    true    false
+    ...    Long string General    ${1000string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value6    value6    true
+    ...    false    Long string General    ${1001 string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value7    value7    true
+    ...    false    Long string General    ${9megstring}
+    # Delete
+    Delete Element    ${Term LS1}
+
+006 - Concrete Inherited Key
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS3 Dict}    TERM    LS06 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+    # Add Values
+    Create Tuple    ${Term LS1}    Short string Key    ${999string}    ${999string}    true    true
+    Create Tuple    ${Term LS1}    Short string Key    ${1000string}    ${1000string}    true    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${1001 string}    ${1001 string}    true
+    ...    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${9megstring}    ${9megstring}    true
+    ...    false
+    # Delete
+    Delete Element    ${Term LS1}
+
+007 - Concrete Inherited Key (Defined)
+    [Documentation]    Creates a concrete term that inherits from Asset with a single key property, 500 character constraint. Strings of lengths 499, 500, 501 & 9.5Mb worth of characters are then saved against the property via the tuple web service. Characters that exceed the default limit of 500 characters are rejected.
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ...    constraint=<= 500
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS3 Dict}    TERM    LS07 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+    # Add Values
+    Create Tuple    ${Term LS1}    Short string Key    ${499string}    ${499string}    true    true
+    Create Tuple    ${Term LS1}    Short string Key    ${500string}    ${500string}    true    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${501string}    ${501string}    true
+    ...    false
+    Create Tuple And Expect Error    ${Term LS1}    400    Short string Key    ${9megstring}    ${9megstring}    true
+    ...    false
+    # Delete
+    Delete Element    ${Term LS1}
+
+008 - Concrete Inherited General
+    [Documentation]    Creates a concrete term that inherits from Asset with a key and general property, default constraint. Strings of lengths 999, 1000, 1001 & 9.5Mb worth of characters are then saved against the general property via the tuple web service. Characters that exceed the default limit of 1000 characters are rejected.
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS3 Dict}    TERM    LS08 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+    # Add Values
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value1    value1    true    true
+    ...    Short string General    ${999string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value2    value2    true    false
+    ...    Short string General    ${1000string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value3    value3    true
+    ...    false    Short string General    ${1001 string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value4    value4    true
+    ...    false    Short string General    ${9megstring}
+    # Delete
+    Delete Element    ${Term LS1}
+
+009 - Concrete Inherited General (Defined)
+    [Documentation]    Creates a concrete term that inherits from Asset with a key and general property, 500 character constraint. Strings of lengths 499, 500, 501 & 9.5Mb worth of characters are then saved against the general property via the tuple web service. Characters that exceed the default limit of 500 characters are rejected.
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ...    constraint=<= 500
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS3 Dict}    TERM    LS09 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+    # Add Values
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value1    value1    true    true
+    ...    Short string General    ${499string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value2    value2    true    false
+    ...    Short string General    ${500string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value3    value3    true
+    ...    false    Short string General    ${501string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value4    value4    true
+    ...    false    Short string General    ${9megstring}
+    # Delete
+    Delete Element    ${Term LS1}
+
+010 - Concrete Inherited General Long
+    [Documentation]    Creates a concrete term that inherits from Asset with a key and general property, 10,000,000 character constraint. Strings of lengths 499, 500, 501, 999, 1000, 1001 & 9.5Mb worth of characters are then saved against the general property via the tuple web service. Characters that exceed the limit of 1000 characters are rejected.
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    false
+    ...    constraint=<= 10000000
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS3 Dict}    TERM    LS10 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+    # Add Values
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value1    value1    true    true
+    ...    Long string General    ${499string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value2    value2    true    false
+    ...    Long string General    ${500string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value3    value3    true    false
+    ...    Long string General    ${501string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value4    value4    true    false
+    ...    Long string General    ${999string}
+    Create Tuple 2 Properties    ${Term LS1}    Short string Key    value5    value5    true    false
+    ...    Long string General    ${1000string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value6    value6    true
+    ...    false    Long string General    ${1001 string}
+    Create Tuple 2 Properties And Expect Error    ${Term LS1}    400    Short string Key    value7    value7    true
+    ...    false    Long string General    ${9megstring}
+    # Delete
+    Delete Element    ${Term LS1}

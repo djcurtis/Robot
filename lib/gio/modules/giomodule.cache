@@ -1,0 +1,6 @@
+cygdconfsettings.dll: gsettings-backend
+cyggiofam.dll: gio-local-file-monitor,gio-nfs-file-monitor
+cyggiognomeproxy.dll: gio-proxy-resolver
+cyggiognutls.dll: gio-tls-backend
+cyggiolibproxy.dll: gio-proxy-resolver
+cyggsettingsgconfbackend.dll: gsettings-backend

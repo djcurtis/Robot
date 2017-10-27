@@ -1,0 +1,322 @@
+*** Settings ***
+Documentation     The tests in this automated testsuite will cover the EWB Publishing Service Public API’s ability to retrieve the PDF of a published record by performing a GET request on the endpoint: /services/1.0/records/{entityId}/publish/pdf
+Suite Setup       Suite Level Setup
+Force Tags        EWB-GKO-PI004-R001
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../Record Service/PDF content acceptance/add_image_items_to_experiments.txt
+Resource          ../Record Service/PDF content acceptance/add_items_to_experiments.txt
+Resource          ../Record Service/PDF content acceptance/test utilities.txt
+# Library           EntityAPILibrary
+Library           CheckPDFLibrary    # Library to compare PDFs
+Library           IDBSSwingLibrary
+Library           RobotRemoteAgent
+Library           TestDataGenerationLibrary
+Library           IDBSHttpLibrary
+Resource          ../Record Service/PDF content acceptance/test utilities.txt
+
+*** Test Cases ***
+All parameters defined : GET PDF for different versions
+    [Documentation]    Tests that the correct PDFs for the different record versions can be retrieved.
+    ...
+    ...    Data set up as follows:
+    ...
+    ...    - Experimnent Version Save 2 = published: \ \ \ \ contains items 1 & 2
+    ...    - Experimnent Version Save 3 = unpublished \ contains items 1, 2 & 3
+    ...    - Experimnent Version Save 4 = published: \ \ \ \ contains items 1, 2, 3 & 4
+    ${ExpectedPDFv2}=    Set Variable    Expt-A-expected-V2.pdf
+    ${ExpectedPDFv4}=    Set Variable    Expt-A-expected-V4.pdf
+    #Get Published PDF for Published Experiment Version 2
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV2}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/Expt-A-actual-V2.pdf
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/Expt-A-actual-V2.pdf    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDFv2}
+    #Get Published PDF for Published Experiment Version 4
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV4}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/Expt-A-actual-V4.pdf
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/Expt-A-actual-V4.pdf    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDFv4}
+
+All parameters defined : PDF does not exist for version requested
+    [Documentation]    Tests that error code 404 returned where a publishing PDF does NOT exist for the entityversion requested in the GET request.
+    Comment
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV3}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+PDF Type parameter NOT provided
+    [Documentation]    Test checks that where the PDF Type parameter has NOT been provided, then PDF_1_4 is assumed by default.
+    ...
+    ...    Record version requested has
+    ...    - published PDF_1_4 = YES
+    ...    - published PDF_A \ \ \ \ = NO
+    ${ExpectedPDFv2}=    Set Variable    Expt-A-expected-V2.pdf
+    ${ActualPDF}=    Set Variable    PDFType_parameter_NOT_provided .pdf
+    #GET Published PDF for Published Experiment Version 2
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV2}
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDFv2}
+
+PDF Type EMPTY value
+    [Documentation]    Tests checks that if NO value \ has been provided for the PDF Type parameter i.e EMPTY string value
+    ...
+    ...    Expected: 404 error code is returned. \ Refer to QC#19430 for explanation of behaviour
+    ...
+    ...    Example URL : http://VPCS-EWB24:8443/ewb/services/1.0/records/EntityID/publish/pdf?entityVersionId=EntityVersionID&pdfVersion=
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV2}&pdfVersion=
+    Response Status Code Should Equal    404
+
+PDF Type INVALID value
+    [Documentation]    Tests that if a PDF Type has been defined incorrectly in the GET request
+    ...
+    ...    - e.g. pdfVersion=RUBBISH
+    ...
+    ...    Expected: 404 error code is returned.
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV2}&pdfVersion=RUBBISH
+    Response Status Code Should Equal    404
+
+PDF Type requested not present for record version
+    [Documentation]    Tests that if a PDF Type has been provided in the request, but type is not available for the published record.
+    ...
+    ...    i.e. record version has a published PDF_1_4 , but no published PDF_A, but GET request PDF_A=PDF Type requested
+    #GET Published PDF_A for Published Experiment Version 2
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionIDV2}&pdfVersion=PDF_A
+    Response Status Code Should Equal    404
+
+EntityVersionID EMPTY value : all parameters defined
+    [Documentation]    Test check that if the record version id _(ie.EntityVersionID)_ value is empty
+    ...    - The published PDF for the latest entityVersion is returned.
+    ...
+    ...
+    ...    _*entityVersionId=*_
+    ...    - the parameter value is an empty string. This is equivalent to not having query parameter entityVersionId in the URL
+    #latest record version save = V4 and version has been published
+    ${ExpectedPDFv4}=    Set Variable    Expt-A-expected-V4.pdf
+    ${ActualPDF}=    Set Variable    EntityVersionID_EMPTY_value .pdf
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDFv4}
+
+EntityVersionID INVALID value : all parameters defined
+    [Documentation]    Tests that if an INVALID record version id _(ie.EntityVersionID)_ has been provided
+    ...    - i.e. EntityVersionID = RUBBISH
+    ...
+    ...    Expected: error code 404 is returned
+    #latest record version save = V4 and version has been published
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=RUBBISH&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+EntityVersionID "" value : all parameters defined
+    [Documentation]    Test check that if the record version id _(ie.EntityVersionID)_ value is empty
+    ...    - The published PDF for the latest entityVersion is returned.
+    ...
+    ...
+    ...    _*entityVersionId=""*_
+    ...    - the parameter value is an "" string. \ i.e. the string containing the characters “ and “
+    #latest record version save = V4 and version has been published
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=""&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+EntityVersionID parameter NOT provided : latest version published
+    [Documentation]    Tests that if a a record version id _(ie.EntityVersionID)_ parameter has NOT been provided in the request, then the latest is assumded by default.
+    ...
+    ...
+    ...    In the following scenario where:
+    ...    - Latest version save of the record has been published.
+    ...    Expected: Publishing PDF for the latest version is retrieved.
+    #latest record version save = V4 and version has been published
+    ${ExpectedPDFv4}=    Set Variable    Expt-A-expected-V4.pdf
+    ${ActualPDF}=    Set Variable    EntityVersionID_parameter_NOT_provided-latest_version_published.pdf
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?pdfVersion=PDF_1_4
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/${ActualPDF}
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/${ActualPDF}    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDFv4}
+
+EntityVersionID parameter NOT provided : latest version NOT published
+    [Documentation]    Tests that if a record version id _(ie.EntityVersionID)_ parameter has NOT been provided in the request, then the latest is assumded by default.
+    ...
+    ...    In the following scenario where:
+    ...    - the LAST PUBLISHED version of the record = V4,
+    ...    - the LATEST version save = V5, but record has NOT been published
+    ...    Expected: Error code 404 is returned
+    [Setup]    Test Setup: latest version NOT published    # Adds a new item to exisitng published record, version save, but NOT publish.
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+EntityVersionID parameter NOT provided : latest version = DRAFT
+    [Documentation]    Tests that if a record version id _(ie.EntityVersionID)_ parameter has NOT been provided in the request, then the latest is assumded by default.
+    ...
+    ...    In the following scenario where:
+    ...    - Latest PUBLISHED version of the record = V2
+    ...    - \ New item then added to V2 and then saved as DRAFT
+    ...    Expected: \ Error code: 404 returned
+    [Setup]    Test Setup: latest version = DRAFT    # Create new expt, VERSION save & publish, edit expt and DRAFT save
+    ${ExpectedPDFv2_B}=    Set Variable    Expt-B-expected-V2.pdf
+    Comment    Control check by getting getting Published PDF for the version before DRAFT save
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id_B}/publish/pdf?entityVersionId=${entityVersionIDV2_B}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    200
+    Save Response Body    ${OUTPUT_DIR}/Expt-B-actual-V2.pdf
+    Check Pdf File    Compare PDFs    ${OUTPUT_DIR}/Expt-B-actual-V2.pdf    ${CURDIR}/../../../Expected Results/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/${APP_SERVER_OS}/${ExpectedPDFv2_B}
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id_B}/publish/pdf?pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+EntityID INVALID value
+    [Documentation]    Tests that if an INVALID Record Id _(ie.EntityID)_ has been provided e.g.:
+    ...    - \ EntityID = RUBBISH
+    ...    - \ and other parameters \ EntityVersionID = VALID, PFDType = VALID
+    ...    Expected: error code 404 is returned
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/RUBBISH/publish/pdf?entityVersionId=${entityVersionIDV4}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+EntityID MISSING value
+    [Documentation]    Test checks that if an Record Id _(ie.EntityID)_ \ value is NULL:
+    ...    - Expected: error code 404 is returned
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Next Request Should Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}//publish/pdf?entityVersionId=${entityVersionIDV4}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    404
+
+Locked Entity Record
+    [Documentation]    Tests that user is able to get published PDF irrespective if record entity is locked for editing.
+    [Setup]    Test Setup: Locked Entity
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id_C}/publish/pdf?entityVersionId=${entityVersionIDV2_C}&pdfVersion=PDF_1_4
+    Response Status Code Should Equal    200
+
+*** Keywords ***
+Suite Level Setup
+    [Documentation]    Sets up test data required for all testcases in this suite using the Entity REST service
+    ...
+    ...
+    ...    - Experimnent Version Save 2 = published: \ \ \ \ contains items 1 & 2
+    ...    - Experimnent Version Save 3 = unpublished \ contains items 1, 2 & 3
+    ...    - Experimnent Version Save 4 = published: \ \ \ \ contains items 1, 2, 3 & 4
+    ...
+    ...    Also ensures that the Page margins are set to default=5 as PDF comparision may fail if other tests fails to reset it back to normal.
+    Set page config    15    15
+    ${unique_id}=    Get Time    epoch
+    ${group_id}=    Rest_Entity_Service_ Resource.Create Group    1    Retrieve Publishihng PDFs_${unique_id}
+    Set Suite Variable    ${group_id}
+    ${project_id}=    Rest_Entity_Service_ Resource.Create Project    ${group_id}    Publishing PDF Project
+    Set Suite Variable    ${project_id}
+    ${experiment_id}=    Rest_Entity_Service_ Resource.Create Experiment    ${project_id}    Expt-A
+    Set Suite Variable    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item1.txt    text/html    PLAIN_TEXT
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item2.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Publish Record    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    #Retrieves the EntityVersionID at Experiment Save Version 2 & set at suite level
+    ${entityVersionIDV2}=    Get Entity Version ID    ${experiment_id}
+    Set Suite Variable    ${entityVersionIDV2}
+    #Add more data to exisitng experiment and version save, but NOT publish record
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    #Retrieves the EntityVersionID at Experiment Save Version 3 & set at suite level
+    ${entityVersionIDV3}=    Get Entity Version ID    ${experiment_id}
+    Set Suite Variable    ${entityVersionIDV3}
+    #Add futher data to exisitng experiment and version save, and PUBLISH record
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item4.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Publish Record    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    #Retrieves the EntityVersionID at Experiment Save Version 4 & set at suite level
+    ${entityVersionIDV4}=    Get Entity Version ID    ${experiment_id}
+    Set Suite Variable    ${entityVersionIDV4}
+
+Test Setup: latest version NOT published
+    [Documentation]    Setup up data for testcase: *EntityVersionID parameter NOT provided : latest version NOT published*:
+    ...    - by adding data to existing record and VERSION saving, but NOT publishing.
+    Lock Entity    ${experiment_id}
+    Add DOCUMENT With File Data    ${experiment_id}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item5.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    Comment    Retrieves the EntityVersionID at Experiment Save Version 5 & set at suite level
+    ${entityVersionIDV5}=    Get Entity Version ID    ${experiment_id}
+    Set Suite Variable    ${entityVersionIDV5}
+
+Test Setup: latest version = DRAFT
+    [Documentation]    Setup up data for testcase: *EntityVersionID parameter NOT provided : latest version = DRAFT* by:
+    ...    - Creating new expt record EXPT-B
+    ...    - Add items to new experiment, VERSION save AND publish so that latest published version = v2
+    ...    - Add some more items and then DRAFT saving the experiment.
+    ${experiment_id_B}=    Rest_Entity_Service_ Resource.Create Experiment    ${project_id}    Expt-B
+    Set Suite Variable    ${experiment_id_B}
+    Lock Entity    ${experiment_id_B}
+    Add DOCUMENT With File Data    ${experiment_id_B}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item1.txt    text/html    PLAIN_TEXT
+    Commit Versioned Entity    ${experiment_id_B}
+    Publish Record    ${experiment_id_B}
+    Unlock Entity    ${experiment_id_B}
+    Comment    Retrieves the EntityVersionID at Experiment Save Version 2 & set at suite level
+    ${entityVersionIDV2_B}=    Get Entity Version ID    ${experiment_id_B}
+    Set Suite Variable    ${entityVersionIDV2_B}
+    Comment    Add more data to exisitng experiment and DRAFT saving
+    Lock Entity    ${experiment_id_B}
+    Add DOCUMENT With File Data    ${experiment_id_B}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item2.html    text/html    HTML_TEXT
+    Commit Draft Entity    ${experiment_id_B}
+    Unlock Entity    ${experiment_id_B}
+    Comment    Retrieves the EntityVersionID at Experiment DRAFT Save & set at suite level
+    ${entityVersionID_DRAFT}=    Get Entity Version ID    ${experiment_id_B}
+
+Test Setup: Locked Entity
+    ${experiment_id_C}=    Rest_Entity_Service_ Resource.Create Experiment    ${project_id}    Expt-C
+    Set Suite Variable    ${experiment_id_C}
+    Lock Entity    ${experiment_id_C}
+    Add DOCUMENT With File Data    ${experiment_id_C}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item1.txt    text/html    PLAIN_TEXT
+    Commit Versioned Entity    ${experiment_id_C}
+    Publish Record    ${experiment_id_C}
+    Unlock Entity    ${experiment_id_C}
+    Comment    Retrieves the EntityVersionID at Experiment Save Version 2 & set at suite level
+    ${entityVersionIDV2_C}=    Get Entity Version ID    ${experiment_id_C}
+    Set Suite Variable    ${entityVersionIDV2_C}
+    Lock Entity    ${experiment_id_C}
+    Add DOCUMENT With File Data    ${experiment_id_C}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Item5.html    text/html    HTML_TEXT

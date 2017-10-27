@@ -1,0 +1,47 @@
+*** Settings ***
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Keywords ***
+Create New Task
+    [Arguments]    ${task_name}=WF2_REVIEW1    # The name of the task
+    [Documentation]    Create and validate a new task
+    ...
+    ...    *Arguments*
+    ...
+    ...    _task_name_ The name of the task
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 2 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    ${task_name}    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    [Return]    ${new task id}    # the id of the task
+
+Set Task In Progress
+    [Arguments]    ${task_id}    # The id of the task
+    [Documentation]    Accept and validate a new task
+    ...
+    ...    *Arguments*
+    ...
+    ...    _task_name_ The name of the task
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=IN_PROGRESS
+
+Create and Accept Task
+    [Arguments]    ${task_name}=WF2_REVIEW1    # the name of the task
+    [Documentation]    Creates and accepts a new task
+    ${new task id}=    Create New Task    ${task_name}
+    Set Task In Progress    ${new task id}
+    [Return]    ${new task id}    # the new task id

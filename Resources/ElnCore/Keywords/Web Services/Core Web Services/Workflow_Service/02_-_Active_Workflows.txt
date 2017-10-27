@@ -1,0 +1,71 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows/activeworkflows* endpoint
+...
+...               Uses WF_EXPERIMENT_2 for active workflows check and WF_EXPERIMENT_NO_WORKFLOW for no active workflows check.
+...
+...               *RELIES ON WORKFLOWS CREATED BY 01 - Create Workflows Positive Tests !!!!!*
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+
+*** Test Cases ***
+POST Workflows - Pre-Requisite
+    # Single Sign off Workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_2}    WF WS Workflow 1    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    # Single Review Workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_2}    WF WS Workflow 2    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    # Single Review Workflow - Project
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_project}    WF WS Workflow 2    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    # Multiple Task Workflow
+    ${task 1 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 2 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 3 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task setup json}=    Set Variable    {"taskSetup": [${task 1 json},${task 2 json},${task 3 json}]}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_2}    WF WS Workflow 4    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task setup json}
+
+GET Active Workflows - Group Level
+    ${active workflows}=    Get Active Workflows    ${wf_group}
+    Log    ${active workflows}
+    Validate Active Workflows    ${active workflows}    ${wf_group}    true
+
+GET Active Workflows - Project Level
+    ${active workflows}=    Get Active Workflows    ${wf_project}
+    Log    ${active workflows}
+    Validate Active Workflows    ${active workflows}    ${wf_project}    true
+
+GET Active Workflows - Experiment Level
+    ${active workflows}=    Get Active Workflows    ${wf_experiment_2}
+    Log    ${active workflows}
+    Validate Active Workflows    ${active workflows}    ${wf_experiment_2}    true
+
+GET Active Workflows - Experiment Level No Workflows
+    ${active workflows}=    Get Active Workflows    ${wf_experiment_no_workflow}
+    Log    ${active workflows}
+    Validate Active Workflows    ${active workflows}    ${wf_experiment_no_workflow}    false
+
+GET Active Workflows as user without permissions
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser7
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser71
+    Get Active Workflows And Expect Error    ${wf_experiment_2}    403
+
+GET Active Workflows as user with VIEW_ANY_TASK
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser6
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser61
+    #Updated to expect failure due to QC16979
+    ${active workflows}=    Get Active Workflows And Expect Error    ${wf_experiment_2}    403
+    #Log    ${active workflows}
+    #Validate Active Workflows    ${active workflows}    ${wf_experiment_2}    true
+
+GET Active Workflows as user with VIEW_EXPERIMENT
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser5
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser51
+    ${active workflows}=    Get Active Workflows    ${wf_experiment_2}
+    Log    ${active workflows}
+    Validate Active Workflows    ${active workflows}    ${wf_experiment_2}    true

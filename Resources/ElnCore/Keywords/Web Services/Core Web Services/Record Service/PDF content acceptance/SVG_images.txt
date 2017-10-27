@@ -1,0 +1,37 @@
+*** Settings ***
+Documentation     This set of tests look at the webclient's ability to PDF an experiment containing SVG images.
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup image test case
+Test Teardown
+Resource          test utilities.txt
+Resource          add_image_items_to_experiments.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           OperatingSystem
+
+*** Variables ***
+
+*** Test Cases ***
+Fits available - full page
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains an SVG image that fits on a page
+    [Tags]    EWB-WEB-PI002-W018-01
+    Do SVG Image Test
+
+*** Keywords ***
+Do SVG Image Test
+    Add SVG Item To Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.svg    test SVG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Do SVG Image Test With Spacer
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\spacer item 300 long.jpg    spacer JPG doc
+    Add JPEG Item To Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.jpg    test JPG doc
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Setup image test case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${configuration_xml}=    Get File    ${test_data_folder}\\input\\print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${configuration_xml}
+    Set Suite Variable    ${experiment_id}

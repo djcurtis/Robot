@@ -1,0 +1,156 @@
+*** Settings ***
+Resource          ../IDBS Spreadsheet/common_spreadsheet_keywords.txt
+Resource          ../Web Client/Selenium/quantrix_web_resource.txt
+Resource          ../General Setup/general setup tools.txt
+Resource          ../Web Client/Selenium/general_resource.txt
+Library           IDBSSwingLibrary
+Library           EntityAPILibrary
+Resource          ../Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+
+*** Variables ***
+${dict_id}        ${EMPTY}
+${mapping_table_name}    catalogMappingTable
+
+*** Keywords ***
+Catalog Suite Setup
+    [Arguments]    ${dict_name}=EWB-SS-SSP-CAT
+    [Documentation]    Creates a test group/project/experiment
+    ...    adds a spreadsheet to it
+    ...    activates the weblaunch for the spreadsheet
+    ...
+    ...
+    ...    This also creates a root dictionary (accessible using ${dict_id}) in which you *should* create any terms. \ The suite teardown will then remove this dictionary, clearing up your terms for free!
+    Kill All Spreadsheet Designer Sessions    # to handle failure and possibly open modal dialogs from other test runs
+    Create Experiment and Hierarchy    CATALOG
+    Create Idbs Spreadsheet Document    ${experiment_id}
+    Weblaunch Open Browser to Page    ${experiment_url}    ${VALID USER}    ${VALID PASSWD}
+    Start Weblaunch    ${DATA_ENTRY_SPREADSHEET_REGEX}
+    ${dict_id}=    create Root element    DICTIONARY    ${dict_name}    test dictionary for spreadsheet catalog automated tests    true
+    Set Suite Variable    ${dict_id}
+
+Catalog Suite Teardown
+    [Arguments]    ${shutdown_weblaunch}=yes
+    [Documentation]    calls Suite Teardown (generic keyword to close all browsers) and then delete the group & contents created in suite setup
+    ...
+    ...    It also deletes the root dictionary (and any terms created in it!) created during suite setup.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _shutdown_weblaunch_ = yes (default) or no
+    run keyword if    '${shutdown_weblaunch}'=='yes' and ${SPREADSHEET_DESIGNER_OPEN}    Shut down weblaunch
+    Kill All Spreadsheet Designer Sessions    # to handle failure and possibly open modal dialogs from other test runs
+    # delete the root dictionary and all terms contained within it
+    Delete Element    ${dict_id}
+    Suite Teardown
+    run keyword and ignore error    Delete Experiment and Hierarchy
+
+find mapping row index for variable named
+    [Arguments]    ${variable_name}
+    [Documentation]    returns the row index of the named variable, or fails if not found
+    ${row_count}=    IDBSSwingLibrary.Get Table Row Count    ${mapping_table_name}
+    ${row}=    Set Variable    -1
+    : FOR    ${i}    IN RANGE    0    ${row_count}
+    \    ${name}=    IDBSSwingLibrary.Get Table Cell Value    ${mapping_table_name}    ${i}    1
+    \    ${row}=    Set Variable If    '${name}' == '${variable_name}'    ${i}    -1
+    \    exit for loop if    ${row} > -1
+    run keyword if    ${row} == -1    fail    variable '${variable_name}' not found
+    [Return]    ${row}
+
+Display Mapping Toolpane
+    [Documentation]    Brings up the mapping toolpane in the Spreadsheet Designer using the keyboard shortcut
+    # Display mapping panel
+    Run Keyword Unless    '${OPERATING_SYSTEM}'=='OSX'    Send Keyboard Event    VK_M    CTRL_MASK
+    Run Keyword If    '${OPERATING_SYSTEM}'=='OSX'    Send Keyboard Event    VK_M    META_MASK
+    Wait Until Component Is Visible    catalogMappingTable
+
+Click on Catalog Hamburger Menu
+    [Documentation]    Clicks on (and consequently opens) the Catalog hamburger menu. Note that the Catalog Mppaings pane needs to be open, otherwise this will fail.
+    Wait Until Component Is Visible    catalogMappingToolPane_HAMBURGER_MENU_BUTTON
+    Click On Component    catalogMappingToolPane_HAMBURGER_MENU_BUTTON
+
+Toggle Sync Catalog Mappings Automatically Switch
+    [Documentation]    Clicks the 'Sync Catalog Mappings Automatically' switch to toggle it from its current state to the opposite state.
+    Wait Until Component Is Visible    SYNC_AUTOMATICALLY_MENU_ITEM_SWITCH
+    Click On Component    SYNC_AUTOMATICALLY_MENU_ITEM_SWITCH
+
+Create Enumerated Term
+    [Arguments]    ${term_name}    @{enums}
+    [Documentation]    creates a term called ${term_name} with the following properties:
+    ...
+    ...
+    ...    *name* \ (key, String)
+    ...
+    ...    and tuples of value 'a', 'b' and 'c'
+    ...
+    ...    *Arguments*
+    ...
+    ...    _name_ the name of the term
+    ...
+    ...    *Return"
+    ...
+    ...    the id for the newly created term
+    # set term
+    ${key_prop}=    Create Property JSON    ${key_prop_name}    STRING    the name    true    true
+    ${properties}=    Create Properties JSON    ${key_prop}
+    ${term_id}=    Create Non-Root Element    ${dict_id}    TERM    ${term_name}    test term for catalog auto tests    true
+    ...    ${properties}
+    # tuples
+    : FOR    ${enum}    IN    @{enums}
+    \    Create Tuple    ${term_id}    ${key_prop_name}    ${enum}    ${enum}    true
+    \    ...    false
+    [Return]    ${term_id}
+
+Create constraint term
+    [Arguments]    ${term_name}    ${constraint}
+    [Documentation]    creates a new term whose key propery has a constraint of "> 5.0"
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _term_name_ the name of the term
+    ...
+    ...    *Return"
+    ...
+    ...    the id for the newly created term
+    ${key_prop}=    Create Property JSON    value    NUMBER    desc    true    true
+    ...    null    ${constraint}
+    ${properties}=    Create Properties JSON    ${key_prop}
+    ${term_id}=    Create Non-Root Element    ${dict_id}    TERM    ${term_name}    test term for catalog auto tests    true
+    ...    ${properties}
+    [Return]    ${term_id}
+
+Update constraint term
+    [Arguments]    ${term_id}    ${term_name}    ${constraint}
+    [Documentation]    updates a constraint term so that the key propery has a constraint of "> 20.0"
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _term_id_ the id of the term to update
+    ...
+    ...    _term_name_ the name of the term
+    ...
+    ...    *Return"
+    ...
+    ...    none
+    ${key_prop}=    Create Property JSON    value    NUMBER    desc    true    true
+    ...    null    ${constraint}
+    ${properties}=    Create Properties JSON    ${key_prop}
+    Update Element    ${term_id}    TERM    ${term_name}    test term for catalog auto tests    true    ${properties}
+
+Click Sync With Catalog Menu Option
+    [Documentation]    Clicks on the 'Sync With Catalog' menu item in the catalog hamburger menu of the Catalog Mppings pane. Note that the menu needs to be open, otherwise this will fail.
+    Wait Until Component Is Visible    SYNC_NOW_MENU_ITEM
+    Click on Component    SYNC_NOW_MENU_ITEM
+
+Create Simple Measure Term
+    [Arguments]    ${term_name}
+    # Delete it if it already exists
+    Run Keyword And Ignore Error    Delete Element    id?path=/${term_name}
+    #Create it
+    ${resulthub_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Results Hub/Measure
+    ${property_1}=    Create Property JSON    Key    STRING    Key    true    true
+    ${property_2}=    Create Property JSON    P1    NUMBER    P1    false    false
+    ${properties}=    Create Properties JSON    ${property_1}    ${property_2}
+    ${measure_ term_id}=    Create Concrete Term By Inheritance    ${term_name}    ${term_name}    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Results Hub/Measure","inheritedTermId":"${resulthub_term_id}"}]}    ${properties}
+    [Return]    ${measure_term_id}

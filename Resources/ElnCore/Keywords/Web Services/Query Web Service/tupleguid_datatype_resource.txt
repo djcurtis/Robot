@@ -1,0 +1,16 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that have TUPLE_GUID in the filter condition. \ \n \nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+
+*** Keywords ***
+Run TupleGUID Datatype Query
+    [Arguments]    ${term path}    ${tuple GUID}    ${term GUID}    ${keyValue}
+    [Documentation]    This keyword will execute a number queries that have TUPLE_GUID in the filter condition. \ \n\nThis is testing HUB-API-SSP-QUE-QLC S006, S007, S008.\n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${tuple GUID} = A tuple guid from a tuple belonging to the term in ${term path}.\n- ${term GUID} = The term guid for the term in ${term path}.\n- ${keyValue} = The key value for tuple specified by ${tuple GUID}.\n
+    # return everything from a TUPLE_GUID filter. This query is only checking that it executes without error. It does not check the contents of the returned query
+    Execute Query    SELECT * FROM ${term path} AS t WHERE t.TUPLE_GUID = '${tuple GUID}'
+    # get TERM_GUID from TUPLE_GUID filter
+    Execute Data Query and Verify Values    SELECT TERM_GUID FROM ${term path} AS t WHERE t.TUPLE_GUID = '${tuple GUID}'    ${term GUID}
+    # get KEY_VALUE from TUPLE_GUID filter
+    Execute Data Query and Verify Values    SELECT KEY_VALUE FROM ${term path} AS t WHERE t.TUPLE_GUID = '${tuple GUID}'    ${keyValue}
+    # Invalid guid, should return 0 results
+    Execute Data Query and Verify Values    SELECT * FROM ${term path} AS t WHERE t.TUPLE_GUID = '629cf9e0fdd445b698d3e0a18176369c'

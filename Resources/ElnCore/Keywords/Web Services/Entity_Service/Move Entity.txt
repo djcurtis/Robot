@@ -1,0 +1,158 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: PUT /services/1.0/entities/{entityId}/parent
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-MEN    Move Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Move entity
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S001
+    ...
+    ...    A successful call returns the HTTP status 204 and the entity is moved to the new parent
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S001
+    ${experiment_name}=    Set Variable    MEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${dest_project_id}    Reason    Additional comment
+    # Checking expectations
+    ${src_child_count}=    Get Entity Child Count    ${project_id}    # source project children
+    ${dest_child_count}=    Get Entity Child Count    ${dest_project_id}    # destination \ project children
+    Should Be Equal As Integers    0    ${src_child_count}
+    Should Be Equal As Integers    1    ${dest_child_count}
+
+Move entity with missing destrination entity id
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S002
+    ...
+    ...    If the call parameter ‘parentEntityId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S002
+    ${experiment_name}=    Set Variable    MEN-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    # Missing destination entity
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${EMPTY}    Reason    Additional comment    400
+    # Wrong destination entity
+    rest_entity_service_resource.Move Entity    ${experiment_id}    WrongDestinationEntityId    Reason    Additional comment    404
+
+Move entity with not existing source entity
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S003
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S003
+    ${experiment_name}=    Set Variable    MEN-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    # Missing source entity id results in not found endpoint
+    rest_entity_service_resource.Move Entity    ${EMPTY}    ${experiment_id}    Reason    Additional comment    404
+    # Wrong souce entity
+    rest_entity_service_resource.Move Entity    WrongSourceEntityId    ${dest_project_id}    Reason    Additional comment    404
+
+Move entity with not existing destination entity
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S004
+    ...
+    ...    If the parent entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S004
+    ${experiment_name}=    Set Variable    MEN-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    # Wrong destination entity
+    rest_entity_service_resource.Move Entity    ${experiment_id}    WrongDestinationEntityId    Reason    Additional comment    404
+
+Move entity with no MOVE permission
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S005
+    ...
+    ...    A client requires the MOVE_<PARENT_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S005
+    ${experiment_name}=    Set Variable    MEN-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Use User With Permissions    ${username}    ${password}    ${dest_project_id}    CREATE_EXPERIMENT
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${dest_project_id}    Reason    Additional comment    403
+
+Move entity with no CREATE permission
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S006
+    ...
+    ...    A client requires the CREATE_<PARENT_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S006
+    ${experiment_name}=    Set Variable    MEN-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Use User With Permissions    ${username}    ${password}    ${dest_project_id}    MOVE_EXPERIMENT
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${dest_project_id}    Reason    Additional comment    403
+
+Move entity with dest. entity not supporting src entity type
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S007
+    ...
+    ...    If the destination entity does not support the type of the entity to move, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S007
+    ${experiment_name}=    Set Variable    MEN-S007
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    # Group cannot contain experiment
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${group_id}    Reason    Additional comment    400
+
+Move entity with src entity type equal to DOCUMENT or RECORD
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S008
+    ...
+    ...    If the entity is of type document or record, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S008
+    ${experiment_name}=    Set Variable    MEN-S008
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    ${text_entity_id}=    Add Text Entity    ${experiment_id}
+    rest_entity_service_resource.Move Entity    ${text_entity_id}    ${dest_project_id}    Reason    Additional comment    400
+
+Move entity with locked src entity
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S009
+    ...
+    ...    If the entity is locked, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S009
+    ${experiment_name}=    Set Variable    MEN-S009
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${dest_project_id}    Reason    Additional comment    403
+
+Move entity with authentication reviewed setting enabled
+    [Documentation]    EWB-SAPI-SSP-ENT-MEN-S010
+    ...
+    ...    If system setting ‘move entity authentication reviewed’ is enabled and call parameter ‘userActionInfo’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-MEN-S010
+    ${experiment_name}=    Set Variable    MEN-S010
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    rest_entity_service_resource.Move Entity    ${experiment_id}    ${dest_project_id}    ${EMPTY}    ${EMPTY}    400
+
+*** Keywords ***
+Add Text Entity
+    [Arguments]    ${parent_entity_id}    ${text_data}=Test text data
+    [Documentation]    Add a Text entity and save record as version.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _parent_entity_id_ - the parent entity id
+    ...
+    ...    _text_data_ - the text data. Default set to "Test text data"
+    ...
+    ...    *Return value*
+    ...
+    ...    The Text entity id
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${text_entity_id}=    Add DOCUMENT With String Data    ${experiment_id}    ${text_data}    text/html    HTML_TEXT    Uploaded Document
+    ...    .html
+    ${document_version_id}=    Get Entity Version ID    ${text_entity_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    [Return]    ${text_entity_id}    # The newly created entity id

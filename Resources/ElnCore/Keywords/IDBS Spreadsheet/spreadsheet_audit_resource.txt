@@ -1,0 +1,280 @@
+*** Settings ***
+Documentation     Keywords to aid working with spreadsheet audit logs.
+Library           IDBSSelenium2Library
+Library           OperatingSystem
+Resource          ../Web Client/Selenium/general_resource.txt
+Library           WebHelperFunctions
+Library           Collections
+Library           IDBSHttpLibrary
+Library           String
+Library           XMLLibrary
+Resource          ../HTTP Common/http_common_resource.txt
+Library           IDBSSwingLibrary
+Resource          ../Web Client/Selenium/record_resource.txt
+Resource          ../E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt
+Resource          ../E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt
+Library           OracleLibrary
+
+*** Keywords ***
+Download Web Spreadsheet Audit Log as CSV
+    [Arguments]    ${document_index}=0
+    [Documentation]    Downloads the Audit Log for the spreadsheet with the given document index (must be visible in the web browser, indexes start at 0).
+    ...
+    ...    Returns the full output file path
+    Robust Click    document-header-${document_index}-entityImage
+    ${entity_id}=    IDBSSelenium2Library.Get Element Attribute    xpath=//body@ewb-selected-entity-id
+    ${audit_log_path}=    Join Path    ${OUTPUT_DIR}    audit_log.csv
+    #We give the audit log 2 minutes to be generated, which should be plenty of time
+    Wait Until Keyword Succeeds    120s    5s    WebHelperFunctions.Download Spreadsheet Audit Log    ${entity_id}    ${audit_log_path}    ${SERVER}
+    ...    ${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    [Return]    ${audit_log_path}
+
+Get Audit Log via Spreadsheet ID
+    [Arguments]    ${spreadsheetEntityID}
+    [Documentation]    *Description*
+    ...
+    ...    This keyword gets the audit log for a given spreadsheet
+    ...
+    ...    The audit log is saved to the ${OUTPUT_DIR}
+    ...
+    ...    The name of the saved file is returned from this keyword
+    ...
+    ...    *Arguments*
+    ...
+    ...    _spreadsheetID_ : The entity ID of the Spreadsheet whos audit entry you wish to check
+    ...
+    ...    *Returns*
+    ...
+    ...    _auditFilename_ : the name of the file as saved in the ${OUTPUT_DIR}
+    ...
+    ...    *Example*
+    ...
+    ...    | ${spreadsheet_id} = | *Get Entity Id From Record* | |
+    ...    | ${auditFilename}= | *Get Audit Log via Spreadsheet ID* | ${spreadsheet_id} |
+    ${namespace}=    Set Variable    http://entity.services.ewb.idbs.com    #http://common.services.ewb.idbs.com
+    # Get the ID for the audit document
+    XML HTTP Header Setup
+    GET    /ewb/services/1.0/entitytree/${spreadsheetEntityID}
+    Response Status Code Should Equal    200
+    ${responseBody}=    Get Response Body
+    log    ${responseBody}
+    @{auditEntityIdList}=    Get Element Value    ${responseBody}    ${namespace}    entityId
+    ${auditEntityID}=    Set Variable    @{auditEntityIdList}[0]    # convert list to string
+    # Get the latest audit version ID
+    XML HTTP Header Setup
+    GET    ${ENTITY SERVICE ENDPOINT}/${auditEntityID}/versions
+    Response Status Code Should Equal    200
+    ${responseBody}=    Get Response Body
+    log    ${responseBody}
+    @{auditVersionEntityIdList}=    Get Element Value    ${responseBody}    ${namespace}    versionId    # .//{${namespace}}version[last()]/versionId
+    ${auditVersionEntityID}    Set Variable    @{auditVersionEntityIdList}[-1]    # convert last value to string
+    # Return the audit log
+    XML HTTP Header Setup
+    GET    ${ENTITY SERVICE ENDPOINT}/${auditEntityID}/data?entityVersionId=${auditVersionEntityID}&filename=auditlog.csv
+    ${auditFilename}=    Set Variable    auditlog_${auditVersionEntityID}.csv
+    IDBSHttpLibrary.Save Response Body    ${OUTPUT_DIR}\\${auditFilename}
+    [Return]    ${auditFilename}
+
+_parse audit values
+    [Arguments]    ${auditFilename}    ${auditRowIndex}    ${auditColumnIndex}
+    [Documentation]    *Description*
+    ...
+    ...    This keyword gets the audit log value for a given audit row and column \ index
+    ...
+    ...    It is used internally within *Get Audit Value*
+    ...
+    ...    *Arguments*
+    ...
+    ...    _auditFilename_ : the name of the file as saved in the ${OUTPUT_DIR}
+    ...
+    ...    _auditRowIndex_ : the row index of the row within the audit log
+    ...
+    ...    _auditColumnIndex_ : the row index of the row within the audit log
+    ...
+    ...    *Returns*
+    ...
+    ...    _value_: the value for the audit entry
+    ${auditCSV}=    OperatingSystem.Get File    ${OUTPUT_DIR}\\${auditFilename}
+    ${auditRowCount}=    Get Line Count    ${auditCSV}
+    Run Keyword If    (${auditRowIndex}+1) > ${auditRowCount}    Fail    You are asking for a row number greater than the number of rows that exist!
+    ${auditRow}=    Get Line    ${auditCSV}    ${auditRowIndex}
+    @{auditRowValues}=    Split String    ${auditRow}    ,
+    ${auditValue}=    Set Variable    @{auditRowValues}[${auditColumnIndex}]
+    [Return]    ${auditValue}
+
+Get Audit Value
+    [Arguments]    ${auditFile}    ${row}    ${column}
+    [Documentation]    *Description*
+    ...
+    ...    This keyword gets the audit log value for a given audit row and column
+    ...
+    ...    The audit entry row is determined by the row; for example use *-1* for the last row
+    ...
+    ...    The audit entry column is determined by a name argument (detailed below
+    ...
+    ...    *Arguments*
+    ...
+    ...    _auditFilename_ : the name of the file as saved in the ${OUTPUT_DIR}
+    ...
+    ...    _row_ : the row index of the row within the audit log
+    ...
+    ...    _column_ :
+    ...
+    ...    | *Argument to use* | Audit row |
+    ...    | TIME | Timestamp |
+    ...    | USER | User Name |
+    ...    | FULL | Full User Name |
+    ...    | IP | I.P. Address |
+    ...    | TYPE | Event Type |
+    ...    | LOCATION | Event Location |
+    ...    | DESCRIPTION | Event Description |
+    ...    | BEFORE | Before |
+    ...    | BEFORM | Before \ (Formatted) |
+    ...    | AFTER | After |
+    ...    | AFORM | After (Formatted) |
+    ...    | DIMSN | Dimension |
+    ...    | ITEM | Item |
+    ...    | QUERY | Query |
+    ...    | OTHER | Other |
+    ...    | COMMENT | Comment |
+    ...
+    ...    *Returns*
+    ...
+    ...    _value_: the value for the audit entry
+    ...
+    ...    *Example*
+    ...
+    ...    | ${auditFilename}= | *Get Audit Log via Spreadsheet ID* | ${spreadsheet_id} | |
+    ...    | ${userNameValue} = | *Get Audit Value* | -1 | USER |
+    ...    | *Should be Equal as Strings* | ${userNameValue} | Administrator | |
+    ${auditDictionary}=    Create Dictionary    TIME    0    USER    1    FULL
+    ...    2    IP    3    TYPE    4    LOCATION
+    ...    5    DESCRIPTION    6    BEFORE    7    BEFORM
+    ...    8    AFTER    9    AFORM    10    DIMSN
+    ...    11    ITEM    12    QUERY    13    OTHER
+    ...    14    COMMENT    15
+    log    ${auditDictionary["${column}"]}
+    ${value}=    _parse audit values    ${auditFile}    ${row}    ${auditDictionary["${column}"]}
+    [Return]    ${value}
+
+Check Audit Entry Exists
+    [Arguments]    ${auditFilename}    ${type}    ${location}    ${description}
+    [Documentation]    *Description*
+    ...
+    ...    This keyword checks that the audit entry exists within a given audit log file
+    ...
+    ...    The audit entry is detirmined by the event type, event location and event description
+    ...
+    ...    It will match any event in the log; and will *NOT* distiguish individual, but matching, events
+    ...
+    ...    *Arguments*
+    ...
+    ...    _auditFilename_ : the name of the file as saved in the ${OUTPUT_DIR}
+    ...
+    ...    _type_ : the audit event type as given in the log
+    ...
+    ...    _location_ : the audit event location as given in the log
+    ...
+    ...    _description_ : the audit event description as given in the log
+    ...
+    ...    *Returns*
+    ...
+    ...    _rowIndex_ : the index position of the _first_ row the entry was found on in the log
+    ...
+    ...    *Example*
+    ...
+    ...    | ${auditFilename}= | *Get Audit Log via Spreadsheet ID* | ${spreadsheet_id} | | |
+    ...    | *Check Audit Entry Exists* | ${auditFilename} | Data Added | Table1::Data1:D1 | Value added to cell A |
+    # Our expected values
+    @{expectedList}=    Create List    ${type}    ${location}    ${description}
+    # Our observed values (audit file)
+    ${auditCSV}=    Get File    ${OUTPUT_DIR}\\${auditFilename}
+    ${auditRowCount}=    Get Line Count    ${auditCSV}
+    # Check observed against expected
+    : FOR    ${row}    IN RANGE    1    ${auditRowCount}
+    \    ${rowIndex}=    Set Variable    ${row}
+    \    ${auditRow}=    Get Line    ${auditCSV}    ${row}    # row of audit log
+    \    @{auditRowValues}=    Split String    ${auditRow}    ,    # values of the row
+    \    ${observedType}=    Set Variable    @{auditRowValues}[4]
+    \    ${observedLoc}=    Set Variable    @{auditRowValues}[5]
+    \    ${observedDesc}=    Set Variable    @{auditRowValues}[6]
+    \    @{observedList}=    Create List    ${observedType}    ${observedLoc}    ${observedDesc}
+    \    ${status}    ${error}    Run Keyword And Ignore Error    Lists Should Be Equal    ${observedList}    ${expectedList}
+    \    Return From Keyword If    '${status}'=='PASS'    ${rowIndex}
+    Fail    Audit Entry does not exist
+    [Return]    ${rowIndex}
+
+Turn Auditing On
+    [Documentation]    *Description*
+    ...
+    ...    Opens the *EWB Desktop Client*, configuration dialog and browses to the Web Spreadsheet tab. Checks the checkbox to turn Web Spreadsheet Auditing *On*
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${VALID USER}    ${VALID PASSWD}
+    Open configuration dialog
+    __Select Config dialog tab    Web Spreadsheet
+    ${status}    ${error}=    Run Keyword And Ignore Error    Check Box Should Be Checked    AUDITING_ENABLED_CHECKBOX
+    Run Keyword If    '${status}'=='FAIL'    Check Check Box    AUDITING_ENABLED_CHECKBOX
+    Close configuration dialog
+    Close E-WorkBook
+
+Turn Auditing Off
+    [Documentation]    *Description*
+    ...
+    ...    Opens the *EWB Desktop Client*, configuration dialog and browses to the Web Spreadsheet tab. Unchecks the checkbox to turn Web Spreadsheet Auditing *Off*
+    ...
+    ...    *Arguments*
+    ...
+    ...    None
+    Login to E-WorkBook    ${SERVER}:${THICK_CLIENT_PORT}    ${VALID USER}    ${VALID PASSWD}
+    Open configuration dialog
+    __Select Config dialog tab    Web Spreadsheet
+    ${status}    ${error}=    Run Keyword And Ignore Error    Check Box Should Be Checked    AUDITING_ENABLED_CHECKBOX
+    Run Keyword If    '${status}'=='PASS'    unCheck Check Box    AUDITING_ENABLED_CHECKBOX
+    Close configuration dialog
+    Close E-WorkBook
+
+Open Audit Log
+    [Arguments]    ${spreadsheet_index}=1    # spreadsheet_index is the document index in the record
+    [Documentation]    *Description*
+    ...
+    ...    Opens the audit log via the document header toolbar in the webclient
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${spreadsheet_index} : The index of the Spreadsheet document in the web record
+    Select Document Header    ${spreadsheet_index}
+    ${click_index}=    Evaluate    ${spreadsheet_index}-1
+    Robust Click    document-header-${click_index}-menuButton
+    robust click    ewb-command-ss-view-auditlog
+
+Turn Auditing On via System Setting
+    [Documentation]    Turns on Web Spreadsheet Auditing by checking for the AUDITING_DISABLED system setting in the database and setting it's string value to 'false'. If the setting isn't found, it is created.
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    ${DB_SERVER}    ${ORACLE_SID}
+    Run Keyword    Execute    BEGIN INSERT INTO ${CORE_USERNAME}.SYSTEM_SETTINGS (SETTINGS_NAME, ORDER_KEY, DATA_TYPE, STRING_DATA) VALUES ('com.idbs.ewb.idbsspreadsheet.audit.AUDITING_DISABLED', 0, 'BOOLEAN', 'false'); COMMIT; EXCEPTION WHEN DUP_VAL_ON_INDEX THEN UPDATE ${CORE_USERNAME}.SYSTEM_SETTINGS SET STRING_DATA='false' WHERE SETTINGS_NAME='com.idbs.ewb.idbsspreadsheet.audit.AUDITING_DISABLED'; COMMIT; END;    # Try to insert the setting. If it fails because the setting already exists, modify the existing setting.
+    Disconnect From Database
+
+Turn Auditing Off via System Setting
+    [Documentation]    Turns off Web Spreadsheet Auditing by checking for the AUDITING_DISABLED system setting in the database and setting it's string value to 'true'. If the setting isn't found, it is created.
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    ${DB_SERVER}    ${ORACLE_SID}
+    Run Keyword    Execute    BEGIN INSERT INTO ${CORE_USERNAME}.SYSTEM_SETTINGS (SETTINGS_NAME, ORDER_KEY, DATA_TYPE, STRING_DATA) VALUES ('com.idbs.ewb.idbsspreadsheet.audit.AUDITING_DISABLED', 0, 'BOOLEAN', 'true'); COMMIT; EXCEPTION WHEN DUP_VAL_ON_INDEX THEN UPDATE ${CORE_USERNAME}.SYSTEM_SETTINGS SET STRING_DATA='true' WHERE SETTINGS_NAME='com.idbs.ewb.idbsspreadsheet.audit.AUDITING_DISABLED'; COMMIT; END;    # Try to insert the setting. If it fails because the setting already exists, modify the existing setting.
+    Disconnect From Database
+
+Get Audit Log CSV Data
+    [Arguments]    ${spreadsheet_id}
+    [Documentation]    Return audit log
+    ${auditFilename}=    Get Audit Log via Spreadsheet ID    ${spreadsheet_id}    #created in test setup
+    ${auditCSV}=    OperatingSystem.Get File    ${OUTPUT_DIR}\\${auditFilename}
+    [Return]    ${auditCSV}
+
+Audit Log Row Count Should Equal
+    [Arguments]    ${number}    ${auditCSV}
+    [Documentation]    Check that Audit Log Row Count Should Equal to ${number}
+    ...
+    ...    The header of the audit log is included in the row count
+    ${audit_file}=    Get File    ${OUTPUT_DIR}\\${auditCSV}
+    ${auditRowCount}=    Get Line Count    ${audit_file}
+    ${number}=    Convert To Integer    ${number}
+    Should Be Equal    ${number}    ${auditRowCount}    Audit log row count did not match ${number}

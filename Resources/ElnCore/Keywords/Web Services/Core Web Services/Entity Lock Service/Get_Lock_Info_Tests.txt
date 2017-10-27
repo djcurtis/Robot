@@ -1,0 +1,39 @@
+*** Settings ***
+Documentation     This test suite targets the endpoint : \ /services/1.0/locks/entities/{entityId}/find
+Suite Setup       Entity Locking Suite Setup
+Suite Teardown    Entity Locking Service Suite Teardown
+Force Tags        Entity Lock Service
+Resource          entity_lock_service_test_suite_resource.txt    # common lock service setup and teardown
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Library           XMLLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Get Lock Info for locked experiement should succeed
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityLockDetails
+    ${experiment_name}=    Set Variable    GLI-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Lock Entity    ${experiment_id}
+    ${lock_info}=    Get Lock Info    ${experiment_id}
+    Check Xml Contains Element    check experiment/entity id element exists    ${lock_info}    entityId    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Element Value Contains    check experiment id value    ${lock_info}    ${experiment_id}    entityId    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Contains Element    check experiment name element exists    ${lock_info}    entityName    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Element Value Contains    check experiment name value    ${lock_info}    ${experiment_name}    entityName    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    ${path}=    Set Variable    /Root/${group_name}/${project_name}/${experiment_name}
+    Check Xml Element Value Contains    XML should contain path    ${lock_info}    ${path}    entityPath    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    ${unlock_response}=    Unlock Entity    ${experiment_id}
+
+Get Lock Info for unlocked experiement should return a 204
+    [Documentation]    
+    ...
+    ...    If the lock is not found, then the HTTP status code 204 is returned to the client
+    ${experiment_name}=    Set Variable    GLI-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_info}=    Get Lock Info    ${experiment_id}    204
+
+*** Keywords ***

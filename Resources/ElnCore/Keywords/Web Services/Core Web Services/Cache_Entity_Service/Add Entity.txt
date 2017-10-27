@@ -1,0 +1,137 @@
+*** Settings ***
+Documentation     It adds a new entity to a parent entity and returns the newly created entity id.
+...
+...               *end point:* POST /services/1.0/cache/entities/{entityId}/children
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags        Add Cache Entity
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Add entity
+    [Documentation]    A successful call returns the HTTP status 200 and the newly added entity id. The entity is added
+    [Setup]
+    ${experiment_name}=    Set Variable    AEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    ${web_link_id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    # Checking expectations
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    ${entity_dto}=    Get Entity New    ${web_link_id}    ${web_link_version_id}    200    includeVersionInfo=true
+    Check Xml Element Value Contains    check entity id value    ${entity_dto}    ${web_link_id}    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Value Contains    check entity version state    ${entity_dto}    CACHE    versionState    elementNamespace=http://entity.services.ewb.idbs.com
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Add entity with invalid DTO
+    [Documentation]    If the call parameter SAPIEntityDefinition is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    AEN-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    # Invalid publishing state
+    ${sapi_entity_definition}=    Build web link DTO    TestWebLinkName    http://www.idbs.com    InvalidPublishingState
+    ${web_link_id}=    Add Cache Entity With Custom DTO    ${experiment_id}    ${sapi_entity_definition}    400
+    # empty DTO
+    ${sapi_entity_definition}=    Set Variable    ${EMPTY}
+    ${web_link_id}=    Add Cache Entity With Custom DTO    ${experiment_id}    ${sapi_entity_definition}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Add entity with confined container
+    [Documentation]    If the container entity is confined, then the HTTP status code 400 is returned to the client.
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Tags]    exclusive_access
+    [Setup]    Disable Template Show Reviewed    # EWB default state for this setting is disabled
+    # Create a template, add a web link, set the template as confined and version save
+    ${experiment_name}=    Set Variable    AEN-S003
+    ${template_id}=    Rest_Entity_Service_Resource.Create Template    ${project_id}    ${experiment_name}-TEM
+    Lock Entity    ${template_id}
+    ${web_link_id}=    Add Web Link Entity    ${template_id}    http://www.idbs.com/1
+    ${sapi_entity_version_sequence}=    Set Template Confined    ${template_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Create an experiment from the template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${experiment_name}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${experiment_dto}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true
+    # Obtains the web link id
+    @{entity_ids}    XMLLibrary.Get Element Value    ${experiment_dto}    http://entity.services.ewb.idbs.com    entityId
+    ${web_link_id}=    Set Variable    @{entity_ids}[1]
+    ${web_link_version_id}=    Get Entity Version ID    ${web_link_id}
+    Lock Entity    ${experiment_id}
+    # Deletes the web link from the confined experiment
+    Add Web Link Entity    ${experiment_id}    http://www.idbs.com/2    403
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Add entity not locked
+    [Documentation]    If the container entity is not locked, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    AEN-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${sapi_entity_definition}=    Build web link DTO    TestWebLinkName    http://www.idbs.com
+    # Adding item to unlock experiment
+    ${web_link_id}=    Add Cache Entity With Custom DTO    ${experiment_id}    ${sapi_entity_definition}    403
+    [Teardown]
+
+Add entity with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    AEN-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # No EDIT permission
+    ${sapi_entity_definition}=    Build web link DTO    TestWebLinkName    http://www.idbs.com
+    ${web_link_id}=    Add Cache Entity With Custom DTO    ${experiment_id}    ${sapi_entity_definition}    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Add Spreadsheet (connect)
+    [Documentation]    _Note that this test requires a spreadsheet server in order to run. It is recommended that the spreadsheet server be 'primed' before running the test to ensure that failure does not occur due to timeout waiting for the initial load of libraries._
+    ...
+    ...    A successful call returns the HTTP status 200 and the newly added entity id. The entity is added
+    ...
+    ...    _This test has been given an ignore tag while moving over to a new spreadsheet specific folder._
+    ...
+    [Tags]    ignore
+    [Setup]
+    ${base_folder}=    set variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${data_file_location}=    Set Variable    ${base_folder}\\spreadsheet2.ewbss
+    ${data_zip_location}=    Set Variable    ${base_folder}\\spreadsheet2.zip
+    ${experiment_name}=    Set Variable    AEN-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    Lock Entity    ${experiment_id}
+    ${doc_entity_id}=    Add SPREADSHEET_DOCUMENT (and Preview) With File Data    ${experiment_id}    ${data_file_location}    ${data_zip_location}    application/x-idbs-web-spreadsheet    IDBS_SPREADSHEET
+    Commit Versioned Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    ${document_version_id}    Get Entity Version ID    ${doc_entity_id}
+    ${entity_data}=    Get Entity Data    ${doc_entity_id}    ${document_version_id}    200
+    ${data_encoded}=    Base64 Encode String    ${entity_data}
+    ${experiment_name2}=    Set Variable    AEN-S007
+    ${experiment_id2}=    Create Experiment    ${project_id}    ${experiment_name2}
+    Lock Entity    ${experiment_id2}
+    ${doc_entity_id}=    Add SPREADSHEET_DOCUMENT (and Tidy)    ${experiment_id2}    ${data_file_location}    ${data_encoded}    application/x-idbs-web-spreadsheet    IDBS_SPREADSHEET
+    # Checking expectations
+    Commit Versioned Entity    ${experiment_id2}
+    Unlock Entity    ${experiment_id2}
+    [Teardown]
+
+*** Keywords ***

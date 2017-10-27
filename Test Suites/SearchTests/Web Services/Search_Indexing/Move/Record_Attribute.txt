@@ -1,0 +1,54 @@
+*** Settings ***
+Documentation     Created for story SH-1302
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Version - Move Record
+    [Documentation]    Record - Version - Move Record
+    ...    - verify moved document is still searchable by keyword text
+    Version Save    ${experimentMoveId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentMoveId}
+    sleep    ${wait}
+    rest_entity_service_resource.Move Entity    ${experimentMoveId}    ${projectId}    As Intended    As Intended
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Group|name|is|"${groupName}"    Project|title|is|"project move to"
+    Execute Search And Verify No Result    qwerty    all    Group|name|is|"${groupName}"    Project|title|is|"project move from"
+
+Record - Draft - Move Record
+    [Documentation]    Record - Draft - Move Record
+    ...    - verify moved document is still searchable by keyword text
+    Draft Save    ${experimentMoveId}
+    EntityAPILibrary.Unlock Entity    ${experimentMoveId}
+    sleep    ${wait}
+    rest_entity_service_resource.Move Entity    ${experimentMoveId}    ${projectId}    As Intended    As Intended
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Group|name|is|"${groupName}"    Project|title|is|"project move to"
+    Execute Search And Verify No Result    qwerty    all    Group|name|is|"${groupName}"    Project|title|is|"project move from"
+
+*** Keywords ***
+setup test
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectMoveFromId}=    EntityAPILibrary.Create Project    ${groupId}    project move from
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project move to
+    Set Suite Variable    ${projectId}
+    ${experimentName}=    Set Variable    Experiment_${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentMoveId}=    EntityAPILibrary.Create Experiment    ${projectMoveFromId}    ${experimentName}    Started    keywords:::qwerty2
+    Set Suite Variable    ${experimentMoveId}
+    Edit Entity KeyWord    ${experimentMoveId}    qwerty    ${experimentName}    Started
+
+teardown test
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended

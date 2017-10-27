@@ -1,0 +1,126 @@
+*** Settings ***
+Documentation     Created for story SH-1301
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Document - Version - Edit Caption - Version
+    [Documentation]    Record - Add Document - Version - Edit Caption - Version
+    ...    - verify record is searchable by document caption text by new document version
+    ...    - vesify record is not searchable by document caption text \ by old document version
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Lock Entity    ${experimentId}
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    caption_qwerty2    Unpublished
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty2    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Document - Version - Edit Caption - Draft
+    [Documentation]    Record - Add Document - Version - Edit Caption - Draft
+    ...    - verfiry draft record is not searchable by document caption text \ by last version document
+    ...    - verift record searchable if it is draft
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Version Save    ${experimentId}    Data Added
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    caption_qwerty2    Unpublished
+    Draft Save    ${experimentId}
+    sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty2    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Document - Version - Edit Caption - Not Save
+    [Documentation]    Record - Add Document - Version - Edit Caption - Not Save
+    ...    - verify not saved record is not searchable by document caption text
+    ...    - verify not saved record is searchable by document caption text by last saved version
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Version Save    ${experimentId}    Data Added
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    caption_qwerty2    Unpublished
+    sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty2    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Document - Draft - Edit Caption - Version
+    [Documentation]    Record - Add Document - Draft - Edit Caption - Version
+    ...    - verify record is not searchable by document caption text \ by previously saved draft
+    ...    - verify record is searchable by last version saved document
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Draft Save    ${experimentId}
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    caption_qwerty2    Unpublished
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty2    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Document - Draft - Edit Caption - Draft
+    [Documentation]    Record - Add Document - Draft - Edit Caption - Draft
+    ...    - verify document is not searchable by document caption text by previusly saved draft
+    ...    - verify document is searchable by last saved draft
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Draft Save    ${experimentId}
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    caption_qwerty2    Unpublished
+    Draft Save    ${experimentId}
+    sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty2    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Document - Draft - Edit Caption - Not Save
+    [Documentation]    Record - Add Document - Draft - Edit Caption - Not Save
+    ...    - verify record is searchble by document caption text by last saved draft
+    ...    - verify record is not searchble by document caption text without saving
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Draft Save    ${experimentId}
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    Web Link    caption_qwerty2    Unpublished
+    sleep    ${wait}
+    Execute Search And Verify No Result    caption_qwerty2    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    caption_qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Document - Version - Edit Title - Version
+    [Documentation]    Record - Add Document - Version - Edit Title - Version
+    ...    - verify record is searchable by document title text by new document version
+    ...    - vesify record is not searchable by document title text \ by old document version
+    ${documentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    www.ewb.com    caption_qwerty
+    Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Lock Entity    ${experimentId}
+    Edit Item Type And Caption    ${experimentId}    ${documentId}    WebLink2    caption_qwerty    Unpublished
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Search And Verify No Result    WebLink    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    WebLink2    all    Experiment|title|is|"${experimentName}"
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${currentDate}=    Get Current Date
+    Set Suite Variable    ${currentDate}
+    ${experimentName}=    Set Variable    Experiment_${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentId}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

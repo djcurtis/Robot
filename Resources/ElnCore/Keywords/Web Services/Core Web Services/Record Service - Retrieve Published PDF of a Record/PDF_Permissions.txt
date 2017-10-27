@@ -1,0 +1,561 @@
+*** Settings ***
+Documentation     *EWB Publising Services Public API*
+...
+...               ENDPOINT: /services/1.0/records/{entityId}/publish
+...
+...               The tests in this suite check that the correct response is returned depending on whether user has the relevant permissions for retrieving the published PDF for a record using the above endpoint. \ The test suite covers the following scenarios:
+...
+...               1. User with All_entity_permission roles, but applied at a specific entity level.
+...               Test where user has / has not got access to enttiies
+...
+...               2. \ User with PDF Test role applied at /Root/
+...               Test roles with various combinations of PDF related permissions
+Suite Setup       00 Suite Level Setup
+Force Tags        EWB-GKO-PI004-R001
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt    # Rest Entity Lock Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../Record Service/PDF content acceptance/add_image_items_to_experiments.txt
+Resource          ../Record Service/PDF content acceptance/add_items_to_experiments.txt
+Resource          ../Record Service/PDF content acceptance/test utilities.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+# Library           EntityAPILibrary
+Library           CheckPDFLibrary    # Library to compare PDFs
+Library           IDBSSwingLibrary
+Library           RobotRemoteAgent
+Library           TestDataGenerationLibrary
+# Library           OracleLibrary
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+01 Entity Access
+    [Documentation]    *Endpoint: _/services/1.0/records/{enitytID}/publish/pdf_ - Check Entity Access*
+    ...
+    ...    Test checks that when a user performs a GET request in order to retrieve the PDF of a published record:
+    ...
+    ...    - \ HTTP status 200 is returned: \ when user has access to the record entity
+    ...    - \ HTTP status 403 \ is returned: when user has NO access to the record entity
+    ...
+    ...    *Data Setup*
+    ...    - There are 2 projects *Has Access* and *NO Access* which contain published experiment PDFs
+    ...    - User is created and assigned _*All Entity Roles*_ \ permissions to project *Has Access* only
+    #User has access to ${Project_Path1}
+    GET_PDF_request    ${experiment_ID1}    ${experiment_ID1_EV2}    PDF_1_4    200    USER010    USER0101
+    #User has NO access to ${Project_Path2}
+    GET_PDF_request    ${experiment_ID2}    ${experiment_ID2_EV2}    PDF_1_4    403    USER010    USER0101
+
+PDF permissions - None
+    [Documentation]    - User has been assigned an entity role that has ALL default \ EWB permissions and PDF permissions in the table below
+    ...
+    ...    - Entity Role Permission has been applied at the Root level
+    ...
+    ...
+    ...    | VIEW_PDF_FOLDER | NO |
+    ...    | VIEW_PDF | NO |
+    ...    | CREATE_PDF | NO |
+    ...    | EDIT_PDF | NO |
+    ...    | DELETE_PDF | NO |
+    ...    | OPEN_PDF | NO |
+    ...    -
+    ...    | Test Condition | Expected HTTP response |
+    ...    | Entity Role has NO PDF permissions \ | 403 |
+    Clear PDF ROLE Permissions    PDF_TEST_ROLE
+    GET_PDF_request    ${experiment_ID3}    ${experiment_ID3_EV2}    PDF_1_4    403    USER011    USER0111
+
+PDF permissions - VIEW FOLDER only
+    [Documentation]    - User has been assigned an entity role that has ALL default \ EWB permissions and PDF permissions in the table below
+    ...    - Entity Role Permission has been applied at the Root level
+    ...
+    ...    | VIEW_PDF_FOLDER | YES |
+    ...    | VIEW_PDF | NO |
+    ...    | CREATE_PDF | NO |
+    ...    | EDIT_PDF | NO |
+    ...    | DELETE_PDF | NO |
+    ...    | OPEN_PDF | NO |
+    ...    | OPEN_EXPERIMENT | YES |
+    ...    -
+    ...    | Test Condition | Expected HTTP response |
+    ...    | Role only has VIEW_PDF_FOLDER permissions \ | 403 |
+    Comment    Role has VIEW_PDF_FOLDER permissions only
+    Clear PDF ROLE Permissions    PDF_TEST_ROLE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF_FOLDER
+    GET_PDF_request    ${experiment_ID3}    ${experiment_ID3_EV2}    PDF_1_4    403    USER011    USER0111
+
+PDF permissions - VIEW and VIEW FOLDER
+    [Documentation]    - User has been assigned an entity role that has ALL default \ EWB permissions and PDF permissions in the table below
+    ...    - Entity Role Permission has been applied at the Root level
+    ...
+    ...    | VIEW_PDF_FOLDER | YES |
+    ...    | VIEW_PDF | YES |
+    ...    | CREATE_PDF | NO |
+    ...    | EDIT_PDF | NO |
+    ...    | DELETE_PDF | NO |
+    ...    | OPEN_PDF | NO |
+    ...    | OPEN_EXPERIMENT | YES |
+    ...    -
+    ...    | Test Condition | Expected HTTP response |
+    ...    | Role has both VIEW & VIEW PDF FOLDER permissions \ | 403 |
+    Comment    Role has VIEW_PDF_FOLDER permissions only
+    Clear PDF ROLE Permissions    PDF_TEST_ROLE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF_FOLDER
+    GET_PDF_request    ${experiment_ID3}    ${experiment_ID3_EV2}    PDF_1_4    200    USER011    USER0111
+
+PDF permissions - ALLbar VIEW_PDF
+    [Documentation]    - User has been assigned an entity role that has ALL default \ EWB permissions and PDF permissions in the table below
+    ...    - Entity Role Permission has been applied at the Root level
+    ...
+    ...    | VIEW_PDF_FOLDER | YES |
+    ...    | VIEW_PDF | NO |
+    ...    | CREATE_PDF | YES |
+    ...    | EDIT_PDF | YES |
+    ...    | DELETE_PDF | YES |
+    ...    | OPEN_PDF | YES |
+    ...    | OPEN_EXPERIMENT | YES |
+    ...    -
+    ...    | Test Condition | Expected HTTP response |
+    ...    | Role has all PDF permissions bar VIEW_PDF \ | 403 |
+    Clear PDF ROLE Permissions    PDF_TEST_ROLE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_PDF
+    GET_PDF_request    ${experiment_ID3}    ${experiment_ID3_EV2}    PDF_1_4    403    USER011    USER0111
+
+PDF permissions - ALLbar VIEW_PDF_FOLDER
+    [Documentation]    - User has been assigned an entity role that has ALL default \ EWB permissions and PDF permissions in the table below
+    ...    - Entity Role Permission has been applied at the Root level
+    ...
+    ...    | VIEW_PDF_FOLDER | NO |
+    ...    | VIEW_PDF | YES |
+    ...    | CREATE_PDF | YES |
+    ...    | EDIT_PDF | YES |
+    ...    | DELETE_PDF | YES |
+    ...    | OPEN_PDF | YES |
+    ...    | OPEN_EXPERIMENT | YES |
+    ...    -
+    ...    | Test Condition | Expected HTTP response |
+    ...    | Role has all PDF permissions bar VIEW_PDF \ | 403 |
+    Clear PDF ROLE Permissions    PDF_TEST_ROLE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_PDF
+    GET_PDF_request    ${experiment_ID3}    ${experiment_ID3_EV2}    PDF_1_4    403    USER011    USER0111
+
+PDF permissions - No OPEN_EXPERIMENT
+    [Documentation]    - User has been assigned an entity role that has ALL default \ EWB permissions and PDF permissions in the table below
+    ...    - Entity Role Permission has been applied at the Root level
+    ...
+    ...    | VIEW_PDF_FOLDER | YES |
+    ...    | VIEW_PDF | YES |
+    ...    | CREATE_PDF | YES |
+    ...    | EDIT_PDF | YES |
+    ...    | DELETE_PDF | YES |
+    ...    | OPEN_PDF | YES |
+    ...    | OPEN_EXPERIMENT | NO |
+    ...    -
+    ...    | Test Condition | Expected HTTP response |
+    ...    | User has NO OPEN_EXPERIMENT permissions \ | 403 |
+    Comment    Role has VIEW_PDF_FOLDER permissions only
+    Clear PDF ROLE Permissions    PDF_TEST_ROLE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_PDF
+    Clear Roles    PDF_TEST_ROLE    OPEN_EXPERIMENT
+    GET_PDF_request    ${experiment_ID3}    ${experiment_ID3_EV2}    PDF_1_4    403    USER011    USER0111
+    Comment    Reassign OPEN_EXPERIMENT as part of housekeeping
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_EXPERIMENT
+
+*** Keywords ***
+00 Suite Level Setup
+    [Documentation]    Setup creates
+    ...    - test entities
+    ...    - entity roles
+    ...    - setup up user security
+    Setup - Create test entities
+    ${Status}    ${Value}=    Run Keyword And Ignore Error    Check Role Not Present    PDF_TEST_ROLE
+    Run Keyword If    '${Status}'=='PASS'    Setup - Create entity roles
+    Setup - User access and security
+
+Setup - Create test entities
+    [Documentation]    Creates the following test entties
+    ...
+    ...    Group = Record_Service_GET_PDFs_Permissions_XXX \ containing
+    ...
+    ...    | Project | Experiment |
+    ...    | Have_Access | \ Expt-Car-A |
+    ...    | NO_Access \ | \ Expt-Car-B \ |
+    ...    | Test Entity Role Permissions | \ Expt-Car-C \ |
+    ...
+    ...    All experiment records are published.
+    ${unique_id}=    Get Time    epoch
+    #Define Group, Project name variables
+    ${Group_Name}=    set variable    Record_Service_GET_PDFs_Permissions_${unique_id}
+    ${Project_Name1}=    set variable    Have_Access
+    ${Project_Name2}=    set variable    NO_Access
+    ${Project_Name3}=    set variable    Test Entity Role Permissions
+    #Define suite variable : entity paths to be used in tests
+    ${Project_PATH1}=    set variable    Root/${Group_Name}/${Project_Name1}
+    Set Suite Variable    ${Project_PATH1}
+    ${Project_PATH2}=    set variable    Root/${Group_Name}/${Project_Name2}
+    Set Suite Variable    ${Project_PATH2}
+    ${Project_PATH3}=    set variable    Root/${Group_Name}/${Project_Name3}
+    Set Suite Variable    ${Project_PATH3}
+    #Create Group for Testsuite
+    ${Group_ID}=    Rest_Entity_Service_ Resource.Create Group    1    ${Group_Name}
+    Set Suite Variable    ${Group_id}
+    #Create 1st Project & Experiment    Project = Have Access
+    ${Project_ID1}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name1}
+    Set Suite Variable    ${Project_ID1}
+    ${experiment_ID1}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID1}    Expt-Car-A
+    Set Suite Variable    ${experiment_ID1}
+    Lock Entity    ${experiment_ID1}
+    Add DOCUMENT With File Data    ${experiment_ID1}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Car_1.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_ID1}
+    Publish Record    ${experiment_ID1}
+    Unlock Entity    ${experiment_ID1}
+    ${experiment_ID1_EV2}=    Get Entity Version ID    ${experiment_ID1}
+    Set Suite Variable    ${experiment_ID1_EV2}
+    #Create 2nd Project & Experiment    Project = NO Access
+    ${Project_ID2}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name2}
+    Set Suite Variable    ${Project_ID2}
+    ${experiment_ID2}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID2}    Expt-Car-B
+    Set Suite Variable    ${experiment_ID2}
+    Lock Entity    ${experiment_ID2}
+    Add DOCUMENT With File Data    ${experiment_ID2}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Car_2.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_ID2}
+    Publish Record    ${experiment_ID2}
+    Unlock Entity    ${experiment_ID2}
+    ${experiment_ID2_EV2}=    Get Entity Version ID    ${experiment_ID2}
+    Set Suite Variable    ${experiment_ID2_EV2}
+    #Create 3rd Project & Experiment    Project = Test Entity Role Permissions
+    ${Project_ID3}=    Rest_Entity_Service_ Resource.Create Project    ${Group_ID}    ${Project_Name3}
+    Set Suite Variable    ${Project_ID3}
+    ${experiment_ID3}=    Rest_Entity_Service_ Resource.Create Experiment    ${Project_ID3}    Expt-Car-C
+    Set Suite Variable    ${experiment_ID3}
+    Lock Entity    ${experiment_ID3}
+    Add DOCUMENT With File Data    ${experiment_ID3}    ${CURDIR}/../../../Test Data/Core Web Services/Record Service/Retrieve_PDF_of_Published_Records/Record Items/Car_3.html    text/html    HTML_TEXT
+    Commit Versioned Entity    ${experiment_ID3}
+    Publish Record    ${experiment_ID3}
+    Unlock Entity    ${experiment_ID3}
+    ${experiment_ID3_EV2}=    Get Entity Version ID    ${experiment_ID3}
+    Set Suite Variable    ${experiment_ID3_EV2}
+
+Setup - Create entity roles
+    [Documentation]    Creates a ROLE that has all the default EWB entity permissions excluding those associated with
+    ...    - PDF
+    ...    - ASSET HUB
+    ...    - CUSTOM entities
+    Create Role And Validate    PDF_TEST_ROLE    PDF_TEST_ROLE    Has most enttiy permission expect for those associated with PDF and AssetHub    false
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    ASSIGN_ROLES
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    BBSS_SET_BLINDING
+    Ensure Role has Permission    PDF_TEST_ROLE    BBSS_SET_DICTMAPPINGS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_TASK_TYPES
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_TASK
+    Ensure Role has Permission    PDF_TEST_ROLE    SIGNOFF_TASK
+    Ensure Role has Permission    PDF_TEST_ROLE    ALLOW_DRAFT_EXPERIMENTS
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_ROOT
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_ROOT
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SPREADSHEET_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SPREADSHEET_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_HEADER_FOOTER
+    Comment    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF_FOLDER
+    Comment    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_PDF
+    Comment    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_PDF
+    Comment    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_PDF
+    Comment    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_PDF
+    Comment    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_PUBLISHING_RULE
+    Ensure Role has Permission    PDF_TEST_ROLE    INITIATE_PUBLISHING
+    Ensure Role has Permission    PDF_TEST_ROLE    SET_SPREADSHEET_GLP
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_EXPERIMENT_FONTS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_ANY_TASK
+    Ensure Role has Permission    PDF_TEST_ROLE    REASSIGN_ANY_TASK
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_TEST_REQUEST
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_TEST_REQUEST
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_DISPLAY_ITEM_PROPERTIES
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_SPREADSHEET_DESIGNERS
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_IMPORT_UTILITY
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_DATA_READER
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_RANDOMISATION
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_TESTABLE_OBJECTS
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_SPREADSHEET_AUDITING_TOOLS
+    Ensure Role has Permission    PDF_TEST_ROLE    INSERT_SPREADSHEET_COMPONENT
+    Ensure Role has Permission    PDF_TEST_ROLE    USE_KNOCKOUT
+    Ensure Role has Permission    PDF_TEST_ROLE    PDF_SIGNOFF
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_USER_SEARCHES
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_USER_SEARCHES
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_USER_SEARCHES
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    CBSS_SET_DICTMAPPINGS
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_FIT_AND_CHART_SETTINGS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_ROOT
+    Ensure Role has Permission    PDF_TEST_ROLE    UPDATE_CATALOG_FROM_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_USER_AREA
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_USER_AREA
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_USER_AREA
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_ANY_COMMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_PRINT_LABELS_OPTION
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_DND_FILE_OPTIONS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_LANDING_PAGE
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_LANDING_PAGE
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_LANDING_PAGE
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_LANDING_PAGE
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_LANDING_PAGE
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_MENU_DISPLAY
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_LOOKUP_SOURCE
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    FILL_IN_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_SPREADSHEET_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_IS_RESOURCES
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_IS_RESOURCES
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_IS_RESOURCES
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_IS_RESOURCES
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_IS_RESOURCES
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_IS_RESOURCES
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_IS_FILE_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_IS_BOOKMARK_RS
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_USER_INBOX
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_USER_INBOX
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_USER_INBOX
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_VERSION_SAVE
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_PRINT_PUBLISHING_OPTIONS
+    Ensure Role has Permission    PDF_TEST_ROLE    CONFIGURE_CREATION_OPTIONS
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    CREATE_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    MOVE_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    OPEN_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    COPY_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_MS_WORD_REPORT_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_ENTITY_ROLES
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_ROOT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_DEVDEF
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_DEVDEF_FOLDER
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_PROJECT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_EXPERIMENT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_FORM
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_SPREADSHEET
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_SPREADSHEET_PROTOCOL
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_ROOT_SPREADSHEET_PROTOCOL_GROUP
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_PDF
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_SEARCH
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_SEARCH_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_USER_SEARCHES
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_USER_AREA
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_USER_INBOX_CATEGORY
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_USER_INBOX
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_FILE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_MS_WORD_TEMPLATE
+    Ensure Role has Permission    PDF_TEST_ROLE    VIEW_HISTORY_MS_WORD_REPORT
+    Ensure Role has Permission    PDF_TEST_ROLE    DELETE_SIGNED_ITEM
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_SIGNED_ITEM
+    Ensure Role has Permission    PDF_TEST_ROLE    PREVENT_RECORD_EDIT
+    Ensure Role has Permission    PDF_TEST_ROLE    ALLOW_RECORD_EDIT
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_TAGS
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_ANY_TAG
+    Ensure Role has Permission    PDF_TEST_ROLE    EDIT_COMMENTS
+
+Setup - User access and security
+    [Documentation]    *Set up user entity access and security permissions*
+    ...
+    ...    - \ USER010: \ has _*All entity permissions*_ \ applied to Project = /Root/Record_Service_GET_PDFs_Permissions_x/Have Access
+    ...    - \ USER011: \ has entity role PDF_TEST_ROLE applies at the /Root level. \ The permission on this roles will vary through out the test suite.
+    Assign User Entity Role    USER010    ALL_ENTITY_PERMISSIONS    ${Project_ID1}
+    Assign User Entity Role    USER011    PDF_TEST_ROLE    1
+
+Clear PDF ROLE Permissions
+    [Arguments]    ${Role_name}
+    [Documentation]    Clears role of any PDF related permissions
+    Clear Roles    ${Role_name}    VIEW_PDF
+    Clear Roles    ${Role_name}    VIEW_PDF_FOLDER
+    Clear Roles    ${Role_name}    CREATE_PDF
+    Clear Roles    ${Role_name}    EDIT_PDF
+    Clear Roles    ${Role_name}    DELETE_PDF
+    Clear Roles    ${Role_name}    OPEN_PDF
+
+GET_PDF_request
+    [Arguments]    ${experiment_id}    ${entityVersionID}    ${PDFType}    ${ExpectedStatusCode}    ${Username}    ${UserPW}
+    [Documentation]    GET request which retrieves the PDF using the endpoint:
+    ...
+    ...    /services/1.0/records/{entityID}/publishing/pdf
+    ...
+    ...    optional url parameters:
+    ...    - \ entityVersionId
+    ...    - \ PDFType
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${Username}    ${UserPW}
+    Next Request May Not Succeed
+    GET    ${RECORD SERVICE ENDPOINT}/${experiment_id}/publish/pdf?entityVersionId=${entityVersionID}&pdfVersion=${PDFType}
+    Response Status Code Should Equal    ${ExpectedStatusCode}
+
+Clear Roles
+    [Arguments]    ${role name}    ${permission name}
+    Request Setup
+    Next Request May Not Succeed
+    DELETE    ${SECURITY ADMINISTRATION ROLE ENDPOINT}/${role name}/permissions/${permission name}

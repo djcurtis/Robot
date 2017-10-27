@@ -1,0 +1,59 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-GEN    Get Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Get entity
+    [Documentation]    EWB-SAPI-SSP-ENT-GEN-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityDto
+    [Tags]    EWB-SAPI-SSP-ENT-GEN-S001
+    ${experiment_name}=    Set Variable    GEN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${sapi_entity_dto}=    Get Entity    ${experiment_id}
+    # Checking expectations
+    Check Xml Element Value Contains    check experiment id value    ${sapi_entity_dto}    ${experiment_id}    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+
+Get entity with wrong entity id
+    [Documentation]    EWB-SAPI-SSP-ENT-GEN-S002
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GEN-S002
+    ${experiment_name}=    Set Variable    GEN-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # wrong entity id
+    ${sapi_entity_dto}=    Get Entity    WrongEnityId    ${entity_version_id}    false    false    false
+    ...    false    false    false    false    false    false
+    ...    false    404
+    # missing entity id
+    ${sapi_entity_dto}=    Get Entity    ${EMPTY}    ${entity_version_id}    false    false    false
+    ...    false    false    false    false    false    false
+    ...    false    404
+
+Get entity without permissions
+    [Documentation]    EWB-SAPI-SSP-RES-GEN-S003
+    ...
+    ...    A client requires the relevant permission with respect to the chosen ‘include’ options specified in the service call. If the client does not have one or more of those permissions, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GEN-S003
+    ${experiment_name}=    Set Variable    GEN-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    ${sapi_entity_dto}=    Get Entity    ${experiment_id}    ${EMPTY}    true    true    true
+    ...    true    true    true    true    true    true
+    ...    true    403
+
+*** Keywords ***

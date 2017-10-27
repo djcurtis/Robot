@@ -1,0 +1,23 @@
+*** Settings ***
+Library           IDBSHttpLibrary
+Library           String
+Resource          ../../common_resource.txt
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+
+*** Variables ***
+${RECORD_ENDPOINT_START}    /ewb/services/1.0/records
+
+*** Keywords ***
+Set Record Read Only
+    [Arguments]    ${entityid}
+    [Documentation]    Set record read only flag
+    HTTP Header Setup
+    PUT    ${RECORD_ENDPOINT_START}/${entityid}/readonly
+    Response Status Code Should Equal    204
+
+Clear Record Read Only
+    [Arguments]    ${entityid}
+    [Documentation]    Clear record read only flag
+    HTTP Header Setup
+    DELETE    ${RECORD_ENDPOINT_START}/${entityid}/readonly
+    Response Status Code Should Equal    204

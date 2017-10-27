@@ -1,0 +1,420 @@
+*** Settings ***
+Documentation     Test Cases Covering Security Entity Role Assignment
+Suite Setup       Create Test Entities
+Test Setup        Services Setup
+# Library           OracleLibrary
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+# Library           EntityAPILibrary
+
+*** Variables ***
+${GROUP ID}       ${EMPTY}
+${PROJECT ID}     ${EMPTY}
+${EXPERIMENT ID}    ${EMPTY}
+
+*** Test Cases ***
+1-1 Assign Entity Role - Enabled User - Valid Role - Root Level
+    Create User    EntityUser1-1    password    fullname    email@idbs.com    department
+    Create Role    EntityRole1-1    EntityRole1-1    EntityRole1-1    false
+    Assign User Entity Role    EntityUser1-1    EntityRole1-1    1
+
+1-2 Assign Entity Role - Enabled User - Invalid Role - Root Level
+    Create User    EntityUser1-2    password    fullname    email@idbs.com    department
+    Assign User Entity Role And Expect Error    EntityUser1-2    EntityRole1-2    1    400
+
+1-3 Assign Entity Role - Enabled User - Valid Role Already Assigned - Root Level
+    Create User    EntityUser1-3    password    fullname    email@idbs.com    department
+    Create Role    EntityRole1-3    EntityRole1-3    EntityRole1-3    false
+    Assign User Entity Role    EntityUser1-3    EntityRole1-3    1
+    Assign User Entity Role    EntityUser1-3    EntityRole1-3    1
+
+1-4 Assign Entity Role - Disabled User - Valid Role - Root Level
+    Create User    EntityUser1-4    password    fullname    email@idbs.com    department
+    Disable User    EntityUser1-4    disablereason
+    Create Role    EntityRole1-4    EntityRole1-4    EntityRole1-4    false
+    Assign User Entity Role    EntityUser1-4    EntityRole1-4    1
+
+1-5 Assign Entity Role - Disabled User - Invalid Role - Root Level
+    Create User    EntityUser1-5    password    fullname    email@idbs.com    department
+    Disable User    EntityUser1-5    disablereason
+    Assign User Entity Role And Expect Error    EntityUser1-5    EntityRole1-5    1    400
+
+1-6 Assign Entity Role - Disabled User - Valid Role Already Assigned - Root Level
+    Create User    EntityUser1-6    password    fullname    email@idbs.com    department
+    Disable User    EntityUser1-6    disablereason
+    Create Role    EntityRole1-6    EntityRole1-6    EntityRole1-6    false
+    Assign User Entity Role    EntityUser1-6    EntityRole1-6    1
+    Assign User Entity Role    EntityUser1-6    EntityRole1-6    1
+
+1-7 Remove Entity Role - Enabled User - Valid Role - Root Level
+    Create User    EntityUser1-7    password    fullname    email@idbs.com    department
+    Create Role    EntityRole1-7    EntityRole1-7    EntityRole1-7    false
+    Assign User Entity Role    EntityUser1-7    EntityRole1-7    1
+    Delete User Entity Role    EntityUser1-7    EntityRole1-7    1
+
+1-8 Remove Entity Role - Enabled User - Invalid Role - Root Level
+    Create User    EntityUser1-8    password    fullname    email@idbs.com    department
+    Delete User Entity Role And Expect Error    EntityUser1-8    EntityRole1-8    1    400
+
+1-9 Remove Entity Role - Enabled User - Valid Role Not Assigned - Root Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser1-9    password    fullname    email@idbs.com    department
+    Create Role    EntityRole1-9    EntityRole1-9    EntityRole1-9    false
+    Delete User Entity Role    EntityUser1-9    EntityRole1-9    1
+
+1-10 Remove Entity Role - Disabled User - Valid Role - Root Level
+    Create User    EntityUser1-10    password    fullname    email@idbs.com    department
+    Disable User    EntityUser1-10    disablereason
+    Create Role    EntityRole1-10    EntityRole1-10    EntityRole1-10    false
+    Assign User Entity Role    EntityUser1-10    EntityRole1-10    1
+    Delete User Entity Role    EntityUser1-10    EntityRole1-10    1
+
+1-11 Remove Entity Role - Disabled User - Invalid Role - Root Level
+    Create User    EntityUser1-11    password    fullname    email@idbs.com    department
+    Disable User    EntityUser1-11    disablereason
+    Delete User Entity Role And Expect Error    EntityUser1-11    EntityRole1-11    1    400
+
+1-12 Remove Entity Role - Disabled User - Valid Role Not Assigned - Root Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser1-12    password    fullname    email@idbs.com    department
+    Disable User    EntityUser1-12    disablereason
+    Create Role    EntityRole1-12    EntityRole1-12    EntityRole1-12    false
+    Delete User Entity Role    EntityUser1-12    EntityRole1-12    1
+
+2-1 Assign Entity Role - Group - Valid Role - Root Level
+    Create User Group    EntityGroup2-1    EntityGroup2-1
+    Create Role    EntityRole2-1    EntityRole2-1    EntityRole2-1    false
+    Assign User Group Entity Role    EntityGroup2-1    EntityRole2-1    1
+
+2-2 Assign Entity Role - Group - Invalid Role - Root Level
+    Create User Group    EntityGroup2-2    EntityGroup2-2
+    Assign User Group Entity Role And Expect Error    EntityGroup-2    EntityRole2-2    1    400
+
+2-3 Assign Entity Role - Group - Valid Role Already Assigned - Root Level
+    Create User Group    EntityGroup2-3    EntityGroup2-3
+    Create Role    EntityRole2-3    EntityRole2-3    EntityRole2-3    false
+    Assign User Group Entity Role    EntityGroup2-3    EntityRole2-3    1
+    Assign User Group Entity Role    EntityGroup2-3    EntityRole2-3    1
+
+2-4 Remove Entity Role - Group - Valid Role - Root Level
+    Create User Group    EntityGroup2-4    EntityGroup2-4
+    Create Role    EntityRole2-4    EntityRole2-4    EntityRole2-4    false
+    Assign User Group Entity Role    EntityGroup2-4    EntityRole2-4    1
+    Delete User Group Entity Role    EntityGroup2-4    EntityRole2-4    1
+
+2-5 Remove Entity Role - Group - Invalid Role - Root Level
+    Create User Group    EntityGroup2-5    EntityGroup2-5
+    Delete User Group Entity Role And Expect Error    EntityGroup2-5    Entity Role2-5    1    400
+
+2-6 Remove Entity Role - Group - Valid Role Not Assigned - Root Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User Group    EntityGroup2-6    EntityGroup2-6
+    Create Role    EntityRole2-6    EntityRole2-6    EntityRole2-6    false
+    Delete User Group Entity Role    EntityGroup2-6    EntityRole2-6    1
+
+3-1 Assign Entity Role - Enabled User - Valid Role - Group Level
+    Create User    EntityUser3-1    password    fullname    email@idbs.com    department
+    Create Role    EntityRole3-1    EntityRole3-1    EntityRole3-1    false
+    Assign User Entity Role    EntityUser3-1    EntityRole3-1    ${GROUP ID}
+
+3-2 Assign Entity Role - Enabled User - Invalid Role - Group Level
+    Create User    EntityUser3-2    password    fullname    email@idbs.com    department
+    Assign User Entity Role And Expect Error    EntityUser3-2    EntityRole3-2    ${GROUP ID}    400
+
+3-3 Assign Entity Role - Enabled User - Valid Role Already Assigned - Group Level
+    Create User    EntityUser3-3    password    fullname    email@idbs.com    department
+    Create Role    EntityRole3-3    EntityRole3-3    EntityRole3-3    false
+    Assign User Entity Role    EntityUser3-3    EntityRole3-3    ${GROUP ID}
+    Assign User Entity Role    EntityUser3-3    EntityRole3-3    ${GROUP ID}
+
+3-4 Assign Entity Role - Disabled User - Valid Role - Group Level
+    Create User    EntityUser3-4    password    fullname    email@idbs.com    department
+    Disable User    EntityUser3-4    disablereason
+    Create Role    EntityRole3-4    EntityRole3-4    EntityRole3-4    false
+    Assign User Entity Role    EntityUser3-4    EntityRole3-4    ${GROUP ID}
+
+3-5 Assign Entity Role - Disabled User - Invalid Role - Group Level
+    Create User    EntityUser3-5    password    fullname    email@idbs.com    department
+    Disable User    EntityUser3-5    disablereason
+    Assign User Entity Role And Expect Error    EntityUser3-5    EntityRole3-5    ${GROUP ID}    400
+
+3-6 Assign Entity Role - Disabled User - Valid Role Already Assigned - Group Level
+    Create User    EntityUser3-6    password    fullname    email@idbs.com    department
+    Disable User    EntityUser3-6    disablereason
+    Create Role    EntityRole3-6    EntityRole3-6    EntityRole3-6    false
+    Assign User Entity Role    EntityUser3-6    EntityRole3-6    ${GROUP ID}
+    Assign User Entity Role    EntityUser3-6    EntityRole3-6    ${GROUP ID}
+
+3-7 Remove Entity Role - Enabled User - Valid Role - Group Level
+    Create User    EntityUser3-7    password    fullname    email@idbs.com    department
+    Create Role    EntityRole3-7    EntityRole3-7    EntityRole3-7    false
+    Assign User Entity Role    EntityUser3-7    EntityRole3-7    ${GROUP ID}
+    Delete User Entity Role    EntityUser3-7    EntityRole3-7    ${GROUP ID}
+
+3-8 Remove Entity Role - Enabled User - Invalid Role - Group Level
+    Create User    EntityUser3-8    password    fullname    email@idbs.com    department
+    Delete User Entity Role And Expect Error    EntityUser3-8    EntityRole3-8    ${GROUP ID}    400
+
+3-9 Remove Entity Role - Enabled User - Valid Role Not Assigned - Group Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser3-9    password    fullname    email@idbs.com    department
+    Create Role    EntityRole3-9    EntityRole3-9    EntityRole3-9    false
+    Delete User Entity Role    EntityUser3-9    EntityRole3-9    ${GROUP ID}
+
+3-10 Remove Entity Role - Disabled User - Valid Role - Group Level
+    Create User    EntityUser3-10    password    fullname    email@idbs.com    department
+    Disable User    EntityUser3-10    disablereason
+    Create Role    EntityRole3-10    EntityRole3-10    EntityRole3-10    false
+    Assign User Entity Role    EntityUser3-10    EntityRole3-10    ${GROUP ID}
+    Delete User Entity Role    EntityUser3-10    EntityRole3-10    ${GROUP ID}
+
+3-11 Remove Entity Role - Disabled User - Invalid Role - Group Level
+    Create User    EntityUser3-11    password    fullname    email@idbs.com    department
+    Disable User    EntityUser3-11    disablereason
+    Delete User Entity Role And Expect Error    EntityUser3-11    EntityRole3-11    ${GROUP ID}    400
+
+3-12 Remove Entity Role - Disabled User - Valid Role Not Assigned - Group Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser3-12    password    fullname    email@idbs.com    department
+    Disable User    EntityUser3-12    disablereason
+    Create Role    EntityRole3-12    EntityRole3-12    EntityRole3-12    false
+    Delete User Entity Role    EntityUser3-12    EntityRole3-12    ${GROUP ID}
+
+4-1 Assign Entity Role - Group - Valid Role - Group Level
+    Create User Group    EntityGroup4-1    EntityGroup4-1
+    Create Role    EntityRole4-1    EntityRole4-1    EntityRole4-1    false
+    Assign User Group Entity Role    EntityGroup4-1    EntityRole4-1    ${GROUP ID}
+
+4-2 Assign Entity Role - Group - Invalid Role - Group Level
+    Create User Group    EntityGroup4-2    EntityGroup4-2
+    Assign User Group Entity Role And Expect Error    EntityGroup-2    EntityRole4-2    ${GROUP ID}    400
+
+4-3 Assign Entity Role - Group - Valid Role Already Assigned - Group Level
+    Create User Group    EntityGroup4-3    EntityGroup4-3
+    Create Role    EntityRole4-3    EntityRole4-3    EntityRole4-3    false
+    Assign User Group Entity Role    EntityGroup4-3    EntityRole4-3    ${GROUP ID}
+    Assign User Group Entity Role    EntityGroup4-3    EntityRole4-3    ${GROUP ID}
+
+4-4 Remove Entity Role - Group - Valid Role - Group Level
+    Create User Group    EntityGroup4-4    EntityGroup4-4
+    Create Role    EntityRole4-4    EntityRole4-4    EntityRole4-4    false
+    Assign User Group Entity Role    EntityGroup4-4    EntityRole4-4    ${GROUP ID}
+    Delete User Group Entity Role    EntityGroup4-4    EntityRole4-4    ${GROUP ID}
+
+4-5 Remove Entity Role - Group - Invalid Role - Group Level
+    Create User Group    EntityGroup4-5    EntityGroup4-5
+    Delete User Group Entity Role And Expect Error    EntityGroup4-5    Entity Role4-5    ${GROUP ID}    400
+
+4-6 Remove Entity Role - Group - Valid Role Not Assigned - Group Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User Group    EntityGroup4-6    EntityGroup4-6
+    Create Role    EntityRole4-6    EntityRole4-6    EntityRole4-6    false
+    Delete User Group Entity Role    EntityGroup4-6    EntityRole4-6    ${GROUP ID}
+
+5-1 Assign Entity Role - Enabled User - Valid Role - Project Level
+    Create User    EntityUser5-1    password    fullname    email@idbs.com    department
+    Create Role    EntityRole5-1    EntityRole5-1    EntityRole5-1    false
+    Assign User Entity Role    EntityUser5-1    EntityRole5-1    ${PROJECT ID}
+
+5-2 Assign Entity Role - Enabled User - Invalid Role - Project Level
+    Create User    EntityUser5-2    password    fullname    email@idbs.com    department
+    Assign User Entity Role And Expect Error    EntityUser5-2    EntityRole5-2    ${PROJECT ID}    400
+
+5-3 Assign Entity Role - Enabled User - Valid Role Already Assigned - Project Level
+    Create User    EntityUser5-3    password    fullname    email@idbs.com    department
+    Create Role    EntityRole5-3    EntityRole5-3    EntityRole5-3    false
+    Assign User Entity Role    EntityUser5-3    EntityRole5-3    ${PROJECT ID}
+    Assign User Entity Role    EntityUser5-3    EntityRole5-3    ${PROJECT ID}
+
+5-4 Assign Entity Role - Disabled User - Valid Role - Project Level
+    Create User    EntityUser5-4    password    fullname    email@idbs.com    department
+    Disable User    EntityUser5-4    disablereason
+    Create Role    EntityRole5-4    EntityRole5-4    EntityRole5-4    false
+    Assign User Entity Role    EntityUser5-4    EntityRole5-4    ${PROJECT ID}
+
+5-5 Assign Entity Role - Disabled User - Invalid Role - Project Level
+    Create User    EntityUser5-5    password    fullname    email@idbs.com    department
+    Disable User    EntityUser5-5    disablereason
+    Assign User Entity Role And Expect Error    EntityUser5-5    EntityRole5-5    ${PROJECT ID}    400
+
+5-6 Assign Entity Role - Disabled User - Valid Role Already Assigned - Project Level
+    Create User    EntityUser5-6    password    fullname    email@idbs.com    department
+    Disable User    EntityUser5-6    disablereason
+    Create Role    EntityRole5-6    EntityRole5-6    EntityRole5-6    false
+    Assign User Entity Role    EntityUser5-6    EntityRole5-6    ${PROJECT ID}
+    Assign User Entity Role    EntityUser5-6    EntityRole5-6    ${PROJECT ID}
+
+5-7 Remove Entity Role - Enabled User - Valid Role - Project Level
+    Create User    EntityUser5-7    password    fullname    email@idbs.com    department
+    Create Role    EntityRole5-7    EntityRole5-7    EntityRole5-7    false
+    Assign User Entity Role    EntityUser5-7    EntityRole5-7    ${PROJECT ID}
+    Delete User Entity Role    EntityUser5-7    EntityRole5-7    ${PROJECT ID}
+
+5-8 Remove Entity Role - Enabled User - Invalid Role - Project Level
+    Create User    EntityUser5-8    password    fullname    email@idbs.com    department
+    Delete User Entity Role And Expect Error    EntityUser5-8    EntityRole5-8    ${PROJECT ID}    400
+
+5-9 Remove Entity Role - Enabled User - Valid Role Not Assigned - Project Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser5-9    password    fullname    email@idbs.com    department
+    Create Role    EntityRole5-9    EntityRole5-9    EntityRole5-9    false
+    Delete User Entity Role    EntityUser5-9    EntityRole5-9    ${PROJECT ID}
+
+5-10 Remove Entity Role - Disabled User - Valid Role - Project Level
+    Create User    EntityUser5-10    password    fullname    email@idbs.com    department
+    Disable User    EntityUser5-10    disablereason
+    Create Role    EntityRole5-10    EntityRole5-10    EntityRole5-10    false
+    Assign User Entity Role    EntityUser5-10    EntityRole5-10    ${PROJECT ID}
+    Delete User Entity Role    EntityUser5-10    EntityRole5-10    ${PROJECT ID}
+
+5-11 Remove Entity Role - Disabled User - Invalid Role - Project Level
+    Create User    EntityUser5-11    password    fullname    email@idbs.com    department
+    Disable User    EntityUser5-11    disablereason
+    Delete User Entity Role And Expect Error    EntityUser5-11    EntityRole5-11    ${PROJECT ID}    400
+
+5-12 Remove Entity Role - Disabled User - Valid Role Not Assigned - Project Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser5-12    password    fullname    email@idbs.com    department
+    Disable User    EntityUser5-12    disablereason
+    Create Role    EntityRole5-12    EntityRole5-12    EntityRole5-12    false
+    Delete User Entity Role    EntityUser5-12    EntityRole5-12    ${PROJECT ID}
+
+6-1 Assign Entity Role - Group - Valid Role - Project Level
+    Create User Group    EntityGroup6-1    EntityGroup6-1
+    Create Role    EntityRole6-1    EntityRole6-1    EntityRole6-1    false
+    Assign User Group Entity Role    EntityGroup6-1    EntityRole6-1    ${PROJECT ID}
+
+6-2 Assign Entity Role - Group - Invalid Role - Project Level
+    Create User Group    EntityGroup6-2    EntityGroup6-2
+    Assign User Group Entity Role And Expect Error    EntityGroup-2    EntityRole6-2    ${PROJECT ID}    400
+
+6-3 Assign Entity Role - Group - Valid Role Already Assigned - Project Level
+    Create User Group    EntityGroup6-3    EntityGroup6-3
+    Create Role    EntityRole6-3    EntityRole6-3    EntityRole6-3    false
+    Assign User Group Entity Role    EntityGroup6-3    EntityRole6-3    ${PROJECT ID}
+    Assign User Group Entity Role    EntityGroup6-3    EntityRole6-3    ${PROJECT ID}
+
+6-4 Remove Entity Role - Group - Valid Role - Project Level
+    Create User Group    EntityGroup6-4    EntityGroup6-4
+    Create Role    EntityRole6-4    EntityRole6-4    EntityRole6-4    false
+    Assign User Group Entity Role    EntityGroup6-4    EntityRole6-4    ${PROJECT ID}
+    Delete User Group Entity Role    EntityGroup6-4    EntityRole6-4    ${PROJECT ID}
+
+6-5 Remove Entity Role - Group - Invalid Role - Project Level
+    Create User Group    EntityGroup6-5    EntityGroup6-5
+    Delete User Group Entity Role And Expect Error    EntityGroup6-5    Entity Role6-5    ${PROJECT ID}    400
+
+6-6 Remove Entity Role - Group - Valid Role Not Assigned - Project Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User Group    EntityGroup6-6    EntityGroup6-6
+    Create Role    EntityRole6-6    EntityRole6-6    EntityRole6-6    false
+    Delete User Group Entity Role    EntityGroup6-6    EntityRole6-6    ${PROJECT ID}
+
+7-1 Assign Entity Role - Enabled User - Valid Role - Experiment Level
+    Create User    EntityUser7-1    password    fullname    email@idbs.com    department
+    Create Role    EntityRole7-1    EntityRole7-1    EntityRole7-1    false
+    Assign User Entity Role    EntityUser7-1    EntityRole7-1    ${EXPERIMENT ID}
+
+7-2 Assign Entity Role - Enabled User - Invalid Role - Experiment Level
+    Create User    EntityUser7-2    password    fullname    email@idbs.com    department
+    Assign User Entity Role And Expect Error    EntityUser7-2    EntityRole7-2    ${EXPERIMENT ID}    400
+
+7-3 Assign Entity Role - Enabled User - Valid Role Already Assigned - Experiment Level
+    Create User    EntityUser7-3    password    fullname    email@idbs.com    department
+    Create Role    EntityRole7-3    EntityRole7-3    EntityRole7-3    false
+    Assign User Entity Role    EntityUser7-3    EntityRole7-3    ${EXPERIMENT ID}
+    Assign User Entity Role    EntityUser7-3    EntityRole7-3    ${EXPERIMENT ID}
+
+7-4 Assign Entity Role - Disabled User - Valid Role - Experiment Level
+    Create User    EntityUser7-4    password    fullname    email@idbs.com    department
+    Disable User    EntityUser7-4    disablereason
+    Create Role    EntityRole7-4    EntityRole7-4    EntityRole7-4    false
+    Assign User Entity Role    EntityUser7-4    EntityRole7-4    ${EXPERIMENT ID}
+
+7-5 Assign Entity Role - Disabled User - Invalid Role - Experiment Level
+    Create User    EntityUser7-5    password    fullname    email@idbs.com    department
+    Disable User    EntityUser7-5    disablereason
+    Assign User Entity Role And Expect Error    EntityUser7-5    EntityRole7-5    ${EXPERIMENT ID}    400
+
+7-6 Assign Entity Role - Disabled User - Valid Role Already Assigned - Experiment Level
+    Create User    EntityUser7-6    password    fullname    email@idbs.com    department
+    Disable User    EntityUser7-6    disablereason
+    Create Role    EntityRole7-6    EntityRole7-6    EntityRole7-6    false
+    Assign User Entity Role    EntityUser7-6    EntityRole7-6    ${EXPERIMENT ID}
+    Assign User Entity Role    EntityUser7-6    EntityRole7-6    ${EXPERIMENT ID}
+
+7-7 Remove Entity Role - Enabled User - Valid Role - Experiment Level
+    Create User    EntityUser7-7    password    fullname    email@idbs.com    department
+    Create Role    EntityRole7-7    EntityRole7-7    EntityRole7-7    false
+    Assign User Entity Role    EntityUser7-7    EntityRole7-7    ${EXPERIMENT ID}
+    Delete User Entity Role    EntityUser7-7    EntityRole7-7    ${EXPERIMENT ID}
+
+7-8 Remove Entity Role - Enabled User - Invalid Role - Experiment Level
+    Create User    EntityUser7-8    password    fullname    email@idbs.com    department
+    Delete User Entity Role And Expect Error    EntityUser7-8    EntityRole7-8    ${EXPERIMENT ID}    400
+
+7-9 Remove Entity Role - Enabled User - Valid Role Not Assigned - Experiment Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser7-9    password    fullname    email@idbs.com    department
+    Create Role    EntityRole7-9    EntityRole7-9    EntityRole7-9    false
+    Delete User Entity Role    EntityUser7-9    EntityRole7-9    ${EXPERIMENT ID}
+
+7-10 Remove Entity Role - Disabled User - Valid Role - Experiment Level
+    Create User    EntityUser7-10    password    fullname    email@idbs.com    department
+    Disable User    EntityUser7-10    disablereason
+    Create Role    EntityRole7-10    EntityRole7-10    EntityRole7-10    false
+    Assign User Entity Role    EntityUser7-10    EntityRole7-10    ${EXPERIMENT ID}
+    Delete User Entity Role    EntityUser7-10    EntityRole7-10    ${EXPERIMENT ID}
+
+7-11 Remove Entity Role - Disabled User - Invalid Role - Experiment Level
+    Create User    EntityUser7-11    password    fullname    email@idbs.com    department
+    Disable User    EntityUser7-11    disablereason
+    Delete User Entity Role And Expect Error    EntityUser7-11    EntityRole7-11    ${EXPERIMENT ID}    400
+
+7-12 Remove Entity Role - Disabled User - Valid Role Not Assigned - Experiment Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User    EntityUser7-12    password    fullname    email@idbs.com    department
+    Disable User    EntityUser7-12    disablereason
+    Create Role    EntityRole7-12    EntityRole7-12    EntityRole7-12    false
+    Delete User Entity Role    EntityUser7-12    EntityRole7-12    ${EXPERIMENT ID}
+
+8-1 Assign Entity Role - Group - Valid Role - Experiment Level
+    Create User Group    EntityGroup8-1    EntityGroup8-1
+    Create Role    EntityRole8-1    EntityRole8-1    EntityRole8-1    false
+    Assign User Group Entity Role    EntityGroup8-1    EntityRole8-1    ${EXPERIMENT ID}
+
+8-2 Assign Entity Role - Group - Invalid Role - Experiment Level
+    Create User Group    EntityGroup8-2    EntityGroup8-2
+    Assign User Group Entity Role And Expect Error    EntityGroup-2    EntityRole8-2    ${EXPERIMENT ID}    400
+
+8-3 Assign Entity Role - Group - Valid Role Already Assigned - Experiment Level
+    Create User Group    EntityGroup8-3    EntityGroup8-3
+    Create Role    EntityRole8-3    EntityRole8-3    EntityRole8-3    false
+    Assign User Group Entity Role    EntityGroup8-3    EntityRole8-3    ${EXPERIMENT ID}
+    Assign User Group Entity Role    EntityGroup8-3    EntityRole8-3    ${EXPERIMENT ID}
+
+8-4 Remove Entity Role - Group - Valid Role - Experiment Level
+    Create User Group    EntityGroup8-4    EntityGroup8-4
+    Create Role    EntityRole8-4    EntityRole8-4    EntityRole8-4    false
+    Assign User Group Entity Role    EntityGroup8-4    EntityRole8-4    ${EXPERIMENT ID}
+    Delete User Group Entity Role    EntityGroup8-4    EntityRole8-4    ${EXPERIMENT ID}
+
+8-5 Remove Entity Role - Group - Invalid Role - Experiment Level
+    Create User Group    EntityGroup8-5    EntityGroup8-5
+    Delete User Group Entity Role And Expect Error    EntityGroup8-5    Entity Role8-5    ${EXPERIMENT ID}    400
+
+8-6 Remove Entity Role - Group - Valid Role Not Assigned - Experiment Level
+    [Documentation]    204 status is acceptable as there is nothing the user can do in this situation and the desired outcome is achieved the role is not assigened to user/usergroup
+    Create User Group    EntityGroup8-6    EntityGroup8-6
+    Create Role    EntityRole8-6    EntityRole8-6    EntityRole8-6    false
+    Delete User Group Entity Role    EntityGroup8-6    EntityRole8-6    ${EXPERIMENT ID}
+
+*** Keywords ***
+Create Test Entities
+    ${GROUP ID}=    EntityAPILibrary.Ensure Group Is Present    1    Security Service Test Group
+    Set Suite Variable    ${GROUP ID}
+    ${PROJECT ID}=    EntityAPILibrary.Ensure Project Is Present    ${GROUP ID}    Security Service Test Project
+    Set Suite Variable    ${PROJECT ID}
+    ${EXPERIMENT ID}=    EntityAPILibrary.Ensure Experiment Is Present    ${PROJECT ID}    Security Service Test Project
+    Set Suite Variable    ${EXPERIMENT ID}

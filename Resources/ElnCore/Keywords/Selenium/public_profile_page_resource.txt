@@ -1,0 +1,85 @@
+*** Settings ***
+Resource          general_resource.txt
+Resource          ../../Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           IDBSSelenium2Library
+
+*** Variables ***
+${Profile Page Full Name Id}    ewb-user-profile-fullname
+${Profile Page Department Id}    ewb-user-profile-department
+${Profile Page Email List Id}    ewb-user-profile-email
+${ewb-follow-user}    ewb-follow-user
+${new-user-name}    cantviewprofilepage
+${new-user-password}    password
+${new-user-full-name}    cant view profile page user
+${new-user-email-addresses}    noprofile@page.user
+${new-user-department}    cant view profile page department
+
+*** Keywords ***
+Open Browser to Profile Page
+    [Arguments]    ${user}=${VALID USER}    ${user-name}=${VALID USER}    ${password}=${VALID PASSWD}    ${expected_error}=${None}
+    [Documentation]    Opens a profile page for a given user
+    Open Browser to Page    https://${SERVER}:${WEB_CLIENT_PORT}/EWorkbookWebApp/#userProfile?name=${user}    ${user-name}    ${password}    ${expected_error}
+
+User Profile Full Name Is
+    [Arguments]    ${expected name}
+    [Documentation]    Verifies the full name on the page is the one supplied as an argument to this keyword
+    Element Text Should Be    ${Profile Page Full Name Id}    ${expected name}
+
+User Profile Department Is
+    [Arguments]    ${expected department}
+    [Documentation]    Verifies the department on the page is the one supplied as an argument to this keyword
+    Element Text Should Be    ${Profile Page Department Id}    ${expected department}
+
+User Profile Email List Contains
+    [Arguments]    ${email address}
+    [Documentation]    Verifies the given email address appears in the email list
+    Element Should Contain    xpath=//ul[@id='${Profile Page Email List Id}']/li    ${email address}
+
+User Profile Email List Is Empty
+    [Documentation]    Verifies that the email list is empty
+    Page Should Contain Element    xpath=//ul[@id='${Profile Page Email List Id}']
+    Page Should Not Contain Element    xpath=//ul[@id='${Profile Page Email List Id}']/li
+
+User Profile Page Contains Recent Item
+    [Arguments]    ${entityName}
+    [Documentation]    Verifies that the current page contains a recent items link for the given entity name
+    Wait Until Page Contains Element    xpath=//*[@id='ewb-user-profile-recent-items-list-container']//*/a[text()='${entityName}']    30s
+
+User Profile Page Contains Tag
+    [Arguments]    ${tagText}
+    [Documentation]    Verifies the current page contains a tag with the supplied text
+    Page Should Contain Element    xpath=.//*[@id='ewb-user-profile-tag-list-container']/div/table/tbody/tr/td/div/div[@class='ewb-tag-item-panel']/div/a[text()='${tagText}']
+
+Go To Profile Page
+    Close Browser
+    Open Browser to Profile Page
+
+User Profile Contains Partial Tag Text
+    [Arguments]    ${tagText}
+    Wait Until Page Contains Element    xpath=//div[@id='ewb-user-profile-tag-list-container']/div[2]/table/tbody/tr/td/div/div[@class='ewb-tag-item-panel']//a[contains(text(),'${tagText}')]    10s
+
+Follow User
+    [Documentation]    Clicks the 'Follow' user button to follow a user(only if the user is unfollowed)
+    Wait Until Page Contains Element    ${ewb-follow-user}
+    ${FollowButtonText}    Get Text    ${ewb-follow-user}
+    Run Keyword If    '${FollowButtonText}'=='+ Follow'    Click Element    ${ewb-follow-user}
+
+Unfollow User
+    [Documentation]    Clicks the 'Following' user button to unfollow a user(only if the user is followed)
+    Wait Until Page Contains Element    ${ewb-follow-user}
+    ${FollowButtonText}    Get Text    ${ewb-follow-user}
+    Run Keyword Unless    '${FollowButtonText}'=='+ Follow'    Click Element    ${ewb-follow-user}
+
+User Profile Page Is Displayed
+    [Arguments]    ${userName}
+    Wait Until Keyword Succeeds    60s    5s    Select Window    title=IDBS E-WorkBook - User Profile for ${userName}
+    Wait Until Page Contains Element    xpath=//*[text()='User Profile for ${userName}']    50s
+
+Create User With No Profile Page Viewing Permission
+    [Documentation]    Creates a user that cannot view profile pages
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    ${existingUser}    Query    select NAME from USERS where NAME='${new-user-name}'
+    Run Keyword If    len(${existingUser}) == 0    Create User    ${new-user-name}    ${new-user-password}    ${new-user-full-name}    ${new-user-email-addresses}
+    ...    ${new-user-department}
+    Execute    update USERS set LAST_PASSWORD_UPDATE=SYSDATE where NAME='${new-user-name}'
+    Disconnect From Database

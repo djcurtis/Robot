@@ -1,0 +1,84 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/{entityId}/undeletablechildren
+...
+...               Finds entities in the sub tree that are undeletable due to signatures that the current user does not have the necessary override permission to remove. The resulting response contains a list of paths to these entities.
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-FUE    Find Undeletable Signed Entity Paths
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Find paths
+    [Documentation]    EWB-SAPI-SSP-ENT-FUE-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIPathElementSequenceSequence
+    [Tags]    EWB-SAPI-SSP-ENT-FUE-S001
+    ${experiment_name}=    Set Variable    FUE-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    Lock Entity    ${experiment_id}
+    Sign Entity    ${experiment_id}    ${text_item_id}
+    Unlock Entity    ${experiment_id}
+    # Checking expectations
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    ${sapi_path_element_sequence}=    Find Undeletable Signed Entity Paths    ${group_id}
+    XMLLibrary.Check Xml Element Count    Count element 'entityId'    ${sapi_path_element_sequence}    5    entityId    elementNamespace=http://entity.services.ewb.idbs.com
+
+Find paths with not existing entity
+    [Documentation]    EWB-SAPI-SSP-ENT-FUE-S002
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-FUE-S002
+    ${experiment_name}=    Set Variable    FUE-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${dest_project_id}=    Create Project    ${group_id}    Destination-project
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_entity_id}=    Create Record PDF    ${experiment_id}    ${experiment_version_id}
+    Lock Entity    ${experiment_id}
+    Sign Entity    ${experiment_id}    ${text_item_id}
+    Unlock Entity    ${experiment_id}
+    # Checking expectations
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # missing entity id
+    ${sapi_path_element_sequence}=    Find Undeletable Signed Entity Paths    ${EMPTY}    404
+    # wrong entity id
+    ${sapi_path_element_sequence}=    Find Undeletable Signed Entity Paths    WrongEntityId    404
+
+*** Keywords ***
+Add Text Entity
+    [Arguments]    ${parent_entity_id}    ${text_data}=Test text data
+    [Documentation]    Add a Text entity and save record as version.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _parent_entity_id_ - the parent entity id
+    ...
+    ...    _text_data_ - the text data. Default set to "Test text data"
+    ...
+    ...    *Return value*
+    ...
+    ...    The Text entity id
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${text_entity_id}=    Add DOCUMENT With String Data    ${experiment_id}    ${text_data}    text/html    HTML_TEXT    Uploaded Document
+    ...    .html
+    ${document_version_id}=    Get Entity Version ID    ${text_entity_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    [Return]    ${text_entity_id}    # The newly created entity id

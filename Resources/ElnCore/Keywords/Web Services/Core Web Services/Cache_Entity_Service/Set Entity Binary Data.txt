@@ -1,0 +1,264 @@
+*** Settings ***
+Documentation     It sets an entity data by replacing any existing data.
+...
+...               *end point:* POST /services/1.0/cache/entities/{entityId}/data
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Force Tags           Add Cache Entity
+Resource          cache_entity_service_suite_keywords.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../../../Libraries/Core Web Services/Cache Template Entity Service/rest_cache_template_entity_service_resource.txt
+Library           XMLLibrary
+
+*** Variables ***
+${HTML_FILE_PATH}    ${CURDIR}/../../../Test Data/Core Web Services/Cache Entity Service/set_entity_binary_data.html
+
+*** Test Cases ***
+Set binary data
+    [Documentation]    A successful call returns the HTTP status 200 and entity version id. The entity data is set
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S001
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    200
+    ${entity_dto}=    Get Entity New    ${html_doc_id}    ${image_version_id}    200    includeVersionInfo=true    includeAttributes=true
+    ...    includeDataInfo=true
+    ${entity_actual_data}=    Get Entity Data    ${html_doc_id}    ${image_version_id}
+    Should Be Equal As Strings    ${entity_actual_data}    ${updated_data}
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with missing fileType
+    [Documentation]    If the call parameter ‘fileType’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S002
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    ${EMPTY}
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with missing dataType
+    [Documentation]    If the call parameter ‘dataType’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ...
+    ...    Confining Templates - Experiments/reports created from confined templates have all their items pinned and no additional items can be added.
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S003
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    ${EMPTY}
+    ${file_type}=    Set Variable    .html
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with missing data
+    [Documentation]    If no data is provided, then the HTTP status code 400 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S004
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    ${EMPTY}
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    400
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with not existing entity
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S005
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    # Empty entity id leads to an unknown URL
+    ${image_version_id}=    Set Cache Entity Data Binary    ${EMPTY}    ${data_type}    ${file_type}    ${updated_data}    404
+    # not existing entity id
+    ${image_version_id}=    Set Cache Entity Data Binary    WrongEntityId    ${data_type}    ${file_type}    ${updated_data}    404
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with no lock
+    [Documentation]    If the container entity is not locked by the request user, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S006
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    Save As Draft Entity    ${experiment_id}
+    Unlock Entity    ${experiment_id}
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    403
+    [Teardown]
+
+Set binary data with no permissions
+    [Documentation]    A client requires the EDIT_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S007
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    # Checking expectations
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    403
+    Use User Administrator
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with sequential edit
+    [Documentation]    If the entity is sequentially editable and the edit order is violated, then the HTTP status code 403 is returned to the client
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S008
+    @{html_doc_ids}=    Create Sequential Editable Experiment Witn 2 HTML Documents    ${experiment_name}    ${experiment_name}
+    # Gets HTML doc 2 info
+    ${html_doc_2_id}=    Set Variable    @{html_doc_ids}[1]
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    Lock Entity    ${experiment_id}
+    # Checking expectations
+    ${html_doc_version_id}=    Set Cache Entity Data Binary    ${html_doc_2_id}    ${data_type}    ${file_type}    ${updated_data}    403
+    Unlock Entity    ${experiment_id}
+
+Set binary data when published
+    [Documentation]    If the entity is published, then its publishing state is set to ‘Unpublished’
+    [Setup]
+    ${experiment_name}=    Set Variable    SED-S009
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    UpdatedData
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${file_type}=    Set Variable    .html
+    Commit Versioned Entity    ${experiment_id}
+    Publish Record    ${experiment_id}
+    # Checking expectations
+    ${html_doc_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    200
+    ${entity_dto}=    Get Entity New    ${html_doc_id}    ${html_doc_version_id}    200    includeVersionInfo=true    includeAttributes=true
+    ...    includeDataInfo=true
+    # Checks attributes have one with value set to ${file_name}
+    @{attributes_values}=    XMLLibrary.Get Element Value    ${entity_dto}    ${ENTITY_XMLNS}    value
+    Should Contain    ${attributes_values}    Unpublished
+    Unlock Entity    ${experiment_id}
+    [Teardown]
+
+Set binary data with legal different file extension and oversized
+    [Documentation]    If the entity data is updated with new data with a different file extension and a file validation rule enforcing the max file size is violated, then the HTTP status code 413 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Rule Max File Size 1KB
+    ${experiment_name}=    Set Variable    SED-S010
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    FakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KBFakeBinaryData2KB    # Oversized data
+    ${data_type}=    Set Variable    JPG_IMAGE
+    ${file_type}=    Set Variable    .jpg
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    413
+    Unlock Entity    ${experiment_id}
+    [Teardown]    Disable Rule Max File Size 1KB
+
+Set binary data with illegal different file extension
+    [Documentation]    If the entity data is updated with new data with an illegal file extension (no dot (.) prefixed extension name and file validation rule is enabled, extension name length less than 3 characters, etc.), then the HTTP status code 415 is returned to the client
+    [Tags]       exclusive_access
+    [Setup]    Enable Rule Max File Size 1KB
+    ${experiment_name}=    Set Variable    SED-S011
+    ${html_doc_id}=    Create Experiment With 1 HTML Document    ${experiment_name}
+    ${updated_data}=    Set Variable    LegalFakeData
+    ${data_type}=    Set Variable    JPG_IMAGE
+    ${file_type}=    Set Variable    .jp    # Unsupported extension
+    # Checking expectations
+    ${image_version_id}=    Set Cache Entity Data Binary    ${html_doc_id}    ${data_type}    ${file_type}    ${updated_data}    415
+    Unlock Entity    ${experiment_id}
+    [Teardown]    Disable Rule Max File Size 1KB
+
+*** Keywords ***
+Create Experiment With 1 HTML Document
+    [Arguments]    ${experiment_title}
+    [Documentation]    Creates a CACHE experiment with 1 HTML document children. The experiment is locked. Also, it sets the suit variable ${experiment_id}.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment HTML doc ids.
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_title}
+    Lock Entity    ${experiment_id}
+    # Adds HTML document
+    ${mime_type}=    Set Variable    text/plain
+    ${file_path}=    Set Variable    ${HTML_FILE_PATH}
+    ${data_type}=    Set Variable    HTML_TEXT
+    ${document_id}=    Add DOCUMENT With File Data    ${experiment_id}    ${file_path}    ${mime_type}    ${data_type}
+    # Sets ${experiment_id} suit variable
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    ${document_id}
+
+Create Sequential Editable Experiment Witn 2 HTML Documents
+    [Arguments]    ${title}    ${name}
+    [Documentation]    Creates a sequentially editable template with with two HTML document children. Creates an experiment from the template and save it as VESION. Experiment is not kept locked.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _title_ - the experiment title
+    ...
+    ...    _name_ - the experiment name
+    ...
+    ...    *Return value*
+    ...
+    ...    A list of experiment HTML document ids. Also, it sets the suite variable ${experiment_id}
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    # Creates template
+    ${template_dto}=    Build Template DTO    ${name}-TEM    ${title}-TEM
+    ${template_id}=    Add Entity With Custom DTO    ${project_id}    ${template_dto}
+    Lock Entity    ${template_id}
+    # Adds HTML doc
+    ${mime_type}=    Set Variable    text/plain
+    ${file_path}=    Set Variable    ${HTML_FILE_PATH}
+    ${data_type}=    Set Variable    HTML_TEXT
+    Add DOCUMENT With File Data    ${template_id}    ${file_path}    ${mime_type}    ${data_type}
+    Add DOCUMENT With File Data    ${template_id}    ${file_path}    ${mime_type}    ${data_type}
+    Set Template Sequentially Editable    ${template_id}
+    Commit Versioned Entity    ${template_id}
+    Unlock Entity    ${template_id}
+    # Creates experiment from template
+    ${experiment_id}=    Create Experiment from Template    ${project_id}    ${title}    ${template_id}
+    ${experiment_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Get experiment Web Link ids
+    ${sapi_entity_ definition}=    Get Entity New    ${experiment_id}    ${experiment_version_id}    200    includeChildren=true    includeAttributes=true
+    ${sapi_entity_sequence}=    XMLLibrary.Get Element Xml    ${sapi_entity_ definition}    ${ENTITY_XMLNS}    entity
+    @{html_document_ids}=    XMLLibrary.Get Element Value    ${sapi_entity_sequence}    ${ENTITY_XMLNS}    entityId
+    Set Suite Variable    ${experiment_id}    ${experiment_id}
+    [Return]    @{html_document_ids}    # The ids of children HTML items
+
+Set Entity Binary Data - Setup

@@ -1,0 +1,106 @@
+*** Settings ***
+Documentation     Covers to include attachments in page numbering when generating a PDF from the Webcleint.
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup
+Test Teardown
+Resource          test utilities.txt
+Resource          ..\\..\\..\\..\\Libraries\\common_resource.txt
+Resource          ..\\..\\..\\..\\Libraries\\Core Web Services\\Record Service\\rest_record_service_resource.txt
+Library           OperatingSystem
+Library           String
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          add_items_to_experiments.txt
+
+*** Variables ***
+${configuration_file}    print publish configuration - page numbering.xml    # The PDF configuration
+
+*** Test Cases ***
+Attachment included page numbering off
+    [Documentation]    Test ensures that
+    ...    - When generating a PDF the 'Include Attachment' and 'Include Attachment in Page Numbering' option configured in the desktop client is honoured
+    ...    - Page numbering is correct when attachments are included but not in page numbering
+    ...    - The PDF content is correct
+    [Tags]    EWB-WEB-PI002-W010-01
+    Do Attachment Test With Preview    true    false
+
+Attachment included page numbering on
+    [Documentation]    Test ensures that
+    ...    - When generating a PDF the 'Include Attachment' and 'Include Attachment in Page Numbering' option configured in the desktop client is honoured
+    ...    - Page numbering is correct when attachments are included in page numbering
+    ...    - The PDF content is correct
+    [Tags]    EWB-WEB-PI002-W010-02
+    Do Attachment Test With Preview    true    true
+
+Attachment not included
+    [Documentation]    Test ensures that
+    ...    - When generating a PDF the 'Include Attachment' and \ 'Include Attachment in Page Numbering' option configured in the desktop client is configured off and this setting is honoured
+    ...    - Page numbering is correct
+    ...    - The PDF content is correct
+    [Tags]    EWB-WEB-PI002-W010-03
+    Do Attachment Test With Preview    false    false
+
+Attachment included single page numbers on
+    [Documentation]    Test ensures that
+    ...    - When generating a PDF the 'Include Attachment' and 'Include Attachment in Page Numbering' option configured in the desktop client is configured on BUT the record does not contain the displayed pages of the attachment it still generates the PDF correctly
+    ...    - Page numbering is correct
+    ...    - The PDF content is correct
+    [Tags]    EWB-WEB-PI002-W010-04
+    Do Attachment Test No Preview    true    true    singlePageTestPdf.pdf
+
+Attachment included single page numbers off
+    [Documentation]    Test ensures that
+    ...    - When generating a PDF the 'Include Attachment' is on and 'Include Attachment in Page Numbering' option configured in the desktop client is configured off AND the record does not contain the displayed pages of the attachment it still generates the PDF correctly
+    ...    - Page numbering is correct
+    ...    - The PDF content is correct
+    [Tags]    EWB-WEB-PI002-W010-05
+    Do Attachment Test No Preview    true    false    singlePageTestPdf.pdf
+
+*** Keywords ***
+Load Print Config - Include attachments in page numbering
+    [Arguments]    ${experiment_inc_attachment}=false    ${experiment_inc_attachment_in_page_numbering}=false
+    [Documentation]    Loads PDF configuration for items and sets its variables. By default all parameters are set to false. The configuration is read from ${basic_item_config}.
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${item_inc_icon} Include item icon (true | false).
+    ...
+    ...    ${item_inc_version} Include item version (true | false).
+    ...
+    ...    ${item_inc_type} Include item type (true | false).
+    ...
+    ...    ${item_inc_caption} Include item caption (true | false).
+    ...
+    ...    ${item_inc_properties} Include item properties (true | false).
+    ...
+    ...    ${item_inc_signoffs} Include item signoffs (true | false).
+    ...
+    ...    *Return value*
+    ...    The configuration as XML string
+    ...
+    ...    *Precondition*
+    ...    Variable ${basic_item_config} needs to be set.
+    ...
+    ...    *Example*
+    ${configuration_xml}=    Get File    ${input_folder}\\${configuration_file}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [experiment_inc_attachment]    ${experiment_inc_attachment}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [experiment_inc_attachment_in_page_numbering]    ${experiment_inc_attachment_in_page_numbering}
+    Log    ${configuration_xml}
+    [Return]    ${configuration_xml}
+
+Do Attachment Test With Preview
+    [Arguments]    ${experiment_inc_attachment}    ${experiment_inc_attachment_in_page_numbering}    ${item_file}=dropped_file.pdf    ${preview_file}=preview_data.zip
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${print_conf_xml}=    Load Print Config - Include attachments in page numbering    ${experiment_inc_attachment}    ${experiment_inc_attachment_in_page_numbering}
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    ${doc_entity_id}=    Add DOCUMENT (and Preview) To Experiment    ${experiment_id}    ${input_folder}\\${item_file}    ${input_folder}\\${preview_file}    application/pdf    FILE
+    ...    Dropped File: EWB UpgradeGuide
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Do Attachment Test No Preview
+    [Arguments]    ${experiment_inc_attachment}    ${experiment_inc_attachment_in_page_numbering}    ${item_file}=dropped_file.pdf
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    ${print_conf_xml}=    Load Print Config - Include attachments in page numbering    ${experiment_inc_attachment}    ${experiment_inc_attachment_in_page_numbering}
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_conf_xml}
+    ${doc_entity_id}=    Add DOCUMENT To Experiment    ${experiment_id}    ${input_folder}\\${item_file}    application/pdf    FILE    Dropped File: EWB UpgradeGuide
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf

@@ -1,0 +1,36 @@
+*** Settings ***
+Suite Setup       Setup standard suite
+Suite Teardown
+Test Setup        Setup MFS Item Test Case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          add_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Simple Single MFS
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a simple managed file set
+    [Tags]    EWB-WEB-PI002-W024-01
+    Add MFS Item to Experiment    ${experiment_id}    <?xml version="1.0" encoding="UTF-8" standalone="no"?> <mfs version="7.1.0"><mfsthumbnail thumbnaillink="${TEST_NAME}"/><mfsmetadata><mfsattribute cataloglink="" catalogtype="" entityattribute="" entitytype="" name="att1" readonly="false" type="TEXT" value="mfs1"/><mfsattribute cataloglink="503" catalogtype="flexible" entityattribute="" entitytype="" name="att2" readonly="false" type="STRING" value="Data Added"/> <mfsattribute cataloglink="502" catalogtype="flexible" entityattribute="title" entitytype="EXPERIMENT" name="att3" readonly="true" type="STRING" value="e1"/></mfsmetadata><mfslink filelink="A link to the actual primary managed file."/><mfstype name="mfs1"/> </mfs>
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Multi MFSs
+    [Documentation]    Test ensures that
+    ...    - The content of a PDF generated on the web client is correct when it contains a multiple managed file sets
+    ...
+    ...    Deferred Defect QC#18980
+    [Tags]    EWB-WEB-PI002-W024-02
+    Add MFS Item to Experiment    ${experiment_id}    <?xml version="1.0" encoding="UTF-8" standalone="no"?> <mfs version="7.1.0"><mfsthumbnail thumbnaillink="${TEST_NAME}1"/><mfsmetadata><mfsattribute cataloglink="" catalogtype="" entityattribute="" entitytype="" name="att1" readonly="false" type="TEXT" value="mfs1"/><mfsattribute cataloglink="503" catalogtype="flexible" entityattribute="" entitytype="" name="att2" readonly="false" type="STRING" value="Data Added"/> <mfsattribute cataloglink="502" catalogtype="flexible" entityattribute="title" entitytype="EXPERIMENT" name="att3" readonly="true" type="STRING" value="e1"/></mfsmetadata><mfslink filelink="A link to the actual primary managed file."/><mfstype name="mfs1"/> </mfs>
+    Add MFS Item to Experiment    ${experiment_id}    <?xml version="1.0" encoding="UTF-8" standalone="no"?><mfs version="7.1.0"><mfsmetadata/><mfslink filelink="C:\Users\mjenkins\Desktop\mydoc.txt"/><mfstype name="mfs2"/></mfs>
+    Add MFS Item to Experiment    ${experiment_id}    <?xml version="1.0" encoding="UTF-8" standalone="no"?> <mfs version="7.1.0"><mfsthumbnail thumbnaillink="${TEST_NAME}2"/><mfsmetadata><mfsattribute cataloglink="" catalogtype="" entityattribute="" entitytype="" name="att1" readonly="false" type="TEXT" value="mfs1"/><mfsattribute cataloglink="503" catalogtype="flexible" entityattribute="" entitytype="" name="att2" readonly="false" type="STRING" value="Data Added"/> <mfsattribute cataloglink="502" catalogtype="flexible" entityattribute="title" entitytype="EXPERIMENT" name="att3" readonly="true" type="STRING" value="e1"/></mfsmetadata><mfslink filelink="A link to the actual primary managed file."/><mfstype name="mfs1"/> </mfs>
+    Add MFS Item to Experiment    ${experiment_id}    <?xml version="1.0" encoding="UTF-8" standalone="no"?><mfs version="7.1.0"><mfsmetadata/><mfslink filelink="C:\Users\mjenkins\Desktop\mydoc.txt"/><mfstype name="mfs2"/></mfs>
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup MFS Item Test Case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}

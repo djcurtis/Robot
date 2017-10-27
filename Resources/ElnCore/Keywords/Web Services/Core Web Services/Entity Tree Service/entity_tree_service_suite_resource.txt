@@ -1,0 +1,15 @@
+*** Settings ***
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+
+*** Keywords ***
+Entity Tree Service Suite Setup
+    [Documentation]    Creates a basic hierarchy for the suite tests
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    ${response}=    Create Hierarchy For Experiments    EWB-SAPI-SSP-ETS
+
+Entity Tree Service Suite Teardown
+    [Documentation]    Tidy up test suite cases
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    EntityAPILibrary.Delete Entity    ${group_id}    As Intended    Test Suite Completed

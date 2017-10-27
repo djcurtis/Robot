@@ -1,0 +1,43 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/headericons/{configId}
+...
+...               They also require some basic setup that can currently only be done via the thick client.
+Suite Setup       EntiyConfig Suite Setup
+Force Tags        Entity Config Service    requires_desktop
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          entity_config_service_suite_common_resources.txt
+Library           IDBSHttpLibrary
+Library           Collections
+Library           String
+Library           XMLLibrary
+
+*** Test Cases ***
+Can Get Header Icon
+    [Documentation]    A successful call returns the HTTP status 200 and the header icon
+    ${entity_version_id}=    Get Entity Version ID    ${valid_icon_experiment_id}
+    ${outline}=    Record Outline    ${valid_icon_experiment_id}    ${entity_version_id}
+    ${config_url}=    Get Element Value From Xpath    ${outline}    {http://entity.services.ewb.idbs.com}recordMetadataArrangement/{http://entity.services.ewb.idbs.com}iconUrl
+    ${config_id}=    Get Config Id from Icon Url    ${config_url}[0]
+    ${response}=    Get Header Icon    ${config_id}
+
+Get Header Icon Fails If No Icon Exists
+    [Documentation]    If the icon does not exist, then the HTTP status code 404 is returned to the client
+    ${entity_version_id}=    Get Entity Version ID    ${invalid_icon_experiment_id}
+    ${outline}=    Record Outline    ${invalid_icon_experiment_id}    ${entity_version_id}
+    ${config_url}=    Get Element Value From Xpath    ${outline}    {http://entity.services.ewb.idbs.com}recordMetadataArrangement/{http://entity.services.ewb.idbs.com}iconUrl
+    ${config_id}=    Get Config Id from Icon Url    ${config_url}[0]
+    ${response}=    Get Header Icon    ${config_id}    404
+    Response Body Should Contain    Resource not found for given ID: No icon found
+
+*** Keywords ***
+Get Config Id from Icon Url
+    [Arguments]    ${config_url}
+    ${values}=    Split String    ${config_url}    /
+    ${config_id}=    Get From List    ${values}    5
+    [Return]    ${config_id}

@@ -1,0 +1,132 @@
+*** Settings ***
+Documentation     Created for story SH-1296
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Document - Draft - Restore 1 Version - Draft
+    [Documentation]    Record - Add Document - Draft - Restore 1 Version - Draft
+    ...    - verify record is not searchable by document text by draft before the restore
+    ...    - verfy record is searchable by document text for restored draft saved
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Draft Save    ${experimentId}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Document - Draft - Restore 1 Version - Version
+    [Documentation]    Record - Add Document - Draft - Restore 1 Version - Version
+    ...    - verify record is not searchable by document text by draft before the restore
+    ...    - verfy record is searchable by document text for restored version saved
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Document - Draft - Restore 1 Version - Not Save
+    [Documentation]    Record - Add Document - Draft - Restore 1 Version - Not Save
+    ...    - verify record is not searchable by document text by last restored version without saving
+    ...    - verify record is searchable by text by last version after restore without \ saving
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Draft Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+Record - Add Document - Version - Restore 1 Version - Draft
+    [Documentation]    Record - Add Document - Version - Restore 1 Version - Draft
+    ...    - verify record is searchable by document text by draft after restoring and draft save
+    ...    - verify record is not searchable by last version before the restoring
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Draft Save    ${experimentId}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Document - Version - Restore 1 Version - Version
+    [Documentation]    Record - Add Document - Version - Restore 1 Version - Version
+    ...    - verify record is not searchble by document text by last version before the restoring and version save
+    ...    - verify record is searchable by restored version after version save
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText2}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+Record - Add Document - Version - Restore 1 Version - Not Save
+    [Documentation]    Record - Add Document - Version - Restore 1 Version - Not Save
+    ...    - verify record is searchable by document text by last version after restore without saving
+    ...    - verify record is not searchable by document text by restored not saved version
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    Document Name
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText}
+    ${version1Id}=    EntityAPILibrary.Get Current Version Id    ${experimentId}
+    ${uniqueSearchText2}=    Set Variable    ${uniqueSearchText}2
+    Edit Text Document And Version Save    ${experimentId}    ${documentId}    ${uniqueSearchText2}
+    Restore Entity From History    ${experimentId}    ${version1Id}
+    sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText2}    1    ${experimentName}
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+    ${searchText}=    Replace String    Text${currentDate}    ${SPACE}    ${EMPTY}
+    Set Suite Variable    ${searchText}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${testCaseTime}=    Get Current Date
+    Set Suite Variable    ${testCaseTime}
+    ${experimentName}=    Set Variable    Experiment ${testCaseTime}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentId}
+    Set Suite Variable    ${experimentName}
+    ${uniqueSearchText}=    Generate Random String    10    [NUMBERS]abcdef    # generates a 10 char "hex" string
+    Set Suite Variable    ${uniqueSearchText}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

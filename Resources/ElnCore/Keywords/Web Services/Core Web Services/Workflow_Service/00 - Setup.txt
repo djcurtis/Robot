@@ -1,0 +1,298 @@
+*** Settings ***
+Documentation     REST setup of users, hierarchy and task configurations in order to test workflows endpoints.
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Library           OperatingSystem
+Library           TestDataGenerationLibrary
+# Library           OracleLibrary
+Library           FileLibrary
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_general_actions_resource.txt    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_security_configuration_actions_resource.txt    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_non_record_entity_actions_resource.txt
+...               #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_record_entity_actions_resource.txt    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_document_entity_actions_resource.txt    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_printing_publishing_options_actions_resource.txt
+Library           Collections    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_configuration_actions_resources.txt    #Resource    ../../../Libraries/E-WorkBook Thick Client/ewb_thick_client_workflow_actions_resource.txt
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+
+*** Variables ***
+${workflow-configurations}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Core Web Services${/}TaskFlow Services${/}Workflow Configurations${/}
+
+*** Test Cases ***
+01 - REST Setup Entity Roles
+    Create Workflow Entity Roles
+
+02 - REST Create Users and Groups
+    Create Workflow Users
+
+03 - REST Setup Experiments And Workflows
+    [Documentation]    Single Signoff
+    ...    Single Review
+    ...    Single Alert
+    ...    Multiple Signoff
+    ...    Multiple Review
+    ...    Multiple Alert
+    ...    Combined
+    ...    Confined Task - User Pool
+    ...    Confined Task - Group Pool
+    ...    Confined Task - Entity Types
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    Set Suite Variable    ${rest_api_user}    ${VALID USER}
+    Set Suite Variable    ${rest_api_password}    ${VALID PASSWD}
+    ${time}=    Get Time    epoch
+    ${wf_group_name}=    Evaluate    "Workflow WS Group - ${time}"
+    ${wf_group}=    EntityAPILibrary.Create Group    1    ${wf_group_name}
+    ${wf_project}=    EntityAPILibrary.Create Project    ${wf_group}    WF_PROJECT1
+    ${wf_experiment_1}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_1
+    ${wf_experiment_2}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_2
+    ${wf_experiment_3}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_3
+    ${wf_experiment_4}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_4
+    ${wf_experiment_5}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_5
+    ${wf_experiment_6}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_6
+    ${wf_experiment_7}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_7
+    ${wf_experiment_8}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_8
+    ${wf_experiment_9}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_9
+    ${wf_experiment_10}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_10
+    ${wf_experiment_11}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_11
+    ${wf_experiment_no_workflow}=    EntityAPILibrary.Create Experiment    ${wf_project}    WF_EXPERIMENT_NO_WORKFLOW
+    ${wf_report_1}=    EntityAPILibrary.Create Report    ${wf_project}    WF_REPORT_1
+    ${wf_template_1}=    EntityAPILibrary.Create Template    ${wf_project}    WF_TEMPLATE_1
+    Set Global Variable    ${wf_group_name}
+    Set Global Variable    ${wf_group}
+    Set Global Variable    ${wf_project}
+    Set Global Variable    ${wf_experiment_1}
+    Set Global Variable    ${wf_experiment_2}
+    Set Global Variable    ${wf_experiment_3}
+    Set Global Variable    ${wf_experiment_4}
+    Set Global Variable    ${wf_experiment_5}
+    Set Global Variable    ${wf_experiment_6}
+    Set Global Variable    ${wf_experiment_7}
+    Set Global Variable    ${wf_experiment_8}
+    Set Global Variable    ${wf_experiment_9}
+    Set Global Variable    ${wf_experiment_10}
+    Set Global Variable    ${wf_experiment_11}
+    Set Global Variable    ${wf_experiment_no_workflow}
+    Set Global Variable    ${wf_report_1}
+    Set Global Variable    ${wf_template_1}
+    Populate WF_EXPERIMENT_1
+    Populate WF_EXPERIMENT_2
+    Populate WF_EXPERIMENT_3
+    Populate WF_EXPERIMENT_4
+    Populate WF_EXPERIMENT_5
+    Populate WF_EXPERIMENT_6
+    Populate WF_EXPERIMENT_7
+    Populate WF_EXPERIMENT_9
+    Populate WF_EXPERIMENT_10
+    Populate WF_EXPERIMENT_11
+    Populate WF_EXPERIMENT_NO_WORKFLOW
+    Populate WF_REPORT_1
+    Populate WF_TEMPLATE_1
+    ${wf_experiment_1_pdf}=    EntityAPILibrary.Publish    ${wf_experiment_1}
+    Set Global Variable    ${wf_experiment_1_pdf}
+    Create Workflow Configurations
+
+*** Keywords ***
+Populate WF_EXPERIMENT_1
+    ${experiment-1-document-id}=    EntityAPILibrary.Create Web Link Document    ${wf_experiment_1}    http://www.idbs.com
+    Set Global Variable    ${experiment-1-document-id}
+    EntityAPILibrary.Version Save    ${wf_experiment_1}    Data Added
+    ${experiment-comment-id}=    EntityAPILibrary.Add Comment    ${wf_experiment_1}    Experiment Comment
+    EntityAPILibrary.Add Reply    ${wf_experiment_1}    ${experiment-comment-id}    Experiment Reply
+    ${document-comment-id}=    EntityAPILibrary.Add Comment    ${experiment-1-document-id}    Document Comment
+    EntityAPILibrary.Add Reply    ${experiment-1-document-id}    ${document-comment-id}    Document Reply
+
+Populate WF_EXPERIMENT_2
+    ${experiment-2-document-id}=    EntityAPILibrary.Create Web Link Document    ${wf_experiment_2}    http://www.idbs.com
+    Set Global Variable    ${experiment-2-document-id}
+    EntityAPILibrary.Version Save    ${wf_experiment_2}    Data Added
+    ${experiment-comment-id}=    EntityAPILibrary.Add Comment    ${wf_experiment_2}    Experiment Comment
+    EntityAPILibrary.Add Reply    ${wf_experiment_2}    ${experiment-comment-id}    Experiment Reply
+    ${document-comment-id}=    EntityAPILibrary.Add Comment    ${experiment-2-document-id}    Document Comment
+    EntityAPILibrary.Add Reply    ${experiment-2-document-id}    ${document-comment-id}    Document Reply
+
+Populate WF_EXPERIMENT_3
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_3}    http://www.idbs.com
+    EntityAPILibrary.Draft Save    ${wf_experiment_3}
+
+Populate WF_EXPERIMENT_4
+    ${document-id}    EntityAPILibrary.Create Web Link Document    ${wf_experiment_4}    http://www.idbs.com
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_4}    http://www.google.com
+    EntityAPILibrary.Version Save    ${wf_experiment_4}    Data Added
+    ${SERVICES USERNAME}=    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}=    Set Variable    WorkflowWSUser11
+    Set Suite Variable    ${rest_api_user}    WorkflowWSUser1
+    Set Suite Variable    ${rest_api_password}    WorkflowWSUser11
+    EntityAPILibrary.Lock Entity    ${wf_experiment_4}
+    Digitally Sign Item    ${wf_experiment_4}    ${document-id}    Actioner    Review Completed
+    EntityAPILibrary.Unlock Entity    ${wf_experiment_4}
+    Set Suite Variable    ${rest_api_user}    ${VALID USER}
+    Set Suite Variable    ${rest_api_password}    ${VALID PASSWD}
+
+Populate WF_EXPERIMENT_5
+    ${document-id-1}    EntityAPILibrary.Create Web Link Document    ${wf_experiment_5}    http://www.idbs.com
+    ${document-id-2}    EntityAPILibrary.Create Web Link Document    ${wf_experiment_5}    http://www.google.com
+    EntityAPILibrary.Version Save    ${wf_experiment_5}    Data Added
+    ${SERVICES USERNAME}=    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}=    Set Variable    WorkflowWSUser11
+    Set Suite Variable    ${rest_api_user}    WorkflowWSUser1
+    Set Suite Variable    ${rest_api_password}    WorkflowWSUser11
+    EntityAPILibrary.Lock Entity    ${wf_experiment_5}
+    Digitally Sign Item    ${wf_experiment_5}    ${document-id-1}    Actioner    Review Completed
+    Digitally Sign Item    ${wf_experiment_5}    ${document-id-2}    Actioner    Review Completed
+    EntityAPILibrary.Unlock Entity    ${wf_experiment_5}
+    Set Suite Variable    ${rest_api_user}    ${VALID USER}
+    Set Suite Variable    ${rest_api_password}    ${VALID PASSWD}
+
+Populate WF_EXPERIMENT_6
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_6}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_6}    Data Added
+    ${wf_experiment_6_pdf_1}=    EntityAPILibrary.Publish    ${wf_experiment_6}
+    Set Global Variable    ${wf_experiment_6_pdf_1}
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_6}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_6}    Data Added
+    ${wf_experiment_6_pdf_2}=    EntityAPILibrary.Publish    ${wf_experiment_6}
+    Set Global Variable    ${wf_experiment_6_pdf_2}
+
+Populate WF_EXPERIMENT_7
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_7}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_7}    Data Added
+    ${wf_experiment_7_pdf}=    EntityAPILibrary.Create Pdf    ${wf_experiment_7}
+    Set Global Variable    ${wf_experiment_7_pdf}
+
+Populate WF_EXPERIMENT_9
+    ${wf_experiment_9_item_1}=    EntityAPILibrary.Create Web Link Document    ${wf_experiment_9}    http://www.idbs.com
+    Set Global Variable    ${wf_experiment_9_item_1}
+
+Populate WF_EXPERIMENT_10
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_10}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_10}    Data Added
+    ${wf_experiment_10_pdf_1}=    EntityAPILibrary.Publish    ${wf_experiment_10}
+    Set Global Variable    ${wf_experiment_10_pdf_1}
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_10}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_10}    Data Added
+    ${wf_experiment_10_pdf_2}=    EntityAPILibrary.Publish    ${wf_experiment_10}
+    Set Global Variable    ${wf_experiment_10_pdf_2}
+    ${wf_experiment_10_pdf_3_unpublished}=    EntityAPILibrary.Create Pdf    ${wf_experiment_10}
+    Set Global Variable    ${wf_experiment_10_pdf_3_unpublished}
+
+Populate WF_EXPERIMENT_11
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_11}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_11}    Data Added
+
+Populate WF_EXPERIMENT_NO_WORKFLOW
+    EntityAPILibrary.Create Web Link Document    ${wf_experiment_no_workflow}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_experiment_no_workflow}    Data Added
+
+Populate WF_REPORT_1
+    EntityAPILibrary.Create Web Link Document    ${wf_report_1}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_report_1}    Data Added
+    EntityAPILibrary.Publish    ${wf_report_1}
+
+Populate WF_TEMPLATE_1
+    EntityAPILibrary.Create Web Link Document    ${wf_template_1}    http://www.idbs.com
+    EntityAPILibrary.Version Save    ${wf_template_1}    Data Added
+
+Create Workflow Entity Roles
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    Set Suite Variable    ${rest_api_user}    ${VALID USER}
+    Set Suite Variable    ${rest_api_password}    ${VALID PASSWD}
+    Run Keyword And Ignore Error    SecurityAPILibrary.Create Entity Role    VIEW_ANY_TASK_ONLY    Only the view any task permission
+    Run Keyword And Ignore Error    SecurityAPILibrary.Assign Permissions To Role    VIEW_ANY_TASK_ONLY    VIEW_ANY_TASK
+    Run Keyword And Ignore Error    SecurityAPILibrary.Create Entity Role    NO_PERMISSIONS    No Permissions
+    Run Keyword And Ignore Error    SecurityAPILibrary.Create Entity Role    No Workflow Permissions    No Workflow Permissions
+    Run Keyword And Ignore Error    SecurityAPILibrary.Assign Permissions To Role    No Workflow Permissions    OPEN_TEMPLATE    OPEN_EXPERIMENT    OPEN_PROJECT    OPEN_GROUP
+    ...    OPEN_ROOT    VIEW_TEMPLATE    VIEW_EXPERIMENT    VIEW_PROJECT    VIEW_GROUP    VIEW_ROOT
+    Run Keyword And Ignore Error    SecurityAPILibrary.Create Entity Role    No VAT or RAT    No VIEW_ANY_TASKS Permission
+    Run Keyword And Ignore Error    SecurityAPILibrary.Assign Permissions To Role    No VAT or RAT    OPEN_TEMPLATE    OPEN_EXPERIMENT    OPEN_PROJECT    OPEN_GROUP
+    ...    OPEN_ROOT    VIEW_TEMPLATE    VIEW_EXPERIMENT    VIEW_PROJECT    VIEW_GROUP    VIEW_ROOT
+    ...    CREATE_TASK    CONFIGURE_TEST_REQUEST    CREATE_TEST_REQUEST    CONFIGURE_TASK_TYPES
+    Run Keyword And Ignore Error    SecurityAPILibrary.Create Entity Role    No Workflow Or View    No Workflow or View Report Related Permissions
+    Run Keyword And Ignore Error    SecurityAPILibrary.Assign Permissions To Role    No Workflow Or View    OPEN_TEMPLATE    OPEN_EXPERIMENT    OPEN_PROJECT    OPEN_GROUP
+    ...    OPEN_ROOT    VIEW_TEMPLATE    VIEW_EXPERIMENT    VIEW_PROJECT    VIEW_GROUP    VIEW_ROOT
+
+Create Workflow Users
+    Set Suite Variable    ${rest_api_host}    ${SERVER}
+    Set Suite Variable    ${rest_api_user}    ${VALID USER}
+    Set Suite Variable    ${rest_api_password}    ${VALID PASSWD}
+    # Set the maximum password length
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Run Keyword And Ignore Error    Execute    insert into SYSTEM_SETTINGS (ORDER_KEY,DATA_TYPE,STRING_DATA,NUMBER_DATA,SETTINGS_NAME) values (0,'INTEGER','20','20','Policy Management/Policy Max Length')
+    Execute    update SYSTEM_SETTINGS set STRING_DATA='20',NUMBER_DATA='20' where SETTINGS_NAME='Policy Management/Policy Max Length'
+    Disconnect From Database
+    SecurityAPILibrary.Create User    WorkflowWSUser1    Workflow Webservice User1    WorkflowWSUser11    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser1
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser1    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser1    All Entity Permissions    1
+    SecurityAPILibrary.Create User    WorkflowWSUser2    Workflow Webservice User2    WorkflowWSUser21    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser2
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser2    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser2    All Entity Permissions    1
+    SecurityAPILibrary.Create User    WorkflowWSUser3    Workflow Webservice User3    WorkflowWSUser31    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser3
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser3    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser3    No Workflow Permissions    1
+    SecurityAPILibrary.Create User    WorkflowWSUser4    Workflow Webservice User4    WorkflowWSUser41    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser4
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser4    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser4    No Workflow Or View    1
+    SecurityAPILibrary.Create User    WorkflowWSUser5    Workflow Webservice User5    WorkflowWSUser51    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser5
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser5    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser5    No VAT or RAT    1
+    SecurityAPILibrary.Create User    WorkflowWSUser6    Workflow Webservice User6    WorkflowWSUser61    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser6
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser6    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser6    VIEW_ANY_TASK_ONLY    1
+    SecurityAPILibrary.Create User    WorkflowWSUser7    Workflow Webservice User7    WorkflowWSUser71    STANDARD_ROLES    Testing    workflowws@idbs.com
+    Reset Expired Password    WorkflowWSUser7
+    SecurityAPILibrary.Assign System Role To User    WorkflowWSUser7    ALL_SYSTEM_PERMISSIONS
+    SecurityAPILibrary.Assign Entity Role To User    WorkflowWSUser7    NO_PERMISSIONS    1
+    Run Keyword And Ignore Error    SecurityAPILibrary.Create User    Steve    Steve Jefferies    Steve1
+    Run Keyword And Ignore Error    SecurityAPILibrary.Assign System Role To User    Steve    ALL_SYSTEM_PERMISSIONS
+    Run Keyword And Ignore Error    SecurityAPILibrary.Assign Entity Role To User    Steve    All Entity Permissions    1
+
+Create Workflow Configurations
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    DELETE FROM entity_configurations WHERE entity_id='${wf_group}'
+    # Workflow Webservice Workflow 1 - Single Sign-off
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 1.xml
+    # Workflow Webservice Workflow 2 - Single Review
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 2.xml
+    # Workflow Webservice Workflow 3 - Single Alert
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 3.xml
+    # Workflow Webservice Workflow 4 - Multiple Sequential Tasks
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 4.xml
+    # Workflow Webservice Workflow 5 - Multiple Parallel Tasks
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 5.xml
+    # Workflow Webservice Workflow 6 - Status Change And Publish
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 6.xml
+    # Workflow Webservice Workflow 7 - All Items Must Be Signed equals NO
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 7.xml
+    # Workflow Webservice Workflow 8 - All Items Must Be Signed equals YES
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 8.xml
+    # Workflow Webservice Workflow 9 - Single Sign-off - Lock Experiment On Completion
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow 9.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - No Task.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Published Only.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Most Recent PDF.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Most Recent PDF And Published Only.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Sign Off Task Actioner Role.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Generate PDF.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Generate PDF And Publish All.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Change Experiment Status.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Auto Close Task.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Delete All Comments.xml
+    Add Workflow Configuration    ${wf_group}    ${workflow-configurations}WF WS Workflow - Lock Against Editing.xml
+    Disconnect From Database
+
+Add Workflow Configuration
+    [Arguments]    ${entity-id}    ${filename}
+    [Documentation]    Adds the given workflow configuration to the specified entity
+    ${uuid}=    Create Hex GUID
+    Execute    INSERT INTO entity_configurations VALUES ('${uuid}', '${entity-id}', 'WORKFLOW', empty_blob())
+    Update Blob Column    entity_configurations    config_data    config_id = '${uuid}'    ${filename}
+
+Reset Expired Password
+    [Arguments]    ${user}
+    [Documentation]    Resets the password update date for the given user to todays date/time
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    update USERS set DISABLED='F',FAILED_AUTH_COUNT='0',LAST_PASSWORD_UPDATE=CURRENT_TIMESTAMP(3) where NAME='${user}'
+    Disconnect From Database

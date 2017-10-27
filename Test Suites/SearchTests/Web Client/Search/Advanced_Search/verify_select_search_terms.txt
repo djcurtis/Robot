@@ -1,0 +1,68 @@
+*** Settings ***
+Documentation     SH-947
+Suite Setup       Login To EWB
+Suite Teardown    close browser
+Test Setup        Navigate Search Screen
+Test Teardown     reload page
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/navigator.txt
+
+*** Test Cases ***
+Verify Any Record Navigator List Content
+    [Documentation]    Verify 'Any Record' Navigator List Content
+    ...    - open 'New Search Term' dialog
+    ...    - verify terms list for 'Any Record'
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Select Navigator Term By Name    Any Record
+    Verify Search Term List Contains    Template    COSHH Refs    Keywords    Status    Last edited date    Last edited by
+    ...    Created date    Created by    Version Type (D/V)    Unique ID    Name    Comment
+    ...    Tag
+    Verify Search Term List Does Not Contain    Templates
+
+Verify Experiment Navigator List Content
+    [Documentation]    Verify 'Experiment' Navigator List Content
+    ...    - open 'New Search Term' dialog
+    ...    - verify terms list for 'Experiment'
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Select Navigator Term By Name    Experiment
+    Verify Search Term List Contains    Template    Keywords    COSHH Refs    Title    Status    Last edited date
+    ...    Last edited by    Created date    Created by    Version Type (D/V)    Unique ID    Comment
+    ...    Tag
+    Verify Search Term List Does Not Contain    Templates
+
+Verify Report Navigator List Content
+    [Documentation]    Verify 'Report' Navigator List Content
+    ...    - open 'New Search Term' dialog
+    ...    - verify terms list for 'Report'
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Select Navigator Term By Name    Report
+    Verify Search Term List Contains    Template    COSHH Refs    Keywords    Title    Status    Last edited date
+    ...    Last edited by    Created date    Created by    Version Type (D/V)    Unique ID    Comment
+    ...    Tag
+    Verify Search Term List Does Not Contain    Templates
+
+Verify Template Navigator List Content
+    [Documentation]    Verify 'Template' Navigator List Content
+    ...    - open 'New Search Term' dialog
+    ...    - verify terms list for 'Template'
+    ...    '
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Select Navigator Term By Name    Template
+    Verify Search Term List Contains    Template    COSHH Refs    Keywords    Target Entity Type    Title    Status
+    ...    Last edited date    Last edited by    Created date    Created by    Version Type (D/V)    Unique ID
+    ...    Comment    Tag
+    Verify Search Term List Does Not Contain    Templates
+
+Verify Document Navigator List Content
+    [Documentation]    Verify 'Document' Navigator List Content
+    ...    - open 'New Search Term' dialog
+    ...    - verify terms list for 'Document'
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Select Navigator Term By Name    Document
+    Verify Search Term List Contains    Registered IDs    Item Type    Annotations    Pre-Registered IDs    Caption    Publishing State
+    ...    Comment    Tag

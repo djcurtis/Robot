@@ -1,0 +1,42 @@
+*** Settings ***
+Documentation     This test suite targets the endpoint : \ /services/1.0/locks/entities/{entityId}/islocked
+Suite Setup       Entity Locking Suite Setup
+Suite Teardown    Entity Locking Service Suite Teardown
+Force Tags        Entity Lock Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Library           XMLLibrary
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          entity_lock_service_test_suite_resource.txt    # common lock service setup and teardown
+
+*** Variables ***
+
+*** Test Cases ***
+Check is-locked status on locked experiement should return is-locked
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityLockQueryResponse
+    [Setup]
+    ${experiment_name}=    Set Variable    IEL-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Lock Entity    ${experiment_id}
+    ${lock_info}=    Is Entity Locked    ${experiment_id}
+    Comment    Check Xml Contains Element    check response is of type lockQueryResponse    ${lock_info}    lockQueryResponse    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Contains Element    check response has result element    ${lock_info}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Element Value Contains    check response value is LOCKED    ${lock_info}    ${IS_LOCKED}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    ${unlock_response}=    Unlock Entity    ${experiment_id}
+
+Check is-locked status on unlocked experiement should return unlocked
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityLockQueryResponse = UNLOCKED
+    [Setup]
+    ${experiment_name}=    Set Variable    IEL-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_info}=    Is Entity Locked    ${experiment_id}
+    Check Xml Contains Element    check response has result element    ${lock_info}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+    Check Xml Element Value Contains    check response value is UNLOCKED    ${lock_info}    ${IS_UNLOCKED}    result    elementNamespace=http://entity.locks.services.ewb.idbs.com
+
+*** Keywords ***

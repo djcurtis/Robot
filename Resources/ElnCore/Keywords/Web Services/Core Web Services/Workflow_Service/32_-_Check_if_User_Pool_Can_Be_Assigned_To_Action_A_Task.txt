@@ -1,0 +1,77 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/{taskid}/userpool/validate* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - Non Existent User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Call for fake user, should get a 200 with error in response body
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    ABCDFGKTYTYTy
+    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    400
+
+Test 2 - Non Existent Task
+    #Try to Get details with a dummy GUID
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    #Make Request
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    ${ResponseJSON}=    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    404
+
+Test 3 - Unexpected Characters In TaskID
+    #Requesting with a series of unexpected characters in the TaskID, expect a 40x not a 50x
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Uppercase
+    ${new task id}=    Set Variable    FFFF69b05bd411e2ae4e0023ae89b843
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    ${ResponseJSON}=    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    404
+    #non hex letters
+    ${new task id}=    Set Variable    QWER69b05bd411e2ae4e0023ae89b843
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    ${ResponseJSON}=    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    404
+    #Symbols
+    ${new task id}=    Set Variable    !'%[]*()d411e2ae4e0023ae89b843ee
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    ${ResponseJSON}=    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    404
+
+Test 4 - TaskID is too long
+    #Try to use a TaskID that is too long, expect a 404 error not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843ffffffffffff
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    WorkflowWSUser1
+    ${ResponseJSON}=    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    404
+
+Test 5 - Call endpoint without valid credentials
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Call as non existent user
+    ${Body JSON}=    Build JSON For a User Pool Using Only Users    Administrator
+    ${SERVICES USERNAME}    Set Variable    sssss
+    ${SERVICES PASSWORD}    Set Variable    ddddd
+    ${ResponseJSON}=    Validate UserPool Against a Task And Expect Error    ${new task id}    ${Body JSON}    401

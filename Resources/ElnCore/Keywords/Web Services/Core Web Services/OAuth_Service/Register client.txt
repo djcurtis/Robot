@@ -1,0 +1,259 @@
+*** Settings ***
+Documentation     *Register a client to OAuth provider*
+Force Tags        PLFM-219    PLFM-221
+Resource          oauth_service_resources.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/OAuth Service/rest_oauth_service_resource.txt    # Rest OAuth Service
+Resource          ../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           TestDataGenerationLibrary
+Library           JSONLibrary
+Library           IDBSHttpLibrary
+
+*** Variables ***
+
+*** Test Cases ***
+Client Registration (success)
+    [Documentation]    *Client Registration - Successful Registration*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an successful Client Registration
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 201
+    ...    - Response body will contains a Json document with the following fields: client_id, client_secret, client_issued_at, secret_expires_at
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${json_request}=    Build Client Registration Request    My Client Name    https://client.example.org/callback
+    OAuth Register Client    ${json_request}    201
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /client_id
+    JSONLibrary.Check Json Contains Field    ${json_response}    /client_secret
+    JSONLibrary.Check Json Contains Field    ${json_response}    /client_id_issued_at
+    JSONLibrary.Check Json Contains Field    ${json_response}    /client_secret_expires_at
+
+Client Registration - unsupported token_endpoint_auth_method
+    [Documentation]    *Client Registration - \ Handling Invalid token_endpoint_auth_method*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an invalid token_endpoint_auth_method
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${token_endpoint_auth_method}=    Set Variable    InvalidValue
+    ${json_request}=    Build Client Registration Request    My Client Name    https://client.example.org/callback    ${token_endpoint_auth_method}
+    OAuth Register Client    ${json_request}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_client_metadata"
+    Should Contain    ${json_response}    "The 'token_endpoint_auth_method' is missing, or its value is different from 'client_secret_basic'."
+
+Client Registration - missing token_endpoint_auth_method
+    [Documentation]    *Client Registration - \ Handling missing token_endpoint_auth_method*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an missing token_endpoint_auth_method
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    OAuth Register Client    { \ "redirect_uris":[ \ "https://client.example.org/callback2" ], "client_name":"My Example Client"}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_client_metadata"
+    Should Contain    ${json_response}    "The 'token_endpoint_auth_method' is missing, or its value is different from 'client_secret_basic'."
+
+Client Registration - empty token_endpoint_auth_method
+    [Documentation]    *Client Registration - \ Handling null/empty token_endpoint_auth_method*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an null/empty token_endpoint_auth_method
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${token_endpoint_auth_method}=    Set Variable    ${EMPTY}
+    ${json_request}=    Build Client Registration Request    My Client Name    https://client.example.org/callback    ${token_endpoint_auth_method}
+    OAuth Register Client    ${json_request}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_client_metadata"
+    Should Contain    ${json_response}    "The 'token_endpoint_auth_method' is missing, or its value is different from 'client_secret_basic'."
+
+Client Registration - missing client_name
+    [Documentation]    *Client Registration - \ Handling missing client_name*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an missing client_name
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    OAuth Register Client    { \ "redirect_uris":[ \ "https://client.example.org/callback2" ], "token_endpoint_auth_method":"client_secret_basic"}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_client_metadata"
+    Should Contain    ${json_response}    "The 'client_name' is missing, or its value is null or empty"
+
+Client Registration - empty client_name
+    [Documentation]    *Client Registration - \ Handling null/empty client_name*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an null/empty client_name
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${client_name}=    Set Variable    ${EMPTY}
+    ${json_request}=    Build Client Registration Request    ${client_name}    https://client.example.org/callback
+    OAuth Register Client    ${json_request}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_client_metadata"
+    Should Contain    ${json_response}    "The 'client_name' is missing, or its value is null or empty"
+
+Client Registration - unsupported redirect_uris
+    [Documentation]    *Client Registration - \ Handling unsupported redirect_uris*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an null/empty redirect_uris
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${redirect_uris}=    Set Variable    Unsupported URI
+    ${json_request}=    Build Client Registration Request    My Client Name    ${redirect_uris}
+    OAuth Register Client    ${json_request}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_redirect_uri"
+    Should Contain    ${json_response}    "The redirection URI Unsupported URI is not allowed by this server."
+
+Client Registration - missing redirect_uris
+    [Documentation]    *Client Registration - \ Handling missing redirect_uris*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an missing redirect_uris
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    OAuth Register Client    {"client_name":"My Client Name", "token_endpoint_auth_method":"client_secret_basic"}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_client_metadata"
+    Should Contain    ${json_response}    "The 'redirect_uris' is missing, or its value is null or empty"
+
+Client Registration - empty redirect_uris
+    [Documentation]    *Client Registration - \ Handling null/empty redirect_uris*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an null/empty redirect_uris
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${redirect_uris}=    Set Variable    ${EMPTY}
+    ${json_request}=    Build Client Registration Request    My Client Name    ${redirect_uris}
+    OAuth Register Client    ${json_request}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_redirect_uri"
+    Should Contain    ${json_response}    "The redirection URI cannot be an empty string."
+
+Client Registration - not https redirect_uris
+    [Documentation]    *Client Registration - \ Handling not https redirect_uris*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an not https redirect_uris
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${redirect_uris}=    Set Variable    http://client.example.org/callback
+    ${json_request}=    Build Client Registration Request    My Client Name    ${redirect_uris}
+    OAuth Register Client    ${json_request}    400
+    ${json_response}=    Get Response Body
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error
+    JSONLibrary.Check Json Contains Field    ${json_response}    /error_description
+    Should Contain    ${json_response}    "invalid_redirect_uri"
+    Should Contain    ${json_response}    "The redirection URI must use https protocol."
+
+Client Registration - no OAUTH_ADMIN permission
+    [Documentation]    *Client Registration - \ Handling not https redirect_uris*
+    ...
+    ...    *Endpoint:* POST https://{server}:8443/ewb/services/1.0/oauth/register
+    ...
+    ...    *Test Coverage*
+    ...    - Handling of an not https redirect_uris
+    ...
+    ...    *Expected*
+    ...    - HTTP status code = 400
+    ...    - Response body will contains a Json document with the following fields: error, error_description
+    ...
+    ...
+    ...    *Confluence Page:* http://20jira1.idbs.co.uk:8090/display/PLFM/Client+registration
+    ${oauth_user}=    Set Variable    oauth_test
+    ${oauth_pass}=    Set Variable    oauth_test
+    Create User And Don't Fail If It Exists    ${oauth_user}    ${oauth_pass}    OAuth Test    oauth.test@idbs.com    Testing
+    ${redirect_uris}=    Set Variable    http://client.example.org/callback
+    ${json_request}=    Build Client Registration Request    My Client Name    ${redirect_uris}
+    OAuth Register Client    ${json_request}    401    ${oauth_user}    ${oauth_pass}
+
+*** Keywords ***

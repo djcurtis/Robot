@@ -1,0 +1,131 @@
+*** Settings ***
+Documentation     Find Catalog Search Term using "find" function
+...
+...               SH-477
+Suite Setup       setup
+Suite Teardown    teardown
+Test Teardown     Reload Page
+Resource          ../../../../../Resources/UI/Search_Page/advanced_search_term.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Library           EntityAPILibrary
+Resource          ../../../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+
+*** Test Cases ***
+Verify Property Is Searchable
+    [Documentation]    Verify Property Is Searchable
+    ...
+    ...    created measure property
+    ...    property should be displayes in Catalog on 'new search item' dialog
+    ...    property name should contains:
+    ...    - letters
+    ...    - foreign letters
+    ...    - numbers
+    ...    - symbols
+    ...    - low/uppercase letters
+    ...    - any html parts like /<>/
+    ...
+    ...    --------------------------------------------------
+    ...    - This is data listed, which will be supplied to "Find Property And Verify Catalog Term List" keyword to execute
+    ...    - 'Find Property And Verify Catalog Term List' will be executed 8 time, what is row number
+    ...    - first column is free text to execute search with
+    ...    - the last columns is expected result list
+    [Tags]    SRCH-ADV
+    [Setup]    Open 'New Search Term' Dialog
+    [Template]    Find Item And Verify Catalog Item List
+    aaa    ddaaaa (in: /TestDictionary477)    aaaaaaa (in: /TestDictionary477)
+    aaaa    ddaaaa (in: /TestDictionary477)    aaaaaaa (in: /TestDictionary477)
+    русские буквы    русские буквы (in: /TestDictionary477)
+    123    123456 (in: /TestDictionary477)
+    hhh    HHHHHHHHHHH (in: /TestDictionary477)
+    HHHH    HHHHHHHHHHH (in: /TestDictionary477)
+    <>    <> (in: /TestDictionary477)
+
+Verify Popover Item Navigate To Correct Property
+    [Documentation]    Verify Popover Item Navigate To Correct Property
+    ...
+    ...    - open 'New Search Term' dialog
+    ...    - type part of item name into the the text field
+    ...    - select item from list
+    ...    - verify item property and description displayed correctly
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Type Text To Find Property    aaa
+    Select Item From Dropdown List    /TestDictionary477/aaaaaaa
+    Verify Correct Catalog Item Selected    aaaaaaa    some description    number    string
+
+Verify Search Tile Created Correctly
+    [Documentation]    Verify Search Tile Created Correctly
+    ...
+    ...    - open 'New Search Term' dialog
+    ...    - type part of item name into the the text field
+    ...    - select item from list
+    ...    - popultae operator and value, click done button
+    ...    - verify search tile is correct
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Type Text To Find Property    aaa
+    Select Item From Dropdown List    /TestDictionary477/aaaaaaa
+    Select Property From The List    string
+    Populate Search Tile    is    value
+    Click Done Button
+    Verify Advanced Search Item    string    is    value
+
+*** Keywords ***
+setup
+    [Documentation]    setup
+    ...
+    ...    create catalor dictionary with the following items.:
+    ...    - aaaaaaa
+    ...    - ddaaaa
+    ...    - русские буквы
+    ...    - 132456
+    ...    - HHHHHH
+    ...    - <>
+    ${disctionaryName}=    set variable    TestDictionary477
+    Ensure Catalog Element does not exist    ${disctionaryName}
+    ${inheritanceName}=    set variable    /IDBS-Applications/Core/Results Hub/Measure
+    ${inheritanceId}=    Get Term Guid From Catalog Webservice    ${inheritanceName}
+    ${inheritanceNameNonMeasure}=    set variable    /IDBS-Applications/Core/Basic/Code
+    ${inheritanceIDNonMeasure}=    Get Term Guid From Catalog Webservice    ${inheritanceNameNonMeasure}
+    ${dictionaryId}=    Create Root Element    DICTIONARY    ${disctionaryName}    some description    true
+    Set Suite Variable    ${dictionaryId}
+    #low case letters
+    ${property1}=    Create Property JSON    string    STRING    Key    true    true
+    ${property2}=    Create Property JSON    number    NUMBER    Description text    false    false
+    ${allProps}=    Create Properties JSON    ${property1}    ${property2}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    aaaaaaa    some description    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceID}"}]}
+    ...    ${allProps}
+    #low case letters2
+    ${property1}=    Create Property JSON    string    STRING    Key    true    true
+    ${allProps}=    Create Properties JSON    ${property1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    ddaaaa    some description    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceID}"}]}
+    ...    ${allProps}
+    #foring letters
+    ${property1}=    Create Property JSON    foring    STRING    Key    true    true
+    ${allProps}=    Create Properties JSON    ${property1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    русские буквы    person description    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}
+    ...    ${allProps}
+    #numbers
+    ${property1}=    Create Property JSON    numbers    NUMBER    Key    true    true
+    ${allProps}=    Create Properties JSON    ${property1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    123456    person description    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}
+    ...    ${allProps}
+    #html
+    ${property1}=    Create Property JSON    symbols    NUMBER    Key    true    true
+    ${allProps}=    Create Properties JSON    ${property1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    /<>    person description    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}
+    ...    ${allProps}
+    #capital letters
+    ${property1}=    Create Property JSON    capital    NUMBER    Key    true    true
+    ${allProps}=    Create Properties JSON    ${property1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    HHHHHHHHHHH    person description    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}
+    ...    ${allProps}
+    Login To EWB
+    Navigate Search Screen
+
+teardown
+    [Documentation]    teardown
+    ...    - delete dictionary
+    Delete Element    ${dictionaryId}
+    Close Browser

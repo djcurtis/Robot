@@ -1,0 +1,90 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: POST /services/1.0/entities/{entityId}/comments
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-ACO    Add Comment
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Add comment
+    [Documentation]    EWB-SAPI-SSP-ENT-ACO-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and the item entity publishing state is set
+    [Tags]    EWB-SAPI-SSP-ENT-ACO-S001
+    ${experiment_name}=    Set Variable    ACO-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    # Checking expectations
+    ${sapi_entity_comment_sequence}=    Rest_Entity_Service_Resource.Get Comments    ${experiment_id}    ${entity_version_id}
+    Check Xml Element Value Contains    check experiment id value    ${sapi_entity_comment_sequence}    ${comment_id}    id    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Value Contains    check experiment id value    ${sapi_entity_comment_sequence}    Test comment    value    elementNamespace=http://entity.services.ewb.idbs.com
+
+Add comment with missing version id
+    [Documentation]    EWB-SAPI-SSP-ENT-ACO-S002
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-ACO-S002
+    ${experiment_name}=    Set Variable    ACO-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # missing entity version id
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${EMPTY}    Test comment    400
+    # wrong entity version id
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    WrongEntityVersionId    Test comment    404
+
+Add comment with missing comment
+    [Documentation]    EWB-SAPI-SSP-RES-ACO-S003
+    ...
+    ...    If the comment is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-ACO-S003
+    ${experiment_name}=    Set Variable    ACO-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    ${EMPTY}    400
+
+Add comment with not existing entity
+    [Documentation]    EWB-SAPI-SSP-RES-ACO-S004
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-ACO-S004
+    ${experiment_name}=    Set Variable    ACO-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    WrongEntityId    WrongEntityVersionId    Test comment    404
+
+Add comment to published entity
+    [Documentation]    EWB-SAPI-SSP-ENT-ACO-S005
+    ...
+    ...    If the entity is published and disable adding and editing comments after publishing an experiment system setting is enabled, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-ACO-S005
+    ${experiment_name}=    Set Variable    ACO-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Lock Entity    ${experiment_id}
+    ${web_link_entity_id}=    Add Web Link Entity    ${experiment_id}    http://www.idbs.com
+    Commit Versioned Entity    ${experiment_id}
+    ${pdf_entity_id}=    Publish Record    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment    200
+    Unlock Entity    ${experiment_id}
+
+Add comment without permissions
+    [Documentation]    EWB-SAPI-SSP-ENT-ACO-S006
+    ...
+    ...    If the client does not have EDIT_COMMENTS permission, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-ACO-S006
+    ${experiment_name}=    Set Variable    ACO-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment    403
+
+*** Keywords ***

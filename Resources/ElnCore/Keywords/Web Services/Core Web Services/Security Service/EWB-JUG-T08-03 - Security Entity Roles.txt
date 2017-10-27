@@ -1,0 +1,236 @@
+*** Settings ***
+Documentation     Test Cases Covering Security Entity Roles
+Test Setup        Services Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+1-1 Lowercase Entity Role Name
+    Ensure Role does not exist    lowercase
+    Create Role And Validate    lowercase    1-1    description    false
+
+1-2 Uppercase Entity Role Name
+    Create Role And Validate    UPPERCASE    1-2    description    false
+
+1-3 Numeric Entity Role Name
+    Create Role And Validate    1234567890    1-3    description    false
+
+1-4 Special Characters Entity Role Name
+    Create Role And Validate    -=_+    1-4    description    false
+
+1-5 Mixed Characters Entity Role Name
+    Create Role And Validate    abcDEF123-=+    1-5    description    false
+
+1-6 Forward Slashes Entity Role Name
+    [Tags]    ignore
+    Create Role    /forward/slashes    1-6    description    false
+    Validate Role    %2Fforward%2Fslashes    1-6    description    false
+
+1-7 Spaces In Entity Role Name
+    Create Role And Validate    Entity Role Name With Spaces    1-7    description    false
+
+1-8 Preceeding Spaces In Entity Role Name
+    Create Role    ${SPACE*10}10spacebuffer    1-8    description    false
+    Validate Role    10spacebuffer    1-8    description    false
+
+1-9 Trailing Spaces In Entity Role Name
+    Create Role    10speaceafter${SPACE*10}    1-9    description    false
+    Validate Role    10speaceafter    1-9    description    false
+
+1-10 32 Characters In Entity Role Name
+    Create Role And Validate    aaaaabbbbbcccccdddddeeeeefffffgg    1-10    description    false
+
+1-11 33 Characters In Entity Role Name
+    Create Role And Expect Error    aaaaabbbbbcccccdddddeeeeefffffggg    1-11    description    false    400
+
+2-1 Lowercase Entity Role Display Name
+    Create Role And Validate    2-1    lowercase    description    false
+
+2-2 Uppercase Entity Role Display Name
+    Create Role And Validate    2-2    UPPERCASE    description    false
+
+2-3 Numeric Entity Role Display Name
+    Create Role And Validate    2-3    1234567890    description    false
+
+2-4 Special Characters Entity Role Display Name
+    Create Role And Validate    2-4    -=_+    description    false
+
+2-5 Mixed Characters Entity Role Display Name
+    Create Role And Validate    2-5    abcDEF123-=+    description    false
+
+2-6 Forward Slashes Entity Role Display Name
+    Create Role And Validate    2-6    /forward/slashes    description    false
+
+2-7 Spaces In Entity Role Display Name
+    Create Role And Validate    2-7    Display Name With Spaces    description    false
+
+2-8 Preceeding Spaces In Entity Role Display Name
+    Create Role    2-8    ${SPACE*10}10spacebuffer    description    false
+    Validate Role    2-8    10spacebuffer    description    false
+
+2-9 Trailing Spaces In Entity Role Display Name
+    Create Role    2-9    10speaceafter${SPACE*10}    description    false
+    Validate Role    2-9    10speaceafter    description    false
+
+2-10 32 Characters In Entity Role Display Name
+    Create Role And Validate    2-10    abcdefghiJKLMNOPQRSTUVWXYZ123456    description    false
+
+2-11 33 Characters In Entity Role Display Name
+    Create Role And Expect Error    2-11    abcdefghiJKLMNOPQRSTUVWXYZ1234567    description    false    400
+
+3-1 Lowercase Entity Role Description
+    Create Role And Validate    3-1    3-1    lowercase    false
+
+3-2 Uppercase Entity Role Description
+    Create Role And Validate    3-2    3-2    UPPERCASE    false
+
+3-3 Numeric Entity Role Description
+    Create Role And Validate    3-3    3-3    1234567890    false
+
+3-4 Special Characters Entity Role Description
+    Create Role And Validate    3-4    3-4    -=_+    false
+
+3-5 Mixed Characters Entity Role Description
+    Create Role And Validate    3-5    3-5    abcDEF123-=+    false
+
+3-6 Forward Slashes Entity Role Description
+    Create Role And Validate    3-6    3-6    /forward/slashes    false
+
+3-7 Spaces In Entity Role Description
+    Create Role And Validate    3-7    3-7    Entity Role Description With Spaces    false
+
+3-8 Preceeding Spaces In Entity Role Description
+    Create Role    3-8    3-8    ${SPACE*10}10spacebuffer    false
+    Validate Role    3-8    3-8    10spacebuffer    false
+
+3-9 Trailing Spaces In Entity Role Description
+    Create Role    3-9    3-9    10speaceafter${SPACE*10}    false
+    Validate Role    3-9    3-9    10speaceafter    false
+
+3-10 255 Characters In Entity Role Description
+    Create Role And Validate    3-10    3-10    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345    false
+
+3-11 256 Characters In Entity Role Description
+    Create Role And Expect Error    3-11    3-11    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    false    400
+
+3-12 Line Breaks In Description
+    Create Role And Validate    3-12    3-12    firstline\\nsecondline    false
+
+4-1 Update Role Description - lowercase
+    Create Role And Validate    4-1    4-1    originaldescription    false
+    Update Role And Validate    4-1    4-1    lowercasedescription    false
+
+4-2 Update Role Description - Uppercase
+    Create Role And Validate    4-2    4-2    originaldescription    false
+    Update Role And Validate    4-2    4-2    UPPERCASEDESCRIPTION    false
+
+4-3 Update Role Description - Numeric
+    Create Role And Validate    4-3    4-3    originaldescription    false
+    Update Role And Validate    4-3    4-3    1234567890    false
+
+4-4 Update Role Description - Special Characters
+    Create Role And Validate    4-4    4-4    originaldescription    false
+    Update Role And Validate    4-4    4-4    -=_+    false
+
+4-5 Update Role Description - Mixed Characters
+    Create Role And Validate    4-5    4-5    originaldescription    false
+    Update Role And Validate    4-5    4-5    ABCdef123_+=    false
+
+4-6 Update Role Description - Spaces In Description
+    Create Role And Validate    4-6    4-6    originaldescription    false
+    Update Role And Validate    4-6    4-6    Description With Spaces    false
+
+4-7 Update Role Description - Preceeding Spaces
+    Create Role And Validate    4-7    4-7    originaldescription    false
+    Update Role    4-7    ${SPACE*10}10spacebuffer
+    Validate Role    4-7    4-7    10spacebuffer    false
+
+4-8 Update Role Description - Trailing Spaces
+    Create Role And Validate    4-8    4-8    originaldescription    false
+    Update Role    4-8    10spaceafter${SPACE*10}
+    Validate Role    4-8    4-8    10spaceafter    false
+
+4-9 Update Role Description - Forward Slashes
+    Create Role And Validate    4-9    4-9    originaldescription    false
+    Update Role And Validate    4-9    4-9    Description With Spaces    false
+
+4-10 Update Role Description - 255 Characters
+    Create Role And Validate    4-10    4-10    originaldescription    false
+    Update Role And Validate    4-10    4-10    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234657890123465789012345678901234567890123456789012346578901234567890123456789012345    false
+
+4-11 Update Role Description - 256 Characters
+    Create Role And Validate    4-11    4-11    originaldescription    false
+    Update Role And Expect Error    4-11    1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012346578901234657890123456789012345678901234567890123465789012345678901234567890123456    400
+
+4-12 Update Role Description - Line Breaks
+    Create Role And Validate    4-12    4-12    originaldescription    false
+    Update Role And Validate    4-12    4-12    firstline\\nsecondline    false
+
+5-1 Delete Role - Valid Role
+    Create Role And Validate    5-1    5-1    5-1    false
+    Delete Role And Validate    5-1    DeleteReason
+
+5-2 Delete Role - Invalid Role
+    Request Setup
+    Next Request Should Not Succeed
+    Set Request Body    {"comment":"DeleteReason"}
+    POST    ${SECURITY ADMINISTRATION ROLE ENDPOINT}/5-2
+    Response Status Code Should Equal    400
+    Next Request Should Succeed
+    Check Role Not Present    5-2
+
+6-1 Addition of Entity Role Permissions - Valid Permissions
+    Create Role And Validate    6-1    6-1    6-1    false
+    Add Role Permission    6-1    ALLOW_DRAFT_EXPERIMENTS
+    Add Role Permission    6-1    ALLOW_RECORD_EDIT
+    Add Role Permission    6-1    ASSIGN_ROLES
+    Add Role Permission    6-1    BBSS_SET_BLINDING
+    Add Role Permission    6-1    BBSS_SET_DICTMAPPINGS
+    Add Role Permission    6-1    CBSS_SET_DICTMAPPINGS
+    Add Role Permission    6-1    CONFIGURE_CREATION_OPTIONS
+    Add Role Permission    6-1    COPY_GROUP
+
+6-2 Addition of Entity Role Permissions - Invalid Permissions
+    Create Role And Validate    6-2    6-2    6-2    false
+    Add Role Permission And Expect Error    6-2    INVALID_PERMISSION    404
+
+6-3 Deletion of Entity Role Permissions - Valid Permissions Assigned To Role
+    Create Role And Validate    6-3    6-3    6-3    false
+    Add Role Permission    6-3    ALLOW_DRAFT_EXPERIMENTS
+    Add Role Permission    6-3    ALLOW_RECORD_EDIT
+    Add Role Permission    6-3    ASSIGN_ROLES
+    Add Role Permission    6-3    BBSS_SET_BLINDING
+    Add Role Permission    6-3    BBSS_SET_DICTMAPPINGS
+    Add Role Permission    6-3    CBSS_SET_DICTMAPPINGS
+    Add Role Permission    6-3    CONFIGURE_CREATION_OPTIONS
+    Add Role Permission    6-3    COPY_GROUP
+    Remove Role Permission    6-3    ALLOW_DRAFT_EXPERIMENTS
+    Remove Role Permission    6-3    ALLOW_RECORD_EDIT
+    Remove Role Permission    6-3    ASSIGN_ROLES
+    Remove Role Permission    6-3    BBSS_SET_BLINDING
+    Remove Role Permission    6-3    BBSS_SET_DICTMAPPINGS
+    Remove Role Permission    6-3    CBSS_SET_DICTMAPPINGS
+    Remove Role Permission    6-3    CONFIGURE_CREATION_OPTIONS
+    Remove Role Permission    6-3    COPY_GROUP
+
+6-4 Deletion of Entity Role Permissions - Valid Permissions Not Assigned To Role
+    Create Role And Validate    6-4    6-4    6-4    false
+    Remove Role Permission And Expect Error No Role Check    6-4    ALLOW_DRAFT_EXPERIMENTS    400
+    Remove Role Permission And Expect Error No Role Check    6-4    ALLOW_RECORD_EDIT    400
+    Remove Role Permission And Expect Error No Role Check    6-4    ASSIGN_ROLES    400
+    Remove Role Permission And Expect Error No Role Check    6-4    BBSS_SET_BLINDING    400
+    Remove Role Permission And Expect Error No Role Check    6-4    BBSS_SET_DICTMAPPINGS    400
+    Remove Role Permission And Expect Error No Role Check    6-4    CBSS_SET_DICTMAPPINGS    400
+    Remove Role Permission And Expect Error No Role Check    6-4    CONFIGURE_CREATION_OPTIONS    400
+    Remove Role Permission And Expect Error No Role Check    6-4    COPY_FILE    400
+
+6-5 Deletion of Entity Role Permissions - Invalid Permissions
+    Create Role And Validate    6-5    6-5    6-5    false
+    Request Setup
+    Next Request Should Not Succeed
+    DELETE    ${SECURITY ADMINISTRATION ROLE ENDPOINT}/6-5/permissions/INVALID_PERMISSION
+    Response Status Code Should Equal    404
+    Next Request Should Succeed
+    Check Permission Assigned To Role    6-5    ${EMPTY}

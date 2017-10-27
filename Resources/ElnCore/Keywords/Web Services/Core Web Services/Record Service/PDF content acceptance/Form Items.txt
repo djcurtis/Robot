@@ -1,0 +1,49 @@
+*** Settings ***
+Documentation     This set of tests looks at including form items into an experiment PDF in insolation
+Suite Setup       Setup standard suite
+Suite Teardown    Teardown standard suite
+Test Setup        Setup Form Item Test Case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          add_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Simple Single Form
+    [Documentation]    This test handles having a single form added to an experiment PDF
+    [Tags]    EWB-WEB-PI002-W023-01
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.dsf
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Multi Forms
+    [Documentation]    This test looks at having 6 form items present within an experiment PDF
+    [Tags]    EWB-WEB-PI002-W023-02
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}1.dsf
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}2.dsf
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}3.dsf
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}1.dsf
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}2.dsf
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}3.dsf
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Form Wider Than Page
+    [Documentation]    Test ensures that
+    ...    - A PDF generated of a record containing a form that is wider than a page contains all the correct data and displays it correctly.
+    [Tags]    EWB-WEB-PI002-W023-03
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.dsf
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Form Taller Than Page
+    [Documentation]    Test ensures that
+    ...    - A PDF generated of a record containing a form that is taller than a page contains all the correct data and displays it correctly.
+    [Tags]    EWB-WEB-PI002-W023-04
+    Add Form Item to Experiment    ${experiment_id}    ${input_folder}\\${TEST NAME}.dsf
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup Form Item Test Case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}

@@ -1,0 +1,401 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/reject* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - Reject Task as User who is not the Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Reject Task should fail as we are doing it as someone other than the assigned user
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    Reject Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 2a - Reject New Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Reject Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=REJECTED
+
+Test 2b - Reject New-Overdue Task As Assigned User
+    # Obtain due date that is yesterday
+    ${new due date}=    Create Due Date Format    NOW - 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    Wait For Overdue Task
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW_OVERDUE
+    # Reject Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=REJECTED
+
+Test 2c - Reject Pending Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task 1 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 2 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 3 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task setup json}=    Set Variable    {"taskSetup": [${task 1 json},${task 2 json},${task 3 json}]}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 4    ${new due date}    false
+    ...    Normal    ${task setup json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    2
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=PENDING
+    # Reject Task should fail
+    Reject Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=PENDING
+
+Test 2d - Reject In Progress Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=IN_PROGRESS
+    # Reject Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=REJECTED
+
+Test 2e - Reject In Progress Overdue Task As Assigned User
+    # Obtain due date that is yesterday
+    ${new due date}=    Create Due Date Format    NOW - 1 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    Wait For Overdue Task
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW_OVERDUE
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=IN_PROGRESS_OVERDUE
+    # Reject Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=REJECTED
+
+Test 2f - Reject Completed Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Accept and Complete Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Multiple Tasks    ${new task id}
+    Complete Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=COMPLETED
+    # Reject Task and expect error
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=COMPLETED
+
+Test 2g - Reject Cancelled Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Cancel Task
+    Cancel Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=CANCELLED
+    # Reject Task and expect error
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=CANCELLED
+
+Test 2h - Reject Rejected Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Cancel Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=REJECTED
+    # Reject Task again and expect error
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=REJECTED
+
+Test 2i - Reject Closed Task As Assigned User
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Complete Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Multiple Tasks    ${new task id}
+    Complete Multiple Tasks    ${new task id}
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    Close Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=CLOSED
+    # Reject Task and expect error
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Reject Multiple Tasks And Expect Error    403    ${new task id}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=CLOSED
+
+Test 3 - Reject Non Existent Task
+    #Try to accept a dummy GUID
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    Complete Multiple Tasks And Expect Error    404    ${new task id}
+
+Test 4 - Unexpected Characters In TaskID
+    #Requesting a Reject with a series of unexpected characters in the TaskID, expect a 40x not a 50x
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Uppercase
+    ${new task id}=    Set Variable    FFFF69b05bd411e2ae4e0023ae89b843
+    Reject Multiple Tasks And Expect Error    404    ${new task id}
+    #non hex letters
+    ${new task id}=    Set Variable    QWER69b05bd411e2ae4e0023ae89b843
+    Reject Multiple Tasks And Expect Error    404    ${new task id}
+    #Symbols
+    ${new task id}=    Set Variable    !'%^&*()d411e2ae4e0023ae89b843ee
+    Reject Multiple Tasks And Expect Error    404    ${new task id}
+
+Test 5 - TaskID is too long
+    #Try to use a TaskID that is too long, expect a 404 error not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843ffffffffffff
+    Reject Multiple Tasks And Expect Error    404    ${new task id}
+
+Test 6 - TaskID is blank
+    #Try to use a TaskID that is too long, expect a 404 error not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable
+    Reject Multiple Tasks And Expect Error    404    ${new task id}
+
+Test 6.a - Reject 2 Tasks Where User is Not Assigned user for one of the Tasks
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create 2 new workflows assigned to different users
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    ${task json2}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "Administrator"    ${EMPTY}    Example Comment
+    ${sign off workflow id2}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json2}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    ${new task id2}=    Get Task ID From Workflow ID    ${sign off workflow id2}    1
+    ${workflow tasks JSON2}=    Get Task From Task ID    ${new task id2}
+    Validate Task    ${workflow tasks JSON2}    task_status=NEW
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Reject Both Tasks at once, using both ways around
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    @{task ids}=    Create List    ${new task id}    ${new task id2}
+    Reject Multiple Tasks And Expect Error    403    @{task ids}
+    @{task ids}=    Create List    ${new task id2}    ${new task id}
+    Reject Multiple Tasks And Expect Error    403    @{task ids}
+    # Validate Task Statuses
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    ${workflow tasks JSON2}=    Get Task From Task ID    ${new task id2}
+    Validate Task    ${workflow tasks JSON2}    task_status=NEW
+
+Test 6.b - Reject COMPLETED Task And NEW Task At The Same Time
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create 2 new workflows
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    ${task json2}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id2}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json2}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    ${new task id2}=    Get Task ID From Workflow ID    ${sign off workflow id2}    1
+    ${workflow tasks JSON2}=    Get Task From Task ID    ${new task id2}
+    Validate Task    ${workflow tasks JSON2}    task_status=NEW
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Accept and CompleteTask 1
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Multiple Tasks    ${new task id}
+    Complete Multiple Tasks    ${new task id}
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=COMPLETED
+    # Reject Both Tasks at once, using both ways around
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    @{task ids}=    Create List    ${new task id}    ${new task id2}
+    Reject Multiple Tasks And Expect Error    403    @{task ids}
+    @{task ids}=    Create List    ${new task id2}    ${new task id}
+    Reject Multiple Tasks And Expect Error    403    @{task ids}
+    # Validate Task Statuses
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=COMPLETED
+    ${workflow tasks JSON2}=    Get Task From Task ID    ${new task id2}
+    Validate Task    ${workflow tasks JSON2}    task_status=NEW
+
+Test 6.c - Reject NEW Task and Nonexistent Task At The Same Time
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Reject Task alongside a noneexistent TaskID (both orderings of ID's)
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    @{task ids}=    Create List    ${new task id}    12345678901234567890abcdeffedbca
+    Reject Multiple Tasks And Expect Error    404    @{task ids}
+    @{task ids}=    Create List    12345678901234567890abcdeffedbca    ${new task id}
+    Reject Multiple Tasks And Expect Error    404    @{task ids}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 7 - Call endpoint without valid credentials
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Reject Task should fail as the user doesn't exist
+    ${SERVICES USERNAME}    Set Variable    sssss
+    ${SERVICES PASSWORD}    Set Variable    ddddd
+    Reject Multiple Tasks And Expect Error    401    ${new task id}
+    # Validate Task Status
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW

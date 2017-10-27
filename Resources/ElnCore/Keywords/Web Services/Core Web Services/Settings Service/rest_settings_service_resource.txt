@@ -1,0 +1,125 @@
+*** Settings ***
+Library           IDBSHttpLibrary
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+
+*** Variables ***
+${SETTINGS SERVICE ENDPOINT}    /ewb/services/1.0/settings
+
+*** Keywords ***
+Get File Validation Setting
+    [Arguments]    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/settings/systemsettings/structured/filevalidation
+    ...
+    ...    Get the current file validation rules in a stuctured (JAXB XML/JSON) format that allows them to be applied on a SAPI client. No permissions are tested, all users can use this.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _validation_rules_ File \ Validation rules system settings in their own structured format (SAPIFileValidationRules)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${SETTINGS SERVICE ENDPOINT}/systemsettings/structured/filevalidation
+    Response Status Code Should Equal    ${expected_http_status}
+    ${validation_rules}=    Get Response Body
+    [Return]    ${validation_rules}    # File validation rules system settings in their own structured format (SAPIFileValidationRules)
+
+Get System Setting
+    [Arguments]    ${key}    ${data_type}=STRING    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/settings/systemsettings/{key}
+    ...
+    ...    Retrieves a system setting from the database.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _key_ \ The key of the setting to retrieve
+    ...
+    ...    _data_type_ \ The expected type of the setting. When this parameter is not supplied, it will default to String
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _settings_ \ SAPISettingValueList that represents the system setting
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    ${url}=    Set Variable    ${SETTINGS SERVICE ENDPOINT}/systemsettings/${key}?type=${data_type}
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${settings}=    Get Response Body
+    [Return]    ${settings}    # SAPISettingValueList that represents the system setting
+
+Get User Setting
+    [Arguments]    ${key}    ${data_type}=STRING    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/settings/usersettings/{key}
+    ...
+    ...    Retrieves a user setting from the database for the authenticated user.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _key_ The name of the setting to retrieve
+    ...
+    ...    _data_type_ The expected type of the setting. When this parameter is not supplied, it will default to String
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _settings_ \ SAPISettingValueList that represents the user setting
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    ...
+    ...    /services/1.0/settings/usersettings/MOTD Show
+    HTTP Header Setup
+    ${url}=    Set Variable    ${SETTINGS SERVICE ENDPOINT}/usersettings/${key}
+    ${url}=    Set Variable If    '${data_type}'!='${EMPTY}'    ${url}?type=${data_type}    ${url}
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${settings}=    Get Response Body
+    [Return]    ${settings}    # SAPISettingValueList that represents the user setting
+
+Put User Setting
+    [Arguments]    ${key}    ${values}    ${expected_http_status}=204
+    [Documentation]    PUT : /services/1.0/settings/usersettings/{key}
+    ...
+    ...    Puts a user setting in the system associated to the authenticated user, replacing any existing entry that may be present.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _key_ \ The name of the user setting
+    ...
+    ...    _values_ \ SAPISettingValueList that represents the user setting to store
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 204 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    ...
+    ...    /services/1.0/settings/usersettings/MOTD Show
+    XML HTTP Header Setup
+    Set Request Body    ${values}
+    Next Request May Not Succeed
+    PUT    ${SETTINGS SERVICE ENDPOINT}/usersettings/${key}
+    Response Status Code Should Equal    ${expected_http_status}

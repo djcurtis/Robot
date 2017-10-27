@@ -1,0 +1,28 @@
+*** Settings ***
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+
+*** Variables ***
+${IS_LOCKED}      RESOURCE_LOCKED_BY_USER
+${IS_UNLOCKED}    UNLOCKED
+${IS_OK}          OK
+${username}       auto_ws_user    # common user name for web service testing
+${password}       password    # password for ws user
+
+*** Keywords ***
+Entity Locking Suite Setup
+    [Documentation]    Create a default group/project for the lock Service test cases to be run under
+    ${unique_id}=    Get Time    epoch
+    Set Suite Variable    ${group_name}    Lock_Service_Test_Group_${unique_id}
+    Set Suite Variable    ${project_name}    Lock Project
+    ${id}=    Create Group    1    ${group_name}
+    Set Suite Variable    ${group_id}    ${id}
+    ${project}=    Create Project    ${group_id}    ${project_name}
+    Set Suite Variable    ${project_id}    ${project}
+    Run Keyword And Ignore Error    Create User    ${username}    ${password}    Test User    testing@idbs.com    Testing
+
+Entity Locking Service Suite Teardown
+    [Documentation]    Tidy up by deleting the group
+    Log    Deleting group    Info
+    Run Keyword And Ignore Error    Delete Entity    ${group_id}
+    Run Keyword And Ignore Error    Remove Entity Role From User    ${username}    EXPERIMENT_ADMIN    ${group_id}

@@ -1,0 +1,85 @@
+*** Settings ***
+Documentation     jira story SH-833
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Login To EWB
+Test Teardown     Close Browser
+Default Tags
+Library           IDBSHttpLibrary
+Library           IDBSSelenium2Library
+Resource          ../../../../../../Libraries/Web Client/Selenium/general_resource.txt
+Resource          ../../../../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../../../Resources/API/Search/search_api.txt
+Library           String
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Navigator_Page/navigator_ui.txt
+Library           DateTime
+
+*** Variables ***
+
+*** Test Cases ***
+Restore Saved Search From Navigator
+    [Documentation]    Restore Saved Search From Navigator
+    ...    - Created search via API
+    ...    - Restore Search from navigator
+    ...    - Verify search restored correctly
+    [Tags]    SRCH-SAV-NAV    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Navigate Navigator Screen
+    Restore Search From Navigator    Root/${groupName}/Restore Saves    Sav2Navigator
+    Verify Search Text Field    RestoreSaveSearch
+    Verify Advanced Search Items    Version Type (D/V)|is|Version    Status|is|Completed
+
+Restore Saved Search From Card View
+    [Documentation]    Restore Saved Search From Card
+    ...    - Created search via API
+    ...    - Restore Search from navigator -> card
+    ...    - Verify search restored correctly
+    [Tags]    SRCH-SAV-NAV    BUILD_ACCEPTANCE    BROWSER_REGRESSION    NO_IE
+    Navigate Navigator Screen
+    Restore Search From Card View    Root/${groupName}/Restore Saves    Sav2Navigator
+    Verify Search Text Field    RestoreSaveSearch
+    Verify Advanced Search Items    Version Type (D/V)|is|Version    Status|is|Completed
+
+Restore Saved Search User Permission Check
+    [Documentation]    Restore Saved Search User Permission Check
+    ...    - Created search via API
+    ...    - Restore Search from navigator with non-creator permissions
+    ...    - Verify search restored correctly
+    [Tags]    SRCH-SAV-NAV    BUILD_ACCEPTANCE
+    Create User and Don't Fail If It Exists    srch_01    srch_011    Search User01    user01@idbs.com    Testing    assignable_role_level=STANDARD_ROLES
+    Assign User System Role    srch_01    EWB_WEB_CLIENT_USER
+    Assign User Entity Role    srch_01    View Role    ${groupId}
+    Logout
+    Supply Non Default User Credentials    srch_01    srch_011
+    Navigate Navigator Screen
+    Verify Search Is Not In Navigator In Path    Root/${groupName}/Restore Saves    Sav2Navigator
+    Assign User Entity Role    srch_01    All Entity Permissions    ${groupId}
+    Reload Page
+    Restore Search From Card View    Root/${groupName}/Restore Saves    Sav2Navigator
+    Verify Search Text Field    RestoreSaveSearch
+    Verify Advanced Search Items    Version Type (D/V)|is|Version    Status|is|Completed
+    Delete User System Role    srch_01    EWB_WEB_CLIENT_USER
+
+*** Keywords ***
+setup
+    [Documentation]    - create Ms. Robot with project as Administrator user
+    ...    - open browser and login with test credentials
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Restore Saves
+    ${recordId}=    EntityAPILibrary.Create Experiment    ${projectId}    RestoreSaveSearch    Completed
+    EntityAPILibrary.Version Save    ${recordId}    Data Added
+    :FOR    ${i}    IN     0    1
+    \    ${templateId}=    EntityAPILibrary.Create Template    ${projectId}    FreeTextAdvancedSearchSave    Planned    keywords:::Unique
+    \    EntityAPILibrary.Version Save    ${templateId}    Data Added
+    Create Saved Search In Navigator Via API    Root/${groupName}/Restore Saves
+
+teardown
+    [Documentation]    - delete Mr. Roboto as Administrator user
+    ...    - close browser
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended

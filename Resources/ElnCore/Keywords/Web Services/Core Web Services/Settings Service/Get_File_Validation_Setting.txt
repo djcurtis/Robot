@@ -1,0 +1,16 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET /services/1.0/settings/systemsettings/structured/filevalidation
+Force Tags        File Validation Settings
+Resource          ../../../Libraries/Core Web Services/Settings Service/rest_settings_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Check can get file validation rules
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIFileValidationRules
+    ${validation_rules}=    Get File Validation Setting
+    ${default_max_size}=    Get Json Value    ${validation_rules}    /defaultMaxSizeRule
+    Should Be Equal    ${default_max_size}    null
+    ${allowed_file_rules}=    Get Json Value    ${validation_rules}    /allowedFileRules
+    Should Be Equal    ${allowed_file_rules}    []

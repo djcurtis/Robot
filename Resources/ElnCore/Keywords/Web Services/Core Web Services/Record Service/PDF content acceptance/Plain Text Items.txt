@@ -1,0 +1,91 @@
+*** Settings ***
+Documentation     This test set looks at the webclient generating PDFs from experiments containing plain and formatted text as well as some with items containing pictures and tables of various sizes.
+Suite Setup       Setup standard suite
+Suite Teardown
+Test Setup        Setup Text Item Test Case
+Test Teardown
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          add_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Wide and Long Plain Text Portrait A4
+    [Documentation]    This test looks at inserting two plain text items that are designed to be larger than the page. \ It has been found during manual testing that when testing these in isolation defects are missed, therefore it's also seen as important to cover these kind of combination scenarios. \ Each of the text items in this test are one for each of:
+    ...
+    ...    - Wider than the page
+    ...
+    ...    - Longer than the page
+    [Tags]    EWB-WEB-PI002-W016-04
+    Set Page Config    5    5    0    A4
+    ${item_id}=    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Wide and Long Plain Text Landscape A4
+    [Documentation]    This test looks at inserting two plain text items that are designed to be larger than the page. \ It has been found during manual testing that when testing these in isolation defects are missed, therefore it's also seen as important to cover these kind of combination scenarios. \ Each of the text items in this test are one for each of:
+    ...
+    ...    - Wider than the page
+    ...
+    ...    - Longer than the page
+    [Tags]    EWB-WEB-PI002-W016-04
+    Set Page Config    5    5    0    A4
+    ${item_id}=    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Wide and Long Plain Text Portrait A5
+    [Documentation]    This test looks at inserting two plain text items that are designed to be larger than the page. \ It has been found during manual testing that when testing these in isolation defects are missed, therefore it's also seen as important to cover these kind of combination scenarios. \ Each of the text items in this test are one for each of:
+    ...
+    ...    - Wider than the page
+    ...
+    ...    - Longer than the page
+    [Tags]    EWB-WEB-PI002-W016-04
+    Set Page Config    5    5    1    A5
+    ${item_id}=    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Wide and Long Plain Text Landscape A5
+    [Documentation]    This test looks at inserting two plain text items that are designed to be larger than the page. \ It has been found during manual testing that when testing these in isolation defects are missed, therefore it's also seen as important to cover these kind of combination scenarios. \ Each of the text items in this test are one for each of:
+    ...
+    ...    - Wider than the page
+    ...
+    ...    - Longer than the page
+    [Tags]    EWB-WEB-PI002-W016-04
+    Set Page Config    5    5    0    A5
+    ${item_id}=    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Wide and Long Plain Text Portrait Legal
+    [Documentation]    This test looks at inserting two plain text items that are designed to be larger than the page. \ It has been found during manual testing that when testing these in isolation defects are missed, therefore it's also seen as important to cover these kind of combination scenarios. \ Each of the text items in this test are one for each of:
+    ...
+    ...    - Wider than the page
+    ...
+    ...    - Longer than the page
+    [Tags]    EWB-WEB-PI002-W016-04
+    Set Page Config    5    5    1    legal
+    ${item_id}=    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Wide and Long Plain Text Landscape Legal
+    [Documentation]    This test looks at inserting two plain text items that are designed to be larger than the page. \ It has been found during manual testing that when testing these in isolation defects are missed, therefore it's also seen as important to cover these kind of combination scenarios. \ Each of the text items in this test are one for each of:
+    ...
+    ...    - Wider than the page
+    ...
+    ...    - Longer than the page
+    [Tags]    EWB-WEB-PI002-W016-04
+    Set Page Config    5    5    0    legal
+    ${item_id}=    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Add Plain Text Item to Experiment    ${experiment_id}    ${input_folder}\\Wide and Long Plain Text.txt
+    Assert Pdf As Expected    ${experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup Text Item Test Case
+    ${experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${experiment_id}

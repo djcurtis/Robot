@@ -1,0 +1,91 @@
+*** Settings ***
+Documentation     Created for SH-1011 story to cover SH-430, SH-429, SH-246 one
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     Reload page
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Library           DateTime
+
+*** Test Cases ***
+Verify Match All Or Any Search Options
+    [Documentation]    Verify Match All Or Any Search Options
+    ...
+    ...    Test created for SH-430
+    ...    - Create AND Advanced search
+    ...    - Verify No result
+    ...    - Switch option to ANY
+    ...    - Verify correct search result \ list
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Template|Title|is|${freeTextAdvancesSearchSaveExp}    Template|Title|is|${advancedSearchSaveExp}
+    Click Search Button
+    Verify Blank Search Result
+    search_ui.Select Match Conditions    ANY
+    Click Search Button
+    Verify Search Result List Exact By Title    ${advancedSearchSaveExp}    ${freeTextAdvancesSearchSaveExp}
+
+Edit Advanced Search Tile
+    [Documentation]    Edit Advanced Search Tile
+    ...
+    ...    Test created for story SH-434
+    ...    - Performe Advanced Search
+    ...    - Edit options and value for advanced search tile
+    ...    - Reexecute search
+    ...    - Verify correct result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Template|Title|is|${freeTextAdvancesSearchSaveExp}    Group|Name|is|${groupName}
+    Click Search Button
+    Verify Search Result List Exact By Title    ${freeTextAdvancesSearchSaveExp}
+    Edit Advanced Term Text Value And Operator    Title    is    ${freeTextAdvancesSearchSaveExp}    starts with    AdvancedSearchSav
+    Click Search Button
+    sleep    5s
+    Verify Search Result List Exact By Title    ${advancedSearchSaveExp}
+
+Verify Clear All Search Option
+    [Documentation]    Verify Clear All Search Option
+    ...
+    ...    Test is for story SH-429
+    ...    - performe search and click 'Clear' search option
+    ...    - click search button
+    ...    - verify no search result
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    *e*    Template|Title|is|${freeTextAdvancesSearchSaveExp}    Template|Title|is|${advancedSearchSaveExp}
+    Clear Search
+    Verify Number Of Advanced Search Items    0    0
+    Click Search Button
+    Verify 'Please Enter Something To Search' Message
+
+*** Keywords ***
+setup
+    [Documentation]    - create Ms. Robot with project as Administrator user
+    ...    - open browser and login with test credentials
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Restore Saves
+    ${recordId}=    EntityAPILibrary.Create Experiment    ${projectId}    RestoreSaveSearch    Completed
+    EntityAPILibrary.Version Save    ${recordId}    Data Added
+    ${freeTextAdvancesSearchSaveExp}=    Set Variable    FreeTextAdvancedSearchSave${currentDate}
+    ${freeTextSearchSaveExp}=    Set Variable    FreeTextSearchSave${currentDate}
+    ${advancedSearchSaveExp}=    Set Variable    AdvancedSearchSave${currentDate}
+    ${projectId1}=    EntityAPILibrary.Create Template    ${projectId}    ${freeTextAdvancesSearchSaveExp}    Planned    keywords:::Unique
+    EntityAPILibrary.Version Save    ${projectId}    Data Added
+    ${projectId2}=    EntityAPILibrary.Create Template    ${projectId}    ${freeTextSearchSaveExp}    Planned    keywords:::Unique
+    EntityAPILibrary.Version Save    ${projectId}    Data Added
+    ${projectId3}=    EntityAPILibrary.Create Template    ${projectId}    ${advancedSearchSaveExp}    Completed    keywords:::Unique
+    EntityAPILibrary.Version Save    ${projectId}    Data Added
+    Login To EWB
+    Set Suite Variable    ${freeTextAdvancesSearchSaveExp}
+    Set Suite Variable    ${freeTextSearchSaveExp}
+    Set Suite Variable    ${advancedSearchSaveExp}
+
+teardown
+    [Documentation]    - delete Mr. Roboto as Administrator user
+    ...    - close browser
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    close browser

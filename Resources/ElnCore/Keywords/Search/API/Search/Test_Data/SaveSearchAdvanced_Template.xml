@@ -1,0 +1,40 @@
+{
+	"entityType": "WEB_SEARCH",
+	"entityName": "{Search_Name}",
+	"attributes": {
+		"attribute": [{
+			"name": "name",
+			"values": {
+				"value": ["{Search_Name}"]
+			}
+		},
+		{
+			"name": "description",
+			"values": {
+				"value": ["Description"]
+			}
+		},
+		{
+			"name": "orderKey",
+			"values": {
+				"value": [""]
+			}
+		},
+		{
+			"name": "isDefault",
+			"values": {
+				"value": [false]
+			}
+		}]
+	},
+	"data": {
+		"data": {
+			"dataText": "{\"text\":{\"text\":\"Free_text\"},\"structured\":{\"searchTerms\":[{\"id\":\"/Flexible%20Hierarchy/Core/Record#With%20Name:name\",\"term\":\"Name\",\"type\":\"string\",\"enabled\":true,\"operator\":\"startswith\",\"value\":\"Advanced_Data\"}],\"matchMode\":\"matchAll\"}}"
+		},
+		"dataInfo": {
+			"mimeType": "application/json",
+			"dataType": "WEB_SEARCH",
+			"fileType": ".search.json"
+		}
+	}
+}

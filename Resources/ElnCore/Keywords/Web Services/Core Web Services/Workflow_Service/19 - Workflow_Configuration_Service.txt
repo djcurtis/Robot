@@ -1,0 +1,72 @@
+*** Settings ***
+Force Tags        Workflow Configuration Service    Services
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_configuration_service_resource.txt    # Workflow Configuration Service Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+01-01 - GET all root workflow configurations
+    [Documentation]    Gets all of the root workflow configurations.
+    ...
+    ...    Does not check the count only that the query returns successfully (cannot guarantee count) - more detailed checks are done in subsquent tests
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}
+
+01-02 - GET root workflow configuration ID - Sign-off Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%201
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+
+01-03 - GET root workflow configuration ID - Review Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%202
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+
+01-04 - GET root workflow configuration ID - Alert Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%203
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+
+01-05 - GET root workflow configuration ID - No Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%204
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+
+01-06 - GET root workflow request - Sign-off Task
+    ${workflow request}=    Get Workflow Configuration Request For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%201
+    Json Value Should Equal    ${workflow request}    /priority    "Normal"
+    Json Value Should Equal    ${workflow request}    /fromConfiguration    "WF WS Workflow 1"
+    Json Value Should Equal    ${workflow request}    /sendEmailNotifications    false
+    Json Value Should Equal    ${workflow request}    /lockExperiment    false
+
+01-07 - GET root workflow request - Review Task
+    ${workflow request}=    Get Workflow Configuration Request For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%202
+    Json Value Should Equal    ${workflow request}    /priority    "Normal"
+    Json Value Should Equal    ${workflow request}    /fromConfiguration    "WF WS Workflow 2"
+    Json Value Should Equal    ${workflow request}    /sendEmailNotifications    false
+    Json Value Should Equal    ${workflow request}    /lockExperiment    false
+
+01-08 - GET root workflow request - Alert Task
+    ${workflow request}=    Get Workflow Configuration Request For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%203
+    Json Value Should Equal    ${workflow request}    /priority    "Normal"
+    Json Value Should Equal    ${workflow request}    /fromConfiguration    "WF WS Workflow 3"
+    Json Value Should Equal    ${workflow request}    /sendEmailNotifications    false
+    Json Value Should Equal    ${workflow request}    /lockExperiment    false
+
+01-09 - GET root workflow request - No Task
+    ${workflow request}=    Get Workflow Configuration Request For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%204
+
+01-10 - GET root workflow configuration by ID - Sign-off Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%201
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+    ${root workflow configurations 2}=    Get Workflow Configurations By Configuration ID    ${wf_experiment_1}    WF%20WS%20Workflow%201
+
+01-11 - GET root workflow configuration by ID - Review Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%202
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+    ${root workflow configurations 2}=    Get Workflow Configurations By Configuration ID    ${wf_experiment_1}    WF%20WS%20Workflow%202
+
+01-12 - GET root workflow configuration by ID - Alert Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%203
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+    ${root workflow configurations 2}=    Get Workflow Configurations By Configuration ID    ${wf_experiment_1}    WF%20WS%20Workflow%203
+
+01-13 - GET root workflow configuration by ID - No Task
+    ${root workflow configurations}=    Get Workflow Configurations For Entity    ${wf_experiment_1}    WF%20WS%20Workflow%204
+    ${workflow configuration ID 1}=    Get Workflow Configuration ID    ${root workflow configurations}
+    ${root workflow configurations 2}=    Get Workflow Configurations By Configuration ID    ${wf_experiment_1}    WF%20WS%20Workflow%204

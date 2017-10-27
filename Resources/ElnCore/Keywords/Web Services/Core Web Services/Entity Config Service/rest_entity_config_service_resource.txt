@@ -1,0 +1,217 @@
+*** Settings ***
+Library           String
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+
+*** Variables ***
+${ENTITY CONFIG SERVICE ENDPOINT}    /ewb/services/1.0/entityconfig
+
+*** Keywords ***
+Get Entity Types
+    [Arguments]    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/entitytypes
+    ...
+    ...    Gets the list of entity types defined in the flexible hierarchy
+    ...
+    ...    *Arguments*
+    ...
+    ...    *Return value*
+    ...    ${entity_types} A sequence of SAPIEntityType details, of type SAPIEntityTypeSequence
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/entitytypes
+    Response Status Code Should Equal    ${expected_http_status}
+    ${entity_types}=    Get Response Body
+    [Return]    ${entity_types}    # SAPIEntityTypeSequence containing a list of SAPIEntityType
+
+Get Entity Type
+    [Arguments]    ${entity_type_name}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/entitytypes/{entityTypeName}
+    ...
+    ...    Gets the details of a specific entity type defined in the flexible hierarchy
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_type_name} the name of the entity type
+    ...
+    ...    *Return value*
+    ...
+    ...    ${entity_type} The entity type details as a SAPIEntityType
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/entitytypes/${entity_type_name}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${entity_type}=    Get Response Body
+    [Return]    ${entity_type}    # The entity type details as a SAPIEntityType
+
+Get Default Attributes
+    [Arguments]    ${entity_type_name}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/entitytypes/{entityTypeName}/attributes/defaultattributes
+    ...
+    ...    Gets the list of default attributes for a given entity type
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_type_name} the name of the entity type
+    ...
+    ...    *Return value*
+    ...
+    ...    ${default_attributes} A list of default attributes (SAPIAttribute) as a SAPIAttributeSequence
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/entitytypes/${entity_type_name}/attributes/defaultattributes
+    Response Status Code Should Equal    ${expected_http_status}
+    ${default_attributes}=    Get Response Body
+    [Return]    ${default_attributes}    # A list of default attributes (SAPIAttribute) as a SAPIAttributeSequence
+
+Get Header Icon
+    [Arguments]    ${config_id}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/headericons/{configId}
+    ...
+    ...    Gets the header icon for an entity types defined in the flexible hierarchy
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${config_id} the id of the entity configuration record
+    ...
+    ...    *Return value*
+    ...
+    ...    ${header_icon} The header icon
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Set Request Header    Accept    image/png
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/headericons/${config_id}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${header_icon}=    Get Response Body
+    [Return]    ${header_icon}    # The header icon
+
+Get Entity Type Icon
+    [Arguments]    ${entity_type_name}    ${read_only}=false    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/icons/{entityTypeName}
+    ...
+    ...    Gets the icon for an entity type
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_type_name} the name of the entity type
+    ...
+    ...    ${read_only} whether the icon should be marked as read-only (false by default)
+    ...
+    ...    *Return value*
+    ...
+    ...    ${entity_icon} The entity type icon
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Set Request Header    Accept    image/png
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/icons/${entity_type_name}?readonly=${read_only}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${entity_icon}=    Get Response Body
+    [Return]    ${entity_icon}    # The entity type icon
+
+Get Document Type Icon
+    [Arguments]    ${entity_type_name}    ${document_type_name}    ${read_only}=false    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/icons/{entityTypeName}/{documentTypeName}
+    ...
+    ...    Gets the icon for a document type
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${entity_type_name} the name of the entity type
+    ...
+    ...    ${document_type_name} the name of a document type
+    ...
+    ...    ${read_only} whether the icon should be marked as read-only (false by default)
+    ...
+    ...    *Return value*
+    ...
+    ...    ${document_icon} The header icon
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Set Request Header    Accept    image/png
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/icons/${entity_type_name}/${document_type_name}?readonly=${read_only}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${document_icon}=    Get Response Body
+    [Return]    ${document_icon}    # The document type icon
+
+Get Record Type Names
+    [Arguments]    ${include_templates}=false    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/recordtypes
+    ...
+    ...    Gets the list of record type names that are defined in the flexible hierarchy
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${include_templates} if true, then templates are included in the returned (default is false)
+    ...
+    ...    *Return value*
+    ...
+    ...    ${record_types} SAPIEntityTypeNameSequence containing list of entity type names
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/recordtypes?includeTemplates=${include_templates}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${record_types}=    Get Response Body
+    [Return]    ${record_types}    # SAPIEntityTypeNameSequence containing list of entity type names
+
+Get Allowed Types
+    [Arguments]    ${path}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/entityconfig/allowedtypes/{path:.*}
+    ...
+    ...    Gets a list of allowed types in a specified part of the flexible hierarchy
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${path} flexible hierarchy location
+    ...
+    ...    *Return value*
+    ...
+    ...    ${allowed_types} SAPIEntityTypeSequence containing list of entity types (SAPIEntityType)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY CONFIG SERVICE ENDPOINT}/allowedtypes?path=${path}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${allowed_types}=    Get Response Body
+    [Return]    ${allowed_types}    # SAPIEntityTypeSequence containing list of entity types (SAPIEntityType)

@@ -1,0 +1,64 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/userpool/history* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - User Without Permission For The Endpoint
+    [Documentation]    Call as user without permissions to use the endpoint, should get 403 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-25
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser7
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser71
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    0    ${wf_experiment_1}    10    403
+
+Test 2 - Invalid Workflow Name
+    [Documentation]    Call with an invalid workflow configuration name, should get 404 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-26
+    Get History Candidates For A New Workflow And Expect Error    IDONTEXIST    0    ${wf_experiment_1}    10    404
+
+Test 3 - Missing Workflow Name
+    [Documentation]    Call without a workflow configuration name, should get 400 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-27
+    Get History Candidates For A New Workflow And Expect Error    \    0    ${wf_experiment_1}    10    400
+
+Test 3 - Non Numeric Task Index
+    [Documentation]    Call for a non numeric task index, should get 404 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-28
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    ABC    ${wf_experiment_1}    10    404
+
+Test 4 - Negative Task Index
+    [Documentation]    Call for a negative task index, should get 400 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-29
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    -1    ${wf_experiment_1}    10    400
+
+Test 5 - Too High Task Index
+    [Documentation]    Call for too high a task index, should get 404 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-30
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    16000000    ${wf_experiment_1}    10    404
+
+Test 6 - Missing Task Index
+    [Documentation]    Call without a task index, should get 404 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-31
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    \    ${wf_experiment_1}    10    404
+
+Test 7 - Missing Entity Id
+    [Documentation]    Call without an entity id, should get 400 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-32
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    0    \    10    400
+
+Test 8 - Invalid Entity Id
+    [Documentation]    Call without an entity id, should get 403 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-33
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    0    IDONTEXIST    10    403
+
+Test 9 - Negative Number Of Records
+    [Documentation]    Call for a negative number of records, should get 400 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-34
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    0    ${wf_experiment_1}    -10    400
+
+Test 10 - Non Numeric Number Of Records
+    [Documentation]    Call for a non numeric number of records, should get 404 response
+    [Tags]                   EWB-WEB-ICM-PI004-W010-35
+    Get History Candidates For A New Workflow And Expect Error    WF%20WS%20Workflow%201    0    ${wf_experiment_1}    ABC    404

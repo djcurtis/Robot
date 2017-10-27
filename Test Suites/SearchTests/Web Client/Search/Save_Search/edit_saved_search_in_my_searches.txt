@@ -1,0 +1,106 @@
+*** Settings ***
+Documentation     SH-746 jira story
+Suite Setup       setup
+Suite Teardown    Close Browser
+Test Setup        Delete All Searches Via API
+Test Teardown     testteardown
+Library           IDBSSelenium2Library
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Library           DateTime
+
+*** Test Cases ***
+Blank Name and Description Value
+    [Documentation]    Blank Name And Description Value
+    ...    - create dummy search
+    ...    - open "My Searches" dialog
+    ...    - enter name and description
+    ...    - verify name was not updated, description was updated
+    [Tags]    SRCH-SAV-MY
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    Open My Searches Dialog
+    #Set Name And Description To Blank
+    Remove Name By Index    0
+    Remove Description By Index    0
+    Verify Name And Description By Index    0    ${search1}    ${EMPTY}
+    #Verify Name Not Changed After Reload
+    Close My Searches Dialog
+    Reload Page
+    Open My Searches Dialog
+    Verify Name And Description By Index    0    ${search1}    ${EMPTY}
+
+Correct Name and Description Value
+    [Documentation]    Correct Name and description Value
+    ...    - Create dummy search
+    ...    - edit name and description
+    ...    - verify value are edited
+    ...    - verify value are edited after page reload
+    [Tags]    SRCH-SAV-MY
+    #Verify Name and Description are New
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    Open My Searches Dialog
+    Edit Name By Index    0    New name
+    Edit Description By Index    0    New Description
+    Verify Name And Description By Index    0    New name    New Description
+    Close My Searches Dialog
+    #Verify name And Descriptino Are New After Reload
+    Reload Page
+    Open My Searches Dialog
+    Verify Name And Description By Index    0    New name    New Description
+    Close My Searches Dialog
+
+Long Name and Description Value
+    [Documentation]    Long Name And Description Value
+    ...    - according to \ CoS Name field limitation is 40, description is 120
+    ...    - verify Name and Description value with 40 and 120 symbols
+    ...    - verify Name and Description value over 40 and 120 symbols
+    [Tags]    SRCH-SAV-MY
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    #Verify the longest name and description
+    Open My Searches Dialog
+    Edit Name By Index    0    1234567890123456789012345678901234567890
+    Edit Description By Index    0    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+    Verify Name And Description By Index    0    1234567890123456789012345678901234567890    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+    #Verify overlimit name and description
+    Edit Name By Index    0    1234567890123456789012345678901234567890_OverLimit
+    Edit Description By Index    0    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890_OverLimit
+    Verify Name And Description By Index    0    1234567890123456789012345678901234567890    123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+
+Value Not Saved Without Clicking Tick Link
+    [Documentation]    Value Not Saved Without Clicking Tick Link
+    ...    - create dummy search
+    ...    - edit name and description without clicking confirmation button
+    ...    - verify values are not changed
+    [Tags]    SRCH-SAV-MY
+    ${namePencilButton}=    set variable    xpath=//div[@class='mySearch'][1]//div[@class='searchTitle']//a[@title='Edit']
+    ${nameTitleInput}=    set variable    xpath=//div[@class='mySearch'][1]//div[@class="searchTitle"]//input
+    ${descriptionPencilButton}=    set variable    xpath=//div[@class='mySearch'][1]//div[@class='searchDescription']//a[@title='Edit']
+    ${descriptionTitleInput}=    set variable    xpath=//div[@class='mySearch'][1]//div[@class="searchDescription"]//input
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    Open My Searches Dialog
+    #Edit Name and Description Without Confirmation
+    Wait Until Page Contains Element    ${namePencilButton}
+    Click Element    ${namePencilButton}
+    Input Text    ${nameTitleInput}    New Name
+    Click Element    ${descriptionPencilButton}
+    Input Text    ${descriptionTitleInput}    New Description
+    Close My Searches Dialog
+    #Verify Name And description Not Changed After Reload
+    Reload Page
+    Open My Searches Dialog
+    Verify Name And Description By Index    0    ${search1}    ${EMPTY}
+
+*** Keywords ***
+setup
+    ${currentDate}=    Get Current Date
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    Set Suite Variable    ${search1}
+    Login To EWB
+
+testteardown
+    Delete All Searches Via API
+    Reload Page

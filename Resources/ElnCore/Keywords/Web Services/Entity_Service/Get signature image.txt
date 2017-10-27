@@ -1,0 +1,149 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/{entityId}/signatures
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-GSI    Get Signature Image
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Get signature image
+    [Documentation]    EWB-SAPI-SSP-ENT-GSI-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and the signature image of mime-type image/png
+    [Tags]    EWB-SAPI-SSP-ENT-GSI-S001    exclusive_access
+    [Setup]    Add signature Image
+    ${experiment_name}=    Set Variable    GSI-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}
+    ${image_bytes}=    Get Signature Image    ${text_item_id}    ${text_item_version_id}    ${signature_id}
+    # Checking expectations
+    Should Not Be Empty    ${image_bytes}
+    [Teardown]    Remove signature Image
+
+Get signature image with missing entity version id
+    [Documentation]    EWB-SAPI-SSP-ENT-GSI-S002
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GSI-S002
+    ${experiment_name}=    Set Variable    GSI-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}
+    # missing entity version id
+    ${image_bytes}=    Get Signature Image    ${text_item_id}    ${EMPTY}    ${signature_id}    400
+    # wrong entity version id
+    ${image_bytes}=    Get Signature Image    ${text_item_id}    WrongEntityVersionId    ${signature_id}    404
+
+Get signature image with missing signature id
+    [Documentation]    EWB-SAPI-SSP-ENT-GSI-S003
+    ...
+    ...    If the call parameter ‘signatureId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GSI-S003
+    ${experiment_name}=    Set Variable    GSI-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}
+    # missing signature id. Hits not existing URL
+    ${image_bytes}=    Get Signature Image    ${text_item_id}    ${text_item_version_id}    ${EMPTY}    404
+    # wrong signature id
+    ${image_bytes}=    Get Signature Image    ${text_item_id}    ${text_item_version_id}    WrongSignatureId    404
+
+Get signature image with no existing entity
+    [Documentation]    EWB-SAPI-SSP-ENT-GSI-S004
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GSI-S004
+    ${experiment_name}=    Set Variable    GSI-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}
+    # missing entity id. Hits not existing URL
+    ${image_bytes}=    Get Signature Image    ${EMPTY}    ${text_item_version_id}    ${signature_id}    404
+    # wrong etity id
+    ${image_bytes}=    Get Signature Image    WrongEntityId    ${text_item_version_id}    ${signature_id}    404
+
+Get signature image with no existing signaure
+    [Documentation]    EWB-SAPI-SSP-ENT-GSI-S005
+    ...
+    ...    If the signature does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GSI-S005    exclusive_access
+    [Setup]    Remove Signature Image
+    ${experiment_name}=    Set Variable    GSI-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${text_item_id}=    Add Text Entity    ${experiment_id}
+    ${text_item_version_id}=    Get Entity Version ID    ${text_item_id}
+    ${signature_id}=    Sign Entity    ${experiment_id}    ${text_item_id}
+    # not signed item
+    ${image_bytes}=    Get Signature Image    ${text_item_id}    ${text_item_version_id}    ${signature_id}    404
+
+*** Keywords ***
+Add Text Entity
+    [Arguments]    ${parent_entity_id}    ${text_data}=Test text data
+    [Documentation]    Add a Text entity and save record as version.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _parent_entity_id_ - the parent entity id
+    ...
+    ...    _text_data_ - the text data. Default set to "Test text data"
+    ...
+    ...    *Return value*
+    ...
+    ...    The Text entity id
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Rest_Entity_Lock_Service.Lock Entity    ${experiment_id}
+    ${text_entity_id}=    Add DOCUMENT With String Data    ${experiment_id}    ${text_data}    text/html    HTML_TEXT    Uploaded Document
+    ...    .html
+    ${document_version_id}=    Get Entity Version ID    ${text_entity_id}
+    Commit Versioned Entity    ${experiment_id}
+    Rest_Entity_Lock_Service.Unlock Entity    ${experiment_id}
+    [Return]    ${text_entity_id}    # The newly created entity id
+
+Sign Entity
+    [Arguments]    ${experiment_id}    ${item_id}
+    [Documentation]    Sign an item entity and returns its signature id
+    ...
+    ...    *Arguments*
+    ...
+    ...    _record_id_ - the record id
+    ...
+    ...    _item_id_ - the record item id of the enity to sign
+    ...
+    ...    *Return value*
+    ...
+    ...    The signature id
+    ...
+    ...    *Precondition*
+    ...
+    ...    None
+    ...
+    ...    *Example*
+    Lock Entity    ${experiment_id}
+    rest_entity_service_resource.Sign Entity    ${experiment_id}    ${item_id}
+    Unlock Entity    ${experiment_id}
+    ${item_version_id}=    Get Entity Version ID    ${item_id}
+    ${entity_dto}=    Get Entity    ${item_id}    ${item_version_id}    false    false    false
+    ...    true    fasle    false    false    false    false
+    ...    false
+    @{signature_image_url}=    XMLLibrary.Get Element Value    ${entity_dto}    http://entity.services.ewb.idbs.com    imageUrl
+    # Parses signature image URL
+    ${from_index}=    Get Length    /services/1.0/entities/${item_id}/signatures/    # exampe URL: /services/1.0/entities/11c0d720189211e48761782bcb93cfa7/signatures/1248a4c0189211e48761782bcb93cfa7/image?entityVersionId=11cac230189211e48761782bcb93cfa7
+    ${to_index}=    Evaluate    ${from_index}+${32}    # 32 is the lenght of an entity id
+    ${signature_id}=    String.Get Substring    @{signature_image_url}[0]    ${from_index}    99
+    [Return]    ${signature_id}

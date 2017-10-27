@@ -1,0 +1,158 @@
+*** Settings ***
+Documentation     Test case names have the format:
+...
+...               Test case name | [itemA(save state)_attr itemB(save state)_attr] -> [itemA(save state)_attr itemB(save state)_attr]
+...               - -> = a save state change action such as version/draft save, or no save
+...               - attr = the attributes (a, b, i, j, p, q) of the item, which can be in version 0, 1, 2, d (draft), c (cache)
+...
+...               Script for SH-1352 - data creation script to be run:
+...               - on a pre-EWB 10.2.1 system
+...
+...               (this script is written to work with the corresponding data verification scripts)
+Suite Setup       setup suite
+Library           Collections
+Library           DateTime
+Library           EntityAPILibrary
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../migration_tool_variables.txt
+
+*** Test Cases ***
+C1 | [AC_acbc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC1    Started
+    ${documentId}=    Create Text Document    ${experimentId}    itemAttributeC1Ab0
+
+C2 | [AV_a1b1]->[AC_acbc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC2    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC2Ab0    itemAttributeC2Aa0
+    Edit Item Entity Attributes    ${experimentId}    ${documentId}    itemAttributeC2Aa1    itemAttributeC2Ab1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Sleep    ${wait}
+    Edit Item Entity Attributes    ${experimentId}    ${documentId}    itemAttributeC2Aac    itemAttributeC2Abc
+
+C3 | [AV_a1b1 BV_i1j1]->[AC_acbc BV_i1j1]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC3    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC3Ab0    itemAttributeC3Aa0
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC3Bj0    itemAttributeC3Bi0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC3Aa1    itemAttributeC3Ab1
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC3Bi1    itemAttributeC3Bj1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC3Aac    itemAttributeC3Abc
+
+C4 | [AD_adbd]->[AC_acbc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC4    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC4Abd    itemAttributeC4Aad
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentId}    itemAttributeC4Aac    itemAttributeC4Abc
+
+C5 | [AD_adbd BD_idjd]->[AC_acbc BD_idjd]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC5    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC5Ab0    itemAttributeC5Aa0
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC5Bj0    itemAttributeC5Bi0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC5Aad    itemAttributeC5Abd
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC5Bid    itemAttributeC5Bjd
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC5Aac    itemAttributeC5Abc
+
+C6 | [AV_a1b1]->[AD_adbd]->[AC_acbc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC6    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC6Ab0    itemAttributeC6Aa0
+    Edit Item Entity Attributes    ${experimentId}    ${documentId}    itemAttributeC6Aa1    itemAttributeC6Ab1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentId}    itemAttributeC6Aad    itemAttributeC6Abd
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentId}    itemAttributeC6Aac    itemAttributeC6Abc
+
+C7 | [AV_a1b1]->[AD_adbd BD_idjd]->[AC_acbc BD_idjd]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC7    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC7Ab0    itemAttributeC7Aa0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC7Aa1    itemAttributeC7Ab1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC7Bjd    itemAttributeC7Bid
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC7Aad    itemAttributeC7Abd
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC7Aac    itemAttributeC7Abc
+
+C8 | [AV_a1b1]->[AD_adbd BD_idjd]->[AC_acbc BC_icjc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC8    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC8Ab0    itemAttributeC8Aa0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC8Aa1    itemAttributeC8Ab1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC8Bj0    itemAttributeC8Bi0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC8Aad    itemAttributeC8Abd
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC8Bid    itemAttributeC8Bjd
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC8Aac    itemAttributeC8Abc
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC8Bic    itemAttributeC8Bjc
+
+C9 | [AV_a1b1 BV_i1j1]->[AD_adbd BV_i1j1]->[AC_acbc BC_icjc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC9    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC9Ab0    itemAttributeC9Aa0
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC9Bj0    itemAttributeC9Bi0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC9Aa1    itemAttributeC9Ab1
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC9Bi1    itemAttributeC9Bj1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC9Aad    itemAttributeC9Abd
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC9Aac    itemAttributeC9Abc
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC9Bic    itemAttributeC9Bjc
+
+C10 | [AV_a1b1 BV_i1j1 CV_p1q1]->[AD_adbd BD_idjd CV_p1q1]->[AC_acbc BD_idjd CV_p1q1]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrItemExpC10    Started
+    ${documentIdA}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC10Ab0    itemAttributeC10Aa0
+    ${documentIdB}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC10Bj0    itemAttributeC10Bi0
+    ${documentIdC}=    EntityAPILibrary.Create Text Document    ${experimentId}    itemAttributeC10Cq0    itemAttributeC10Cp0
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC10Aa1    itemAttributeC10Ab1
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC10Bi1    itemAttributeC10Bj1
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdC}    itemAttributeC10Cp1    itemAttributeC10Cq1
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC10Aad    itemAttributeC10Abd
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdB}    itemAttributeC10Bid    itemAttributeC10Bjd
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    Edit Item Entity Attributes    ${experimentId}    ${documentIdA}    itemAttributeC10Aac    itemAttributeC10Abc
+
+*** Keywords ***
+setup suite
+    [Documentation]    General test setup
+    ${wait}=    Set Variable    3s
+    Set Suite Variable    ${wait}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${GROUP_NAME}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Attribute_Item_C
+    Set Suite Variable    ${projectId}

@@ -1,0 +1,472 @@
+*** Settings ***
+Library           IDBSSwingLibrary
+Resource          ../common_spreadsheet_keywords.txt
+Library           InstrumentSimulator/InstrumentSimulatorLibrary/
+Resource          ../../Web Client/Selenium/quantrix_web_resource.txt
+Library           IDBSSelenium2Library
+Library           QuantrixLibrary
+Resource          ../../Web Client/Selenium/general_resource.txt
+Library           Collections
+Resource          ../../Web Client/Selenium/record_resource.txt
+Resource          ../../General Setup/general setup tools.txt
+Library           String
+Library           OperatingSystem
+Resource          ../../Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+
+*** Variables ***
+${ENTITY_PREFIX}    Instrument
+${experiment_id}    Instrument Reader
+${experiment_url}    ${WEB_CLIENT_HTTP_SCHEME}://${SERVER}:${WEB_CLIENT_PORT}/EWorkbookWebApp/
+${Configuration Name}    InstrumentReaderEditMapping.name
+${instrument_host}    ${EMPTY}
+${xpath_mappings_table}    xpath=//*[@name= 'InstrumentReaderMappingList.mappingsTable']
+${xpath_edit_mapping_data_range}    xpath=//*[@name='InstrumentReaderToolPane.NewMappingPanel']//*[@name= 'InstrumentReaderEditMapping.dataRangeAddress']
+${xpath_edit_mapping_configuration_tab}    xpath=//*[@name='InstrumentReaderToolPane.EditMapping.tabPanel']//*[@name='InstrumentReaderToolPane.Configurations.tabLabel']
+${xpath_edit_mapping_test_tab}    xpath=//*[@name='InstrumentReaderToolPane.EditMapping.tabPanel']//*[@name='InstrumentReaderToolPane.Test.tabLabel']
+${xpath_edit_mapping_name}    xpath=//*[@name='InstrumentReaderToolPane.EditMappingPanel']//*[@name= 'InstrumentReaderEditMapping.name']
+${xpath_new_mapping_name}    xpath=//*[@name='InstrumentReaderToolPane.NewMappingPanel']//*[@name= 'InstrumentReaderEditMapping.name']
+${xpath_new_mapping_instrument_dropdown}    xpath=//*[@name='InstrumentReaderToolPane.NewMappingPanel']//*[@name='InstrumentReaderEditMapping.instrumentType.comboBox']
+${xpath_new_mapping_map_range_button}    xpath=//*[@name='InstrumentReaderToolPane.NewMappingPanel']//*[@name= 'InstrumentReaderEditMapping.mapRange.button']
+${xpath_instrument_panel_web_back}    xpath=//*[@class="nav-item previous"]
+${xpath_instrument_off_toastr}    xpath=//*[@class="irtoastr-icon custom-icon irtoastr-off-icon"]
+${xpath_instrument_listen_state_web_suffix}    _switch
+${xpath_instrument_button_state_prefix}    toggle-bg pull-right
+${xpath_new_mapping_test_tab}    xpath=//*[@name='InstrumentReaderToolPane.AddMapping.tabPanel']//*[@name='InstrumentReaderToolPane.Test.tabLabel']
+${xpath_instrument_reading_toastr}    xpath=//*[@class="irtoastr-subtitle"]
+${xpath_instrument_on_toastr}    xpath=//*[@class="irtoastr-icon custom-icon irtoastr-on-icon"]
+
+*** Keywords ***
+Create Instrument Reader Configuration Table
+    [Arguments]    ${instrument_name}=Sartorius ME5 (Mass + Units)    ${instrument_id}=006    ${instrument_ip}=localhost    ${instrument_port}=50018
+    [Documentation]    Creates a new Instrument Reader Configuration Table and adds instrument details in row 1.
+    ...
+    ...    Arguments:
+    ...
+    ...    ${instrument_name}= Sartorius ME5 (Mass + Units) |
+    ...    ${instrument_id}=006 |
+    ...    ${instrument_ip}=localhost |
+    ...    ${instrument_port}=50018 |
+    Log    Putting the following values into the configuration table: ${instrument_name} , ${instrument_id} , ${instrument_ip} , ${instrument_port}
+    Select From Designer Menu    Tools|Instrument Reader Mappings
+    Wait Until Keyword Succeeds    20s    1s    IDBSSwingLibrary.Component Should Exist    instrumentReaderToolPane
+    Wait Until Keyword Succeeds    20s    1s    IDBSSwingLibrary.Component Should Be Visible    instrumentReaderToolPane
+    Component Should Be Visible    InstrumentReaderToolPane.createTable.button
+    Wait Until Keyword Succeeds    20s    2s    Click On Component    InstrumentReaderToolPane.createTable.button
+    Wait Until Keyword Succeeds    20s    2s    Select First Cell in Matrix    Instrument Reader
+    Set current cell value    Instrument Reader    ${instrument_name}
+    Sleep    1s    Allowing time for combobox to appear
+    Send Keyboard Event    VK_ENTER
+    Sleep    1s    Allowing time for combobox to disappear
+    Send Keyboard Event    VK_RIGHT
+    Set current cell value    Instrument Reader    ${instrument_id}
+    Send Keyboard Event    VK_RIGHT
+    Set current cell value    Instrument Reader    ${instrument_ip}
+    Send Keyboard Event    VK_RIGHT
+    Set current cell value    Instrument Reader    ${instrument_port}
+
+Expand Data Capture Table For Reading
+    [Arguments]    ${table_name}=Table1    ${extra_columns}=1    ${extra_rows}=4
+    [Documentation]    Expands an empty data capture table to make it big enough for reading into. Defaults to a 2 column, 5 row layout.
+    ...
+    ...    Arguments:
+    ...    ${table_name}=Table1 |
+    ...    ${extra_columns}=1 |
+    ...    ${extra_rows}=4
+    ...
+    ...    Example use:
+    ...    Expand Data Capture Table For Reading | MyReadingsTable | 1 | 4
+    ...
+    ...    Will increase MyReadingsTable by 1 column and 4 rows
+    Component Should Be Visible    xpath=//*[contains(text(), "${table_name}")]
+    Click on label    xpath=//*[contains(text(), "${table_name}")]
+    Select First Cell in Matrix    ${table_name}
+    Send Keyboard Event    VK_UP
+    Repeat Keyword    ${extra_columns}    Send Keyboard Event    VK_ENTER
+    Sleep    100ms    # Second select occasionally fails - this fixed it
+    Select First Cell in Matrix    ${table_name}
+    Send Keyboard Event    VK_LEFT
+    Repeat Keyword    ${extra_rows}    Send Keyboard Event    VK_ENTER
+
+Add First Instrument Configuration
+    [Arguments]    ${instrument_configuration_name}=Config1    ${instrument_configuration_data_table}=Table1
+    [Documentation]    Adds the first instrument configuration to the Instrument Reader Mappings list. This will only work if there are no instruments mapped, otherwise it will overwrite the first instrument in the mappings list.
+    ...
+    ...    The keyword was initially intended to allow selection of multiple columns for use as the mapping range, but currently will map the entire data table. This was the only way I (Liam) was able to select a range to test the mapping button, since the SHIFT_MASK argument for Send Keyboard Event wasn't additionally selecting other columns in the Select Columns and Map Range.
+    ...
+    ...    Arguments:
+    ...
+    ...    ${instrument_configuration_name}=Config1 |
+    ...    ${instrument_configuration_data_table}=${EMPTY} |
+    Component Should Be Visible    ${xpath_mappings_table}
+    Click on table cell    ${xpath_mappings_table}    0    0
+    Sleep    100ms
+    Component Should Be Visible    ${xpath_new_mapping_name}
+    Click On Component    ${xpath_new_mapping_name}    3
+    Send Keyboard Event    VK_DELETE
+    Type To Component    ${xpath_new_mapping_name}    ${instrument_configuration_name}
+    Map Entire Table to Range    ${instrument_configuration_data_table}
+    Select From Combo Box    ${xpath_new_mapping_instrument_dropdown}    0
+
+Send Instrument Values to Designer and Validate
+    [Arguments]    ${sheet_name}    ${readings}
+    [Documentation]    See the following two Keywords for a description:
+    ...
+    ...    Send Instrument Values to Designer |
+    ...    Validate Readings In Designer
+    ...
+    ...    Arguments:
+    ...
+    ...    ${sheet_name}
+    ...    ${readings}
+    Send Instrument Values to Designer    ${readings}
+    Wait Until Keyword Succeeds    30s    3s    Validate Readings In Designer    ${sheet_name}    ${readings}
+
+Validate Readings In Designer
+    [Arguments]    ${sheet_name}    ${readings}
+    [Documentation]    Validates all readings in the Instrument Reader table using *Validate Single Reading In Designer*
+    Component Should Be Visible    xpath=//*[@name='${sheet_name}']//*[contains(@class, 'MatrixGridBodyComponent')]
+    Select First Cell In Matrix    ${sheet_name}
+    ${row}=    Set Variable    0
+    ${length}=    Get Length    ${readings}
+    : FOR    ${index}    IN RANGE    ${length}
+    \    ${reading}=    Get From List    ${readings}    ${index}
+    \    ${row}=    Evaluate    (int(${row})+1)
+    \    Wait Until Keyword Succeeds    20s    2s    Validate Single Reading In Designer    ${reading}    g
+    \    ...    B${row}
+
+Validate Single Reading In Designer
+    [Arguments]    ${reading}    ${unit}    ${row}=B1    ${sheet}=Table1
+    [Documentation]    Compares the ${_validation} cell value retrieved from ${sheet}::${row}:Data1 with the original ${reading} given. Then compares the unit retrieved from ${sheet}::${row}:Data2 with the original ${unit} given. Will fail if the values retrieved do not match the original.
+    ${_validation}=    Get Cell Value    ${sheet}::${row}:Data1
+    Should Be Equal    ${_validation}    ${reading}
+    ${_validation}=    Get Cell Value    ${sheet}::${row}:Data2
+    Should Be Equal    ${_validation}    ${unit}
+
+Send Instrument Values to Designer
+    [Arguments]    ${readings}
+    [Documentation]    Assumes the instrument has already been started. Sends a list of ${readings} to spreadsheet designer. Currently only configured to match the regex of the 006 Sartorius ME5 Instrument, for which the ${unit} must be 'g'.
+    ...
+    ...    Arguments:
+    ...
+    ...    ${readings} - a list of the readings you want to send
+    #Turn on the Listener
+    Component Should Be Visible    InstrumentReaderTestMapping.listenForReading.switch
+    Click on Component    InstrumentReaderTestMapping.listenForReading.switch
+    Ensure Simulated Instrument is Connected in Designer
+    #Grace period for connection
+    Sleep    5 s
+    Send Instrument Readings    ${readings}
+    #Grace period for final reading
+    Sleep    2 s
+    #Kill the Emulator
+    Stop Simulator
+
+Open Instrument Reader Panel Web
+    [Documentation]    Opens the Instrument Reader Panel in the Web Spreadsheet Editor.
+    #Ensure Spreadsheet Editor Frame is Selected
+    Select Drawer Tab    2    #If the test fails here, check if Select Spreadsheet Editor Frame failed.
+    Wait Until Keyword Succeeds    20s    2s    Robust Click    xpath=//*[@class="chevron-link-item instrument-reader"]
+
+Toggle Instrument Listener On or Off Web
+    [Arguments]    ${configuration_name}
+    [Documentation]    Clicks the listener on/off button for your given ${configuration_name}
+    Run Keyword If    '${OPERATING_SYSTEM}'!='WINDOWS'    Internal Toggle Instrument Listener On or Off Web Unix    ${configuration_name}
+    Return From Keyword If    '${OPERATING_SYSTEM}'!='WINDOWS'
+    Internal Toggle Instrument Listener On or Off Web Windows    ${configuration_name}
+
+Send Instrument Readings
+    [Arguments]    ${readings}
+    [Documentation]    Requires the Simulator to have already been started with *Start Simulator*.
+    ${length}=    Get Length    ${readings}
+    : FOR    ${index}    IN RANGE    ${length}
+    \    ${reading}=    Get From List    ${readings}    ${index}
+    \    Send Reading    N + ${reading} g    100
+
+Validate Readings In Web
+    [Arguments]    ${readings}    ${unit}=g    ${column_one}=0    ${column_two}=1    ${first_reading_y}=0
+    [Documentation]    Validates a given list of readings have been inserted into the Instrument Reader table using *Validate Single Reading In Web*. Assumes that data fill direction is left to right.
+    ...
+    ...    Optional arguments:
+    ...    ${unit}
+    Select Cell in Editor    0    0
+    ${celly}=    Set Variable    ${first_reading_y}
+    ${length}=    Get Length    ${readings}
+    : FOR    ${index}    IN RANGE    ${length}
+    \    ${reading}=    Get From List    ${readings}    ${index}
+    \    Wait Until Keyword Succeeds    20s    2s    Validate Single Reading In Web    ${reading}    c${celly}-${column_one}
+    \    ...    ${unit}    c${celly}-${column_two}
+    \    ${celly}=    Evaluate    (int(${celly})+1)
+
+Validate Single Reading In Web
+    [Arguments]    ${reading}=${EMPTY}    ${reading_cell_locator}=${EMPTY}    ${unit}=${EMPTY}    ${unit_cell_locator}=${EMPTY}
+    [Documentation]    Compares the ${_validation} cell value retrieved from ${reading_cell_locator} with the original ${reading} given. Then compares the unit retrieved from ${unit_cell_locator} with the original ${unit} given. Will fail if the values retrieved do not match the original.
+    ${_validation}=    Get Text    ${reading_cell_locator}
+    Run Keyword If    '${reading}'    Should Be Equal    ${_validation}    ${reading}
+    Return From Keyword If    '${unit_cell_locator}'=='${EMPTY}'
+    ${_validation}=    Get Text    ${unit_cell_locator}
+    Run Keyword If    '${reading}'    Run Keyword If    '${unit}' != 'any'    Should Be Equal    ${_validation}    ${unit}
+
+Update Web Spreadsheet With Instrument IP
+    [Arguments]    ${configuration_table_name}=Instrument Reader    ${machine_name}=${SERVER}    ${instrument_row}=0    ${port}=50018
+    [Documentation]    Updates the ${configuration_table_name} table on row ${instrument_row} with Instrument the connection details ${machine_name} and ${port}.
+    Log    Putting the following values into the configuration table: ${machine_name} , ${port}
+    Robust Click    xpath=//*[@data-view-name="${configuration_table_name}"]
+    Wait Until Page Contains Element    xpath=//*[@id="view-${configuration_table_name}"]//*[@id="c${instrument_row}-2"]
+    Type to Cell in Editor    ${configuration_table_name}    ${instrument_row}    2    ${machine_name}
+    Wait Until Page Contains Element    xpath=//*[@id="view-${configuration_table_name}"]//*[@id="c${instrument_row}-3"]
+    Type to Cell in Editor    ${configuration_table_name}    ${instrument_row}    3    ${port}
+
+Set Instrument Host To Local Machine
+    [Documentation]    Sets the ${instrument_host} variable to the local machine name using socket.gethostname().
+    ...
+    ...    This is necessary so that the local machine can run the Instrument Simulator
+    ${name}=    Evaluate    socket.gethostname()    socket
+    ${host}=    Evaluate    socket.gethostbyname('${name}')    socket
+    Set Suite Variable    ${instrument_host}    ${host}
+    Log    Instrument host: ${name} \nDB Server: ${DB_SERVER} \nApp Server: ${SERVER} \nModel Server: ${SPREADSHEET_SERVER}
+
+Ensure Simulated Instrument is Connected in Web
+    [Arguments]    ${configuration}
+    [Documentation]    Workaround Keyword that is necessary because the Instrument Simulator fails to connect first time over the network. Simply toggles the listener off and on again in the Instrument Reader tab for the given ${configuration}
+    Sleep    10s
+    Toggle Instrument Listener On or Off Web    ${configuration}
+    Sleep    10s
+    Toggle Instrument Listener On or Off Web    ${configuration}
+
+Ensure Simulated Instrument is Connected in Designer
+    [Documentation]    Workaround Keyword that is necessary because the Instrument Simulator fails to connect first time over the network. Simply toggles the listener off and on again in the Instrument Reader tab for the given ${configuration}
+    Sleep    10s
+    Click on Component    InstrumentReaderTestMapping.listenForReading.switch
+    Sleep    10s
+    Click on Component    InstrumentReaderTestMapping.listenForReading.switch
+
+Map Entire Table to Range
+    [Arguments]    ${table_name}
+    [Documentation]    Maps the Entire given ${table_name} to the Instrument Reader range. Assumes that an instrument configuration is open.
+    Select First Cell in Matrix    ${table_name}
+    Send Keyboard Event    VK_A    CTRL_MASK
+    Push Button    ${xpath_new_mapping_map_range_button}
+
+Internal Toggle Instrument Listener On or Off Web Windows
+    [Arguments]    ${configuration_name}
+    [Documentation]    Non-mac version of toggling instrument listener on and off in the web
+    Wait Until Keyword Succeeds    3s    500ms    Mouse Down    ${configuration_name}_switch
+    Mouse Up    ${configuration_name}_switch
+
+Internal Toggle Instrument Listener On or Off Web Unix
+    [Arguments]    ${configuration_name}
+    [Documentation]    Mac Specific Keyword for toggling the instrument listener on and off in the web.
+    Wait Until Keyword Succeeds    3s    500ms    Click Element    ${configuration_name}_switch
+
+Validate Listen State Web
+    [Arguments]    ${state}    ${instrument_name}=Config1
+    [Documentation]    Checks that an instrument listen toggle in the web is in the given state.
+    ...
+    ...    e.g. Validate Listen State | on | MyInstrument
+    ...
+    ...    will check that the listen state for the MyInstrument configuration is set to on. Can also be used to check if the state is off.
+    Wait Until Element Is Visible    xpath=//*[@id="${instrument_name}${xpath_instrument_listen_state_web_suffix}" and @class="${xpath_instrument_button_state_prefix} ${state}"]    10s    Listen State wasn't as expected.
+
+Send Instrument Readings For Specific Instrument
+    [Arguments]    ${readings}    ${instrument_index}=0    ${character_latency}=0    ${reading_latency}=1000
+    [Documentation]    Requires the Simulator to have already been started with *Start Simulator*.
+    ...
+    ...    Takes an additional ${instrument_index} argument to select the instrument simulator you want to send values for. These are indexed from 0,1,2,3,etc upon start. Also takes character and reading latency arguments (in milliseconds).
+    ...
+    ...    E.g.
+    ...
+    ...    Start Simulator | host1 | port1 - index will be 0
+    ...
+    ...    Start Simulator | host2 | port2 - index will be 1
+    ...
+    ...    Start Simulator | host3 | port3 - index will be 2
+    #Only send the readings if they exist
+    ${length}=    Get Length    ${readings}
+    : FOR    ${index}    IN RANGE    ${length}
+    \    ${reading}=    Get From List    ${readings}    ${index}
+    \    Send Reading For Instrument Index    N + ${reading} g    ${instrument_index}    ${character_latency}
+    \    Sleep    ${reading_latency}ms
+
+Close Instrument Reader Panel Web
+    [Documentation]    Closes the Instrument Reader Panel in the Web
+    Robust Click    ${xpath_instrument_panel_web_back}
+    #Ensure that the mouse doesn't unintentionally give focus to an inappropriate element, e.g.toastr notification
+    IDBSSelenium2Library.Hover    ${Save Button}
+
+Instruments Should Not Be Connected
+    [Arguments]    @{instrument_indexes}
+    [Documentation]    Checks if each instrument in a given list of indexes is connected. Fails if any are.
+    ...
+    ...    Takes a list of instrument indexes as arguments. If just one instrument has been used, a single '0' can be passed. If multiple instruments have been started, specific indexes can be passed.
+    ...
+    ...    E.g.
+    ...
+    ...    *Instruments Should Not Be Connected* | 0 | 1 | 2
+    ...
+    ...    The above will check that the first three instruments are not connected.
+    : FOR    ${index}    IN    @{instrument_indexes}
+    \    ${connected}=    Check If Instrument Is Connected    ${index}
+    \    Should Not Be True    ${connected}
+
+Instruments Should Be Connected
+    [Arguments]    @{instrument_indexes}
+    [Documentation]    Checks if each instrument in a given list of indexes is currently connected. Fails if not.
+    : FOR    ${index}    IN    @{instrument_indexes}
+    \    ${connected}=    Check If Instrument Is Connected    ${index}
+    \    Should Be True    ${connected}
+
+_Turn On Instrument And Check Connected
+    [Arguments]    ${config}=Config1    @{indexes}
+    [Documentation]    Used by the Robust Turn On Instrument Keyword to wait for a connection to be made before passing.
+    Toggle Instrument Listener On or Off Web    ${config}
+    Wait Until Keyword Succeeds    15s    2s    Instruments Should Be Connected    @{indexes}
+
+Robust Turn On Instrument Web
+    [Arguments]    ${config}=Config1    @{indexes}
+    [Documentation]    Turns on an instrument and waits for a connection. If the connection isn't made, it will retry. Times out after a minute. User must specify which instrument configuration they wish to turn on (${config}) and which instrument simulator should be connected (@{indexes})
+    Wait Until Keyword Succeeds    60s    1s    _Turn On Instrument And Check Connected    ${config}    @{indexes}
+
+Robust Turn On Instrument Designer
+    [Arguments]    ${config}=Config1    @{indexes}
+    [Documentation]    Turns on an instrument and waits for a connection. If the connection isn't made, it will retry. Times out after a minute. User must specify which instrument configuration they wish to turn on (${config}) and which instrument simulator should be connected (@{indexes})
+    Wait Until Keyword Succeeds    60s    1s    _Turn On Instrument And Check Connected Designer    ${config}    @{indexes}
+
+_Turn On Instrument And Check Connected Designer
+    [Arguments]    ${config}=Config1    @{indexes}
+    [Documentation]    Used by the Robust Turn On Instrument Keyword to wait for a connection to be made before passing.
+    #Turn on the Listener
+    Component Should Be Visible    InstrumentReaderTestMapping.listenForReading.switch
+    Click on Component    InstrumentReaderTestMapping.listenForReading.switch
+    #Ensure connection
+    Wait Until Keyword Succeeds    15s    2s    Instruments Should Be Connected    @{indexes}
+
+Select to Overwrite Reading Web
+    [Documentation]    In the web browser, when the Overwrite dialog is present, clicks the Overwrite button.
+    Robust Click    xpath=//*[@class="btn btn-primary" and text()="Overwrite"]
+
+Select to Cancel Overwrite of Reading Web
+    [Documentation]    In the web browser, when the Overwrite dialog is present, clicks the Cancel button.
+    Robust Click    xpath=//*[@class="btn btn-default" and text()="Cancel"]
+
+Select Skip to Next Empty Cell Web
+    [Documentation]    In the web browser, when the Overwrite dialog is present, clicks the Skip to Next Empty Cell button.
+    Robust Click    xpath=//*[@class="btn btn-default" and text()="Skip to next empty cell"]
+
+Start Multiple Simulators
+    [Arguments]    ${num_simulators}
+    [Documentation]    Starts the given number of simulators using the InstrumentSimulatorLibrary.
+    ${port_list}=    Create List
+    : FOR    ${index}    IN RANGE    ${num_simulators}
+    \    ${port}=    Start New Simulator    ${instrument_host}
+    \    Append to List    ${port_list}    ${port}
+    [Return]    ${port_list}
+
+Send Readings For Multiple Simulators
+    [Arguments]    ${readings_lists}    ${instrument_indexes}    ${delay}=0
+    [Documentation]    Sends readings from multiple instruments.
+    ...
+    ...    *Arguments*:
+    ...    - ${readings_lists} - Two or more lists of instrument readings. Must be a two dimensional array (i.e. a list of lists- see below example)
+    ...    - ${instrument_indexes} - a list of the indexes to send the readings on. Size of this list must correlate 1:1 with the readings list.
+    ...    - ${delay} - the time to wait between each reading.
+    ...
+    ...    *Example use*:
+    ...
+    ...    | ${reading_list1}= | *Create List* | 1 | 2 | 3 |
+    ...
+    ...    | ${reading_list2}= | *Create List* | 4 | 5 | 6 |
+    ...
+    ...    | ${reading_lists}= | *Create List* | ${reading_list1} | ${reading_list2} |
+    ...
+    ...    | ${indexes}= | *Create List* | 0 | 1 |
+    ...
+    ...    | *Send Readings For Multiple Simulators* | ${reading_lists} | ${indexes} |
+    ${length}=    Get Length    ${instrument_indexes}
+    : FOR    ${index}    IN RANGE    ${length}
+    \    ${i}=    Evaluate    int(${index})
+    \    Send Instrument Readings For Specific Instrument    ${readings_lists[${i}]}    ${instrument_indexes[${i}]}    reading_latency=${delay}
+
+Open Configuration Table Sheet Web
+    [Documentation]    Opens the Instrument Reeader Configuration table in the web.
+    Robust Click    xpath=//*[@data-view-name="Instrument Reader"]
+
+Prepare Concurrent Readings Thread From File
+    [Arguments]    ${file_path}    ${instrument_index}
+    [Documentation]    Prepares a thread to send readings from a simulated instrument at the given ${instrument_index}. This keyword has been created for the concurrent use tests, where it was necessary to create multiple threads to simulate simultaneous readings from different instruments.
+    ...
+    ...    This keyword specifically uses each line of a given file (${file_path}) as a consecutive reading for the instrument to send. e.g. a file containing the following (anything in [square brackets] is not part of the file)
+    ...
+    ...    [Line 1: ]3.4
+    ...
+    ...    [Line 2: ]5.6
+    ...
+    ...    [Line 3: ]87.6
+    ...
+    ...
+    ...    will print three readings of 3.4, 5.6 and 87.6 if used with this keyword.
+    ${file}=    Get File    ${file_path}
+    @{lines}=    Split to Lines    ${file}
+    ${readings}=    Create List    @{lines}
+    Prepare Concurrent Instrument Readings Thread    ${readings}    ${instrument_index}
+
+Update Configuration Table For Multiple Instruments
+    [Arguments]    ${port_list}    ${instrument_ip}=${instrument_host}
+    [Documentation]    Given a list of ports (${port_list}) and an instrument host (${instrument_ip}), updates the instrument reader configuration table for each.
+    ${length}=    Get Length    ${port_list}
+    : FOR    ${i}    IN RANGE    ${length}
+    \    Update Web Spreadsheet With Instrument IP    port=${port_list[${i}]}    instrument_row=${i}    machine_name=${instrument_ip}
+
+Robust Turn On Multiple Instruments Web
+    [Arguments]    ${config_list}    ${instrument_indexes}
+    [Documentation]    A wrapper that uses a FOR loop to call Robust Turn On Instrument Web as many times as necessary. Takes two lists of the configurations (${config_list}) and ${instrument_indexes} that must match in length.
+    ${length}=    Get Length    ${config_list}
+    : FOR    ${i}    IN RANGE    ${length}
+    \    Robust Turn On Instrument Web    ${config_list[${i}]}    ${instrument_indexes[${i}]}
+
+Import Instrument Reader Dictionary
+    [Documentation]    Checks to see if an Instruments dictionary can be found in the catalog and, if not, imports one.
+    ${present}=    Check Catalog for Instruments Dictionary
+    #If it does, it might not be what the test requires, so delete it
+    Run Keyword If    '${present}' == 'True'    Delete Existing Instrument Reader Dictionary
+    #Import it
+    Wait Until Keyword Succeeds    60    5s    _import_instruments_dictionary
+
+Delete Existing Instrument Reader Dictionary
+    Wait Until Keyword Succeeds    60s    5s    _delete_instrument_reader_dictionary
+
+_delete_instrument_reader_dictionary
+    Connect to Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    ${DB_SERVER}    ${ORACLE_SID}
+    ${query_results}    Query    SELECT TERM_ID FROM IDBS_EWB_DICT.TERMS WHERE PATH = '/Instruments'
+    Disconnect From Database
+    ${instrument_dictionary}=    Set Variable    ${query_results[0][0]}
+    Delete Child Elements    ${instrument_dictionary}
+    Delete Element    ${instrument_dictionary}
+    #Check that it has been deleted
+    ${json}=    JSON Format Find Request    Instruments    /    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    ${null_response}=    Set Variable    {"catalog":null}
+    Should Be Equal    ${json}    ${null_response}
+
+_import_instruments_dictionary
+    ${xml}=    Join Path    ${CURDIR}    ..    ..    ..    Test Suites
+    ...    Web Client    EWB Web - Spreadsheet    Instrument_Reader    Common Test Data    Instrument Reader.xml
+    Import XML to Catalog via Web Service    ${xml}
+    #Check that we can find the instrument type term
+    ${json}=    JSON Format Find Request    Instrument Type    /Instruments/Driver Info/    TERM    CONCRETE    0
+    ...    10    ENABLED
+    ${null_response}=    Set Variable    {"catalog":null}
+    Should Not Be Equal    ${json}    ${null_response}
+
+Check Catalog for Instruments Dictionary
+    #Check if the catalog already has the dictionary
+    ${json}=    JSON Format Find Request    Instruments    /    DICTIONARY    CONCRETE    0
+    ...    10    ENABLED
+    ${null_response}=    Set Variable    {"catalog":null}
+    ${result}=    Set Variable If    '${json}'=='${null_response}'    False    True
+    Log    The dictionary is already present? - ${result}!
+    [Return]    ${result}
+
+Wait Until Toastr Is Not Visible
+    [Documentation]    Waits until toastr becomes not visible
+    Run Keyword and Ignore Error    Wait Until Element Is Visible    toast-container
+    Wait Until Element Is Not Visible    toast-container

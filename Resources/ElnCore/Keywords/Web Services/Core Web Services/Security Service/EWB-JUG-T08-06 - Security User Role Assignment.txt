@@ -1,0 +1,79 @@
+*** Settings ***
+Documentation     Test Cases Covering Security User Role Assignment
+Test Setup        Services Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          security_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt    # Security Service Resource
+
+*** Test Cases ***
+1-1 Assign User Role - Enabled User - Valid Role
+    Create User    AssignUser1-1    password    fullname    email@idbs.com    department
+    Create Role    AssignRole1-1    AssignRole1-1    AssignRole1-1    true
+    Assign User System Role    AssignUser1-1    AssignRole1-1
+
+1-2 Assign User Role - Enabled User - Invalid Role
+    Create User    AssignUser1-2    password    fullname    email@idbs.com    department
+    Assign User System Role And Expect Error    AssignUser1-2    AssignRole1-2    400
+    Validate User System Permission Not Present    AssignUser1-2    AssignRole1-2
+
+1-3 Assign User Role - Enabled User - Role Already Assigned
+    Create User    AssignUser1-3    password    fullname    email@idbs.com    department
+    Create Role    AssignRole1-3    AssignRole1-3    AssignRole1-3    true
+    Assign User System Role    AssignUser1-3    AssignRole1-3
+    Assign User System Role    AssignUser1-3    AssignRole1-3
+
+1-4 Assign User Role - Disabled User - Valid Role
+    Create User    AssignUser1-4    password    fullname    email@idbs.com    department
+    Disable User    AssignUser1-4    disablereason
+    Create Role    AssignRole1-4    AssignRole1-4    AssignRole1-4    true
+    Assign User System Role    AssignUser1-4    AssignRole1-4
+
+1-5 Assign User Role - Disabled User - Invalid Role
+    Create User    AssignUser1-5    password    fullname    email@idbs.com    department
+    Disable User    AssignUser1-5    disablereason
+    Assign User System Role And Expect Error    AssignUser1-5    AssignRole1-5    400
+    Validate User System Permission Not Present    AssignUser1-5    AssignRole1-5
+
+1-6 Assign User Role - Disabled User - Role Already Assigned
+    Create User    AssignUser1-6    password    fullname    email@idbs.com    department
+    Disable User    AssignUser1-6    disablereason
+    Create Role    AssignRole1-6    AssignRole1-6    AssignRole1-6    true
+    Assign User System Role    AssignUser1-6    AssignRole1-6
+    Assign User System Role    AssignUser1-6    AssignRole1-6
+
+2-1 Remove User Role - Enabled User - Valid Role
+    Create User    AssignUser2-1    password    fullname    email@idbs.com    department
+    Create Role    AssignRole2-1    AssignRole2-1    AssignRole2-1    true
+    Assign User System Role    AssignUser2-1    AssignRole2-1
+    Delete User System Role    AssignUser2-1    AssignRole2-1
+
+2-2 Remove User Role - Enabled User - Invalid Role
+    Create User    AssignUser2-2    password    fullname    email@idbs.com    department
+    Delete User System Role And Expect Error    AssignUser2-2    AssignRole2-2    400
+    Validate User System Permission Not Present    AssignUser2-2    AssignRole2-2
+
+2-3 Remove User Role - Enabled User - Valid Role Not Assigned
+    Create User    AssignUser2-3    password    fullname    email@idbs.com    department
+    Create Role    AssignRole2-3    AssignRole2-3    AssignRole2-3    true
+    Delete User System Role And Expect Error    AssignUser2-3    AssignRole2-3    400
+    Validate User System Permission Not Present    AssignUser2-3    AssignRole2-3
+
+2-4 Remove User Role - Disabled User - Valid Role
+    Create User    AssignUser2-4    password    fullname    email@idbs.com    department
+    Disable User    AssignUser2-4    disablereason
+    Create Role    AssignRole2-4    AssignRole2-4    AssignRole2-4    true
+    Assign User System Role    AssignUser2-4    AssignRole2-4
+    Delete User System Role    AssignUser2-4    AssignRole2-4
+
+2-5 Remove User Role - Disabled User - Invalid Role
+    Create User    AssignUser2-5    password    fullname    email@idbs.com    department
+    Disable User    AssignUser2-5    disablereason
+    Delete User System Role And Expect Error    AssignUser2-5    AssignRole2-5    400
+    Validate User System Permission Not Present    AssignUser2-5    AssignRole2-5
+
+2-6 Remove User Role - Disabled User - Valid Role Not Assigned
+    Create User    AssignUser2-6    password    fullname    email@idbs.com    department
+    Disable User    AssignUser2-6    disablereason
+    Create Role    AssignRole2-6    AssignRole2-6    AssignRole2-6    true
+    Delete User System Role And Expect Error    AssignUser2-6    AssignRole2-6    400
+    Validate User System Permission Not Present    AssignUser2-6    AssignRole2-6

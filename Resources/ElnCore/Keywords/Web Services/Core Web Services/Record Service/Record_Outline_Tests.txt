@@ -1,0 +1,61 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: /services/1.0/records/{entityId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Library           XMLLibrary
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Library           IDBSHttpLibrary
+Library           Collections
+Resource          ../Entity_Service/rest_entity_service_resource.txt
+
+*** Test Cases ***
+Can Get Record Outline
+    [Documentation]    \
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIRecordOutlineDto
+    ${experiment_name}=    Set Variable    GRO-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${response}=    Record Outline    ${experiment_id}    ${entity_version_id}
+    ${list}=    Get Element Value From Xpath    ${response}    .//{http://entity.services.ewb.idbs.com}entityId
+    List Should Contain Value    ${list}    ${experiment_id}
+
+Cannot Get Record Outline for non-Record Entities
+    [Documentation]    \
+    ...    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ${entity_version_id}=    Get Entity Version ID    ${group_id}
+    ${response}=    Record Outline    ${group_id}    ${entity_version_id}    400
+    Response Body Should Contain    The entity with the following id is not a record
+
+Cannot Get Record Outline if Entity Does Not Exist
+    [Documentation]    \
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_id}=    Set Variable    GRO-S003
+    ${entity_version_id}=    Set Variable    1
+    ${response}=    Record Outline    ${experiment_id}    ${entity_version_id    404
+    Response Body Should Contain    Resource not found for given ID: Specified entity could not be found
+
+Cannot Get Record Outline if User Does Not Have Sufficient Permissions
+    [Documentation]    \
+    ...    A client requires the relevant permission with respect to the chosen ‘include’ options specified in the service call. If the client does not have one or more of those permissions, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    GRO-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    CUSTOM_GRO-S004_${unique_id}
+    ${role_response}=    Create Role    ${role_name}    ${role_name}    custom role for record outline testing    false
+    ${permission_response}=    Add Role Permission    ${role_name}    VIEW_EXPERIMENT
+    ${role_assignment_response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    As a new user...    INFO
+    ${outline_response}=    Record Outline    ${experiment_id}    ${entity_version_id}    403
+    Response Body Should Contain    Insufficient permissions to retrieve requested data
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}

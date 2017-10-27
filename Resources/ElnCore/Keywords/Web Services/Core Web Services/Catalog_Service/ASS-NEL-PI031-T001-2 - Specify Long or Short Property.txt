@@ -1,0 +1,548 @@
+*** Settings ***
+Documentation     R001 – Catalog designers must be able to specify a property type that can hold a string of any length.
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Library           ../../../Libraries/CatalogWebserviceGUIDLibrary/
+
+*** Variables ***
+${No limit}       <= 10000000    # Sets the character limit to 1 billion (as would be if the 'long string' radio button was selected)
+${Short limit}    <= 500    # Sets the constraint to 500 characters for a string
+
+*** Test Cases ***
+000 - Create a Root Dictionary
+    [Documentation]    Creates a dictionary called Long String Auto 1 under Root.
+    ...
+    ...    Dictionary used for 001 - 035 tests of ASS-NELP1031-T001.2
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${LS Dict} =    Create Root Element    DICTIONARY    Long String Auto 1    Service checks for long string properties (automated)    true
+    ${LS Dict} =    Set Suite Variable    ${LS Dict}
+
+001 - Inherited Concrete Short Key Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short    true    true
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS01 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+002 - Inherited Concrete Short Key Display & General
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...    Short string General:
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS02 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+003 - Inherited Concrete Short Key & General Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key
+    ...
+    ...    Short string General: Display
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    false
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    true
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS03 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+004 - Inherited Concrete Short Key Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display +Overide(Barcode)
+    ...
+    ...    Short string General
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ...    override_property_id=${barcode_property_id}
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS04 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+005 - Inherited Concrete Short General Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...    Short string General: +Overide(Barcode)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ...    override_property_id=${barcode_property_id}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS05 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+006 - Inherited Concrete Long Key Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string Key: Key, Display
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ...
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Long string Key    STRING    Long    true    true
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}
+    Run Keyword And Expect Error    Request should have succeeded, but was "400 Bad Request".    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS06 - Asset    Concrete with Inheritance
+    ...    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+007 - Inherited Concrete Long General
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...    Long string General:
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS07 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+008 - Inherited Concrete Long General Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key
+    ...
+    ...    Long string General: Display
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    false
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    true
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS08 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+009 - Inherited Concrete Long Key Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string Key: Key, Display,+Override(Barcode)
+    ...
+    ...    Long string General:
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Long string Key    STRING    Long    true    true
+    ...    override_property_id=${barcode_property_id}    constraint=${No limit}
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    Run Keyword And Expect Error    Request should have succeeded, but was "400 Bad Request".    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS09 - Asset    Concrete with Inheritance
+    ...    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+010 - Inherited Concrete Long General Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display,
+    ...
+    ...    Long string General: +Override(Barcode)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    # Cannot override a property with a narrow constraint
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    false
+    ...    constraint=${No limit}    override_property_id=${barcode_property_id}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    Run Keyword And Expect Error    Request should have succeeded, but was "400 Bad Request".    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS10 - Asset    Concrete with Inheritance
+    ...    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+011 - Abstract Short
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key:
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short    false    false
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS11 - Abstract    Abstract Non-Inheritance    true
+    ...    ${properties}
+
+012 - Abstract Short & Long
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key:
+    ...
+    ...    Long string General:
+    ...
+    ${property 1}=    Create Property JSON    Short string    STRING    Short    false    false
+    ${property 2}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS12 - Abstract    Abstract Non-Inheritance    true
+    ...    ${properties}
+
+013 - Inherited Abstract Short
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key:
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ...
+    ...
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${properties}=    Create Properties JSON With Single Property    Short string    STRING    Short    false    false
+    ${Term LS1} =    Create Non-Root Abstract Term With Inheritance    ${LS Dict}    TERM    LS13 - Asset Abstract    Abstract with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+014 - Inherited Abstract Short & Long
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key:
+    ...
+    ...    Short string General:
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string    STRING    Short    false    false
+    ${property 2}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Abstract Term With Inheritance    ${LS Dict}    TERM    LS14 - Asset Abstract    Abstract with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}
+
+015 - Inherited Abstract Short Override & Long
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key:+Overide(Barcode)
+    ...
+    ...    Short string General:
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string    STRING    Short    false    false
+    ...    override_property_id=${barcode_property_id}
+    ${property 2}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Abstract Term With Inheritance    ${LS Dict}    TERM    LS15 - Asset Abstract    Abstract with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}
+
+016 - Inherited Abstract Short & Long Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key:
+    ...
+    ...    Long string General: +Override(Barcode)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    # Cannot override a property with a narrow constraint
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string    STRING    Short    false    false
+    ${property 2}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}    override_property_id=${barcode_property_id}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    Run Keyword And Expect Error    Request should have succeeded, but was "400 Bad Request".    Create Non-Root Abstract Term With Inheritance    ${LS Dict}    TERM    LS16 - Asset Abstract    Abstract with Inheritance
+    ...    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}
+
+017 - Concrete Short Key & Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short    true    true
+    ${Term LS1} =    Create Non-Root Element    ${LS Dict}    TERM    LS17 - Concrete    Concrete Non-Inheritance    true
+    ...    ${properties}
+
+018 - Concrete Short Key Display & General
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...    Short string General:
+    ...
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    false
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Element    ${LS Dict}    TERM    LS18 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties}
+
+019 - Concrete Short Key & General Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key
+    ...
+    ...    Short string General: Display
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    false
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short    false    true
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Element    ${LS Dict}    TERM    LS19 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties}
+
+020 - Concrete Long Key Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string Key: Key, Display
+    ...
+    ...
+    ${property 1}=    Create Property JSON    Long string Key    STRING    Long    true    true
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}
+    Run Keyword And Expect Error    Request should have succeeded, but was "400 Bad Request".    Create Non-Root Element    ${LS Dict}    TERM    LS20 - Concrete    Concrete Non-Inheritance
+    ...    true    ${properties}
+
+021 - Concrete Long General
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key, Display
+    ...
+    ...    Long string General:
+    ...
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    true
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    Create Non-Root Element    ${LS Dict}    TERM    LS21 - Concrete    Concrete Non- Inheritance    true    ${properties}
+
+022 - Concrete Long General Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key: Key
+    ...
+    ...    Long string General: Display
+    ...
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short    true    false
+    ${property 2}=    Create Property JSON    Long string General    STRING    Long    false    true
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    Create Non-Root Element    ${LS Dict}    TERM    LS22 - Concrete    Concrete Non- Inheritance    true    ${properties}
+
+023 - Abstract Short (Defined)
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key (<=500 characters):
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short Defined    false    false
+    ...    constraint=${Short limit}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS23 - Abstract    Abstract Non-Inheritance    true
+    ...    ${properties}
+
+024 - Inherited Abstract Short (Defined)
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters):
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${properties}=    Create Properties JSON With Single Property    Short string    STRING    Short Defined    false    false
+    ...    constraint=${Short limit}
+    ${Term LS1} =    Create Non-Root Abstract Term With Inheritance    ${LS Dict}    TERM    LS24 - Asset Abstract    Abstract with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+025 - Inherited Abstract Short (Defined) Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): +Override(Barcode)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${properties}=    Create Properties JSON With Single Property    Short string    STRING    Short Defined    false    false
+    ...    constraint=${Short limit}    override_property_id=${barcode_property_id}
+    ${Term LS1} =    Create Non-Root Abstract Term With Inheritance    ${LS Dict}    TERM    LS25 - Asset Abstract    Abstract with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+026 - Concrete Short (Defined) Key & Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): Key, Display
+    ...
+    ...
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short Defined    true    true
+    ...    constraint=${Short limit}
+    ${Term LS1} =    Create Non-Root Element    ${LS Dict}    TERM    LS26 - Concrete    Concrete Non-Inheritance    true
+    ...    ${properties}
+
+027 - Concrete Short (Defined) General Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): Key
+    ...
+    ...    Short string Key(<=500 characters): Display
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    false
+    ...    constraint=${Short limit}
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    true
+    ...    constraint=${Short limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Element    ${LS Dict}    TERM    LS27 - Concrete    Concrete Non- Inheritance    true
+    ...    ${properties}
+
+028 - Inherited Concrete Short (Defined) Key Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): Key, Display
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${properties}=    Create Properties JSON With Single Property    Short string Key    STRING    Short (Defined)    true    true
+    ...    constraint=${Short limit}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS28 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+029 - Inherited Concrete Short (Defined) General Display
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): Key
+    ...
+    ...    Short string Key(<=500 characters): Display
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    false
+    ...    constraint=${Short limit}
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    true
+    ...    constraint=${Short limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS29 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+030 - Inherited Concrete Short (Defined) Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): Key, Display +Override(Barcode)
+    ...
+    ...    Short string Key(<=500 characters):
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    true
+    ...    constraint=${Short limit}    override_property_id=${barcode_property_id}
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=${Short limit}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS30 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+031 - Inherited Concrete Short (Defined) General Override
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Short string Key(<=500 characters): Key, Display
+    ...
+    ...
+    ...    Short string Key(<=500 characters): +Override(Barcode)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${barcode_property_id}=    Get Property Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset    barcode
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Short string Key    STRING    Short (Defined)    true    true
+    ...    constraint=${Short limit}
+    ${property 2}=    Create Property JSON    Short string General    STRING    Short (Defined)    false    false
+    ...    constraint=${Short limit}    override_property_id=${barcode_property_id}
+    ${properties}=    Create Properties JSON    ${property 1}    ${property 2}
+    ${Term LS1} =    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS31 - Asset    Concrete with Inheritance    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties}    STRING
+
+032 - Long string as a Number unit Key
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string:
+    ...
+    ...    Creates a new term with the properties:
+    ...
+    ...    Number: Unit(Long String)
+    ${property 1}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS32 - Unit    Abstract    true
+    ...    ${properties}
+    # Create Number property linking to Long String
+    ${property 2}=    Create Property JSON    Number Property Key    NUMBER    Unit as Long String    true    true
+    ...    unit_term_path=/Long String Auto/LS32 - Unit
+    ${properties2}=    Create Properties JSON    ${property 2}
+    Run Keyword And Expect Error    Request should have succeeded, but was "404 Not Found".    Create Non-Root Element    ${LS Dict}    TERM    LS32 - Number    Concrete Non-Inheritance
+    ...    true    ${properties2}
+
+033 - Long string as a Number unit General
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string:
+    ...
+    ...    Creates a new term with the properties:
+    ...
+    ...    Number: Unit(Long String)
+    ${property 1}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS33 - Unit    Abstract    true
+    ...    ${properties}
+    # Create Number property linking to Long String
+    ${property 2}=    Create Property JSON    Short String    STRING    Short    true    true
+    ${property 3}=    Create Property JSON    Number Property Key    NUMBER    Unit as Long String    false    false
+    ...    unit_term_path=/Long String Auto/LS32 - Unit
+    ${properties2}=    Create Properties JSON    ${property 2}    ${property 3}
+    Run Keyword And Expect Error    Request should have succeeded, but was "404 Not Found".    Create Non-Root Element    ${LS Dict}    TERM    LS33 - Number    Concrete Non-Inheritance
+    ...    true    ${properties2}
+
+034 - Inherited Long string as a Number unit Key
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string:
+    ...
+    ...    Creates a new term with the properties:
+    ...
+    ...    Number: Unit(Long String)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS34 - Unit    Abstract    true
+    ...    ${properties}
+    # Create Number property linking to Long String
+    ${property 2}=    Create Property JSON    Number Property Key    NUMBER    Unit as Long String    true    true
+    ...    unit_term_path=/Long String Auto/LS32 - Unit
+    ${properties2}=    Create Properties JSON    ${property 2}
+    Run Keyword And Expect Error    Request should have succeeded, but was "404 Not Found".    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS34 - Number    Concrete Non-Inheritance
+    ...    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties2}
+
+035 - Inherited Long string as a Number unit General
+    [Documentation]    Creates a new term with the properties:
+    ...
+    ...    Long string:
+    ...
+    ...    Creates a new term with the properties:
+    ...
+    ...    Number: Unit(Long String)
+    ...
+    ...    Term: (Inherits from: /IDBS-Applications/Core/Asset Hub/Asset)
+    ${asset_term_id}=    Get Term Guid From Catalog Webservice    /IDBS-Applications/Core/Asset Hub/Asset
+    ${property 1}=    Create Property JSON    Long string    STRING    Long    false    false
+    ...    constraint=${No limit}
+    ${properties}=    Create Properties JSON    ${property 1}
+    ${Term LS1} =    Create Non-Root Abstract Term    ${LS Dict}    TERM    LS35 - Unit    Abstract    true
+    ...    ${properties}
+    # Create Number property linking to Long String
+    ${property 2}=    Create Property JSON    Short String    STRING    Short    true    true
+    ${property 3}=    Create Property JSON    Number Property Key    NUMBER    Unit as Long String    false    false
+    ...    unit_term_path=/Long String Auto/LS32 - Unit
+    ${properties2}=    Create Properties JSON    ${property 2}    ${property 3}
+    Run Keyword And Expect Error    Request should have succeeded, but was "404 Not Found".    Create Non-Root Concrete Term With Inheritance    ${LS Dict}    TERM    LS35 - Number    Concrete Non-Inheritance
+    ...    true    {"inheritedTerm":[{"inheritedTermPath":"/IDBS-Applications/Core/Asset Hub/Asset","inheritedTermId":"${asset_term_id}"}]}    ${properties2}

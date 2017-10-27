@@ -1,0 +1,56 @@
+*** Settings ***
+Documentation     The following tests are for the following endpoint:
+...
+...               GET /services/1.0/entities/{entityId}/versions
+Suite Setup       Entity Version Suite Setup
+Suite Teardown    Entity Version Suite Teardown
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Version Service/rest_entity_version_service_resource.txt
+Resource          entity_version_suite_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Check Can Get Entity Versions
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityVersionInfoSequence
+    ...
+    ...    The 'create versioned experiment' should create 4 versions.
+    ...    There are no apparent guarantees on the returned order of the versions, so a simple check is done to ensure each version is within the expected version list (1-4)
+    ${experiment_name}=    Set Variable    GEV-S001
+    ${experiment_id}=    Create Versioned Experiment    ${experiment_name}
+    ${version_info}=    Get Entity Versions    ${experiment_id}
+    ${expected_versions}=    Create List    1    2    3    4
+    ${json_value}=    Get Json Value    ${version_info}    /version/0
+    Log    ${json_value}    INFO
+    ${version_number}=    Get Json Value    ${json_value}    /versionNumber
+    Should Contain    ${expected_versions}    ${version_number}
+    ${json_value}=    Get Json Value    ${version_info}    /version/3
+    Log    ${json_value}    INFO
+    ${version_number}=    Get Json Value    ${json_value}    /versionNumber
+    Should Contain    ${expected_versions}    ${version_number}
+
+Check GET Entity Versions Fails With Bad Id
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_id}=    Set Variable    GEV-S002
+    ${version_info}=    Get Entity Versions    ${experiment_id}    404
+
+Check GET Entity Versions Fails Without VIEW_HISTORY permission
+    [Documentation]    A client requires the VIEW_HISTORY_<CONTAINER_ENTITY_TYPE> permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${name}=    Set Variable    CUSTOM_GEV-S003
+    ${experiment_id}=    Create Versioned Experiment    GEV-S003
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${role_name}=    Create Custom EVS Role    ${name}
+    ${remove_permission}=    Remove Role Permission    ${role_name}    VIEW_HISTORY_EXPERIMENT
+    ${response}=    Assign User Entity Role    ${username}    ${role_name}    ${experiment_id}
+    ${old services username}=    Set Variable    ${SERVICES USERNAME}
+    ${old services password}=    Set Variable    ${SERVICES PASSWORD}
+    ${SERVICES USERNAME}=    Set Variable    ${username}
+    ${SERVICES PASSWORD}=    Set Variable    ${password}
+    Log    Switching default user...    INFO
+    ${version_info}=    Get Entity Versions    ${experiment_id}    403
+    ${SERVICES USERNAME}=    Set Variable    ${old services username}
+    ${SERVICES PASSWORD}=    Set Variable    ${old services password}
+    ${unassign_role}=    Delete User Entity Role    ${username}    ${role_name}    ${experiment_id}
+    ${tidy_up}=    Delete Custom EVS Role    ${role_name}

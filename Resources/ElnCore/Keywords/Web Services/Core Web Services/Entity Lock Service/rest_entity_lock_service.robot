@@ -1,0 +1,186 @@
+*** Settings ***
+Library           IDBSHttpLibrary
+# Library           EntityAPILibrary
+Resource          ../../../Common/HTTP Common/http_common_resource.robot    # HTTP common resources
+
+*** Variables ***
+${ENTITY LOCK SERVICE ENDPOINT}    /ewb/services/1.0/locks
+
+*** Keywords ***
+Lock Entity
+    [Arguments]    ${entity_id}    ${expected_http_status}=200
+    [Documentation]    PUT : services/1.0/locks/entities/${entity_id}/lock
+    ...
+    ...    Acquires a lock on an entity.
+    ...
+    ...    *Arguments*
+    ...
+    ...    $(entity_id) The entity id.
+    ...
+    ...    *Return value*
+    ...
+    ...    ${lock} A DTO describing whether or not the lock was obtained of type SAPIEntityLockResponse
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    ...
+    ...    on lock success {SAPIEntityLockResponse}:
+    ...
+    ...    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    ...    <lockResponse
+    ...    xmlns="http://entity.locks.services.ewb.idbs.com">
+    ...    <result>OK</result>
+    ...    </lockResponse>
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    PUT    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/lock
+    Response Status Code Should Equal    ${expected_http_status}
+    ${lock}=    Get Response Body
+    [Return]    ${lock}    # A DTO describing whether or not the lock was obtained of type SAPIEntityLockResponse
+
+Unlock Entity
+    [Arguments]    ${entity_id}    ${expected_http_status}=204
+    [Documentation]    DELETE \ : services/1.0/locks/entities/${entity_id}/lock
+    ...
+    ...    Used to unlock an entity.
+    ...
+    ...    *Arguments*
+    ...    $(entity_id) The entity id.
+    ...
+    ...    *Return value*
+    ...    none
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    DELETE    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/lock
+    Response Status Code Should Equal    ${expected_http_status}
+
+Is Entity Locked
+    [Arguments]    ${entity_id}    ${include_children}=false    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/locks/entities/{entityId}/islocked
+    ...
+    ...    Returns a DTO describing whether or not the entity is currently locked.
+    ...
+    ...    *Arguments*
+    ...    $(entity_id) The entity id.
+    ...
+    ...    ${include_children} If true, children of the entity will also be tested (false by default)
+    ...
+    ...    *Return value*
+    ...    A DTO describing whether or not the entity is locked of type SAPIEntityLockQueryResponse
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    ...
+    ...    locked record query response {SAPIEntityLockQueryResponse}:
+    ...
+    ...    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    ...    <lockQueryResponse
+    ...    xmlns="http://entity.locks.services.ewb.idbs.com">
+    ...    <result>RESOURCE_LOCKED_BY_USER</result>
+    ...    </lockQueryResponse>
+    XML HTTP Header Setup
+    GET    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/islocked?includeChildren=${include_children}
+    ${response}=    Get Response Body
+    Response Status Code Should Equal    ${expected_http_status}
+    [Return]    ${response}    # SAPIEntityLockQueryResponse describing if the entity is locked
+
+Get Lock Info
+    [Arguments]    ${entity_id}    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/locks/entities/{entityId}/find
+    ...
+    ...    Returns details of a specific entity lock.
+    ...
+    ...    *Arguments*
+    ...    $(entity_id) The entity id.
+    ...
+    ...    *Return value*
+    ...    ${lock_info} A DTO containing the details of the lock, of type SAPIEntityLockDetails
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    ...
+    ...    lock info {SAPIEntityLockDetails}:
+    ...
+    ...    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    ...    <lockInfo
+    ...    xmlns="http://entity.locks.services.ewb.idbs.com">
+    ...    <entityId>85844e40fad711e393eb0025649ba776</entityId>
+    ...    <entityName>IT1-EXP</entityName>
+    ...    <entityPath>/Root/IT1-GRP-2/IT1-PRJ/IT1-EXP</entityPath>
+    ...    <userFullName>Administrator User</userFullName>
+    ...    <entityLockedAt>2014-07-07T09:14:30.508Z</entityLockedAt>
+    ...    <userLoggedIn>false</userLoggedIn>
+    ...    <userLastLoggedIn>2014-07-02T17:26:52.976Z</userLastLoggedIn>
+    ...    </lockInfo>
+    XML HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/find
+    ${lock_info}=    Get Response Body
+    Response Status Code Should Equal    ${expected_http_status}
+    [Return]    ${lock_info}    # SAPIEntityLockDetails DTO containing the details of the lock
+
+Lock Entity with specific user
+    [Arguments]    ${entity_id}    ${username}    ${password}    ${expected_http_status}=403
+    [Documentation]    PUT : services/1.0/locks/entities/${entity_id}/lock
+    ...
+    ...    Attempts to acquire a lock on an entity by the user passed in.
+    ...    The default permissions may be altered to make this keyword pass/fail
+    ...
+    ...    *Arguments*
+    ...
+    ...    $(entity_id) The entity id.
+    ...
+    ...    $(username) The name of the user
+    ...
+    ...    $(password) The password of the user
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Example*
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Set Basic Auth    ${username}    ${password}
+    Next Request May Not Succeed
+    PUT    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/lock
+    Response Status Code Should Equal    ${expected_http_status}
+    ${lock}=    Get Response Body
+    [Return]    ${lock}    # A DTO describing whether or not the lock was obtained of type SAPIEntityLockResponse
+
+Unlock Entity with specific user
+    [Arguments]    ${entity_id}    ${username}    ${password}    ${expected_http_status}=403
+    [Documentation]    DELETE \ : services/1.0/locks/entities/${entity_id}/lock
+    ...
+    ...    Used to unlock an entity by a specific user (details passed in)
+    ...
+    ...    *Arguments*
+    ...    $(entity_id) The entity id.
+    ...
+    ...    *Return value*
+    ...    none
+    ...
+    ...    *Precondition*
+    ...    User with insufficient permissions
+    ...
+    ...    *Example*
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Request Header    Accept    application/xml;charset=utf-8
+    Set Request Header    Content-Type    application/xml;charset=utf-8
+    Set Basic Auth    ${username}    ${password}
+    Next Request May Not Succeed
+    DELETE    ${ENTITY LOCK SERVICE ENDPOINT}/entities/${entity_id}/lock
+    Response Status Code Should Equal    ${expected_http_status}

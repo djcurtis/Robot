@@ -1,0 +1,53 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains verification checks for graphical elements.
+...               *Version: E-WorkBook Web Client 9.1.0*
+Library           IDBSSelenium2Library
+
+*** Keywords ***
+Check HTML_TEXT Icon Visible
+    [Documentation]    Checks that the HTML_TEXT entity icon *is* visible within the record content panel.
+    Wait Until Element Is Visible    xpath=//img[contains(@src, 'HTML_TEXT') and contains(@id, 'entityImage')]    10s
+
+Check HTML_TEXT Icon Not Visible
+    [Documentation]    Checks that the HTML_TEXT entity icon *is not* visible within the record content panel.
+    Wait Until Element Not Visible    xpath=//img[contains(@src, 'HTML_TEXT') and contains(@id, 'entityImage')]    10s
+
+Check Spreadsheet Icon Visible
+    [Documentation]    Checks that the BioBook spreadsheet entity icon *is* visible within the record content panel.
+    Wait Until Element Is Visible    xpath=//img[contains(@src, 'SPREADSHEET') and contains(@id, 'entityImage')]    10s
+
+Check Spreadsheet Icon Not Visible
+    [Documentation]    Checks that the BioBook spreadsheet entity icon *is not* visible within the record content panel.
+    Wait Until Element Not Visible    xpath=//img[contains(@src, 'SPREADSHEET') and contains(@id, 'entityImage')]    10s
+
+Check Chemistry Icon Visible
+    [Documentation]    Checks that the ChemBook spreadsheet entity icon *is* visible within the record content panel.
+    Wait Until Element Is Visible    xpath=//img[contains(@src, 'CHEMISTRY') and contains(@id, 'entityImage')]    10s
+
+Check Chemistry Icon Not Visible
+    [Documentation]    Checks that the ChemBook spreadsheet entity icon *is not* visible within the record content panel.
+    Wait Until Element Not Visible    xpath=//img[contains(@src, 'CHEMISTRY') and contains(@id, 'entityImage')]    10s
+
+Check SVG_IMAGE Icon Visible
+    [Documentation]    Checks that the image entity icon *is* visible within the record content panel.
+    Wait Until Element Is Visible    xpath=//img[contains(@src, 'SVG_IMAGE') and contains(@id, 'entityImage')]    10s
+
+Check SVG_IMAGE Icon Not Visible
+    [Documentation]    Checks that the image entity icon *is not* visible within the record content panel.
+    Wait Until Element Not Visible    xpath=//img[contains(@src, 'SVG_IMAGE') and contains(@id, 'entityImage')]    10s
+
+Check Form Icon Visible
+    [Documentation]    Checks that the form entity icon *is* visible within the record content panel.
+    Wait Until Element Is Visible    xpath=//img[contains(@src, 'FORM') and contains(@id, 'entityImage')]    10s
+
+Check Form Icon Not Visible
+    [Documentation]    Checks that the form entity icon *is not* visible within the record content panel.
+    Wait Until Element Not Visible    xpath=//img[contains(@src, 'FORM') and contains(@id, 'entityImage')]    10s
+
+Check WEB_LINK Icon Visible
+    [Documentation]    Checks that the HTML_TEXT entity icon *is* visible within the record content panel.
+    Wait Until Element Is Visible    xpath=//img[contains(@src, 'WEB_LINK') and contains(@id, 'entityImage')]    10s
+
+Check WEB_LINK Icon Not Visible
+    [Documentation]    Checks that the HTML_TEXT entity icon *is not* visible within the record content panel.
+    Wait Until Element Not Visible    xpath=//img[contains(@src, 'WEB_LINK') and contains(@id, 'entityImage')]    10s

@@ -1,0 +1,54 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/statuses* and */services/1.0/tasks/types* endpoints
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog WS Resource
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Get Task Statuses
+    ${task status JSON}=    Get Task Statuses
+    Log    ${task status JSON}
+    ${unparsed task list}=    Get Json Value    ${task status JSON}    /taskStatus
+    ${parsed task list}=    Parse Json    ${unparsed task list}
+    Length Should Be    ${parsed task list}    10
+    Should Contain    ${parsed task list}    NEW
+    Should Contain    ${parsed task list}    IN_PROGRESS
+    Should Contain    ${parsed task list}    REJECTED
+    Should Contain    ${parsed task list}    COMPLETED
+    Should Contain    ${parsed task list}    CANCELLED
+    Should Contain    ${parsed task list}    CLOSED
+    Should Contain    ${parsed task list}    PENDING
+    Should Contain    ${parsed task list}    NEW_OVERDUE
+    Should Contain    ${parsed task list}    IN_PROGRESS_OVERDUE
+    Should Contain    ${parsed task list}    TIMED_OUT
+
+Get Task Types
+    ${task types JSON}=    Get Task Types
+    Log    ${task types JSON}
+    ${unparsed task list}=    Get Json Value    ${task types JSON}    /taskType
+    ${parsed task list}=    Parse Json    ${unparsed task list}
+    Length Should Be    ${parsed task list}    4
+    Should Contain    ${parsed task list}    SIGN_OFF
+    Should Contain    ${parsed task list}    REVIEW
+    Should Contain    ${parsed task list}    ALERT
+    Should Contain    ${parsed task list}    TEST
+
+Create Workflow From Custom Priority
+    ${term_id}=    Get Term Id From Path    /Experiment%20Dictionaries/Task%20Priorities
+    Log    ${term_id}
+    Run Keyword And Ignore Error    Create Tuple    ${term_id}    priority    WORKFLOW_WS_TEST_PRIORITY    WORKFLOW_WS_TEST_PRIORITY    true
+    ...    false
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    ${new due date}    false
+    ...    WORKFLOW_WS_TEST_PRIORITY    ${task json}
+    # Get and Validate Workflow
+    ${workflow JSON response}=    Get Workflow    ${sign off workflow id}
+    Log    ${workflow JSON response}
+    Validate Workflow    ${workflow JSON response}    priority=WORKFLOW_WS_TEST_PRIORITY

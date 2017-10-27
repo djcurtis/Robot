@@ -1,0 +1,132 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint: /services/1.0/records/{entityId}/signatures
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Library           IDBSHttpLibrary
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/HTTP Common/http_common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+
+*** Test Cases ***
+Check Whether the User Can Sign Off An Experiment
+    [Documentation]    A successful call returns the HTTP status 204 and the chosen record items are signed
+    ...
+    ...    The record needs to be locked.
+    ${experiment_name}=    Set Variable    ASI-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${experiment_id}
+    Add Signatures    ${experiment_id}    ${add_link_response}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check User Cannot Sign Off An Experiment Without SAPISignOff parameter
+    [Documentation]    If the call parameter ‘SAPISignOff’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    ASI-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${experiment_id}
+    Add Signatures    ${experiment_id}    ${add_link_response}    omit_request_body=True    expected_http_status=400
+    Response Body Should Contain    Problem with request: [sapiSignOff]
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check User Cannot Sign Off An Experiment With Bad Id
+    [Documentation]    If the call parameter ‘SAPISignOff’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_id}=    Set Variable    ASI-S003
+    Add Signatures    ${experiment_id}    ${EMPTY}    omit_request_body=False    expected_http_status=404
+    Response Body Should Contain    Resource not found for given ID: [parentEntityId]
+
+Check User Cannot Sign Off An Non-Record Entity
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    ASI-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${project_id}
+    ${add_link_response}=    Add Web Link Entity    ${project_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${project_id}
+    Add Signatures    ${project_id}    ${add_link_response}    Reason    Additional Comment    False    400
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${project_id}
+
+Check Cannot Sign Off An Experiment Without Correct Headers
+    [Documentation]    If the request HTTP header does not contain the author credentials, then the HTTP status code 401 is returned to the client
+    ${experiment_name}=    Set Variable    ASI-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${document_id}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    Switching default user...    INFO
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    Sign Experiment    ${experiment_id}    ${document_id}    401
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check User Cannot Sign Off An Experiment If Not Locked
+    [Documentation]    If the entity is not locked, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    ASI-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    Add Signatures    ${experiment_id}    ${add_link_response}    expected_http_status=403
+    Response Body Should Contain    Authorization failure: The entity is not locked
+
+Check User Cannot Sign Off An Experiment with Non-versioned Child Items
+    [Documentation]    If any of the record entity items in SAPISignOff is of version type other than VERSION, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    ASI-S007
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Draft Entity    ${experiment_id}
+    Add Signatures    ${experiment_id}    ${add_link_response}    expected_http_status=400
+    Response Body Should Contain    Parent [entityId] must be of type VERSION
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Cannot Sign Off An Experiment If Child Already Signed Off
+    [Documentation]    If any of the record entity items in SAPISignOff is already signed by the client, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    ASI-S008
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}=    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Versioned Entity    ${experiment_id}
+    ${sign_off}=    Add Signatures    ${experiment_id}    ${add_link_response}
+    Log    Re-signing...    INFO
+    Add Signatures    ${experiment_id}    ${add_link_response}    expected_http_status=400
+    Response Body Should Contain    [entity] is already SIGNATURE_ADDED
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+*** Keywords ***
+Sign Experiment
+    [Arguments]    ${record_id}    ${document_id}    ${expected_http_status}=204
+    [Documentation]    Signs a single document in a record.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _record_id_ The id of he record containing the document to be signed.
+    ...
+    ...    _document_id_ The id of he document to be signed.
+    ...
+    ...    _expected_http_status_
+    ...    (default-204)
+    ...
+    ...    *Return value*
+    ...    _response_
+    ...
+    ...    *Precondition*
+    ...    The document must be versioned
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    ${payload}=    Set Variable    { "signer": { "reason": "Signing Reason", "additionalComment": "Signing Additional Reason" }, "entities": { "id": [ "${document_id}" \ ] }, "role": "Actioner" }
+    Set Request Body    ${payload}
+    Next Request May Not Succeed
+    POST    ${RECORD SERVICE ENDPOINT}/${record_id}/signatures
+    Response Status Code Should Equal    ${expected_http_status}
+    Comment    ${response}=    Get Response Body

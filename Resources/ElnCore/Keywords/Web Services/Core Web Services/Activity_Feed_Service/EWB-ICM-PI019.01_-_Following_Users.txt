@@ -1,0 +1,20 @@
+*** Settings ***
+Suite Setup       User Setup
+Resource          ../../../Libraries/Web Services/REST_ActivityFeedService/rest_activity_service_resource.txt
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+
+*** Test Cases ***
+001 - Follow User
+    Add User To Following List    ${SERVICES USERNAME}    ${SECOND USER}
+    Following List Should Contain User    ${SERVICES USERNAME}    ${SECOND USER}
+
+002 - Unfollow User
+    Add User To Following List    ${SERVICES USERNAME}    ${SECOND USER}
+    Following List Should Contain User    ${SERVICES USERNAME}    ${SECOND USER}
+    Remove User from Following List    ${SERVICES USERNAME}    ${SECOND USER}
+    Following List Should Not Contain User    ${SERVICES USERNAME}    ${SECOND USER}
+
+*** Keywords ***
+User Setup
+    Run Keyword And Ignore Error    Create User    ${SECOND USER}    ${SECOND PASSWD}    ${SECOND USER}    test@idbs.com    Testing

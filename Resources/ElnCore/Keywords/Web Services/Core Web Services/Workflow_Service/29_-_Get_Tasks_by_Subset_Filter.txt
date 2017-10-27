@@ -1,0 +1,55 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/subset* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Library           XMLLibrary
+Library           OperatingSystem
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Test 1 - Call endpoint without valid credentials
+    ${SERVICES USERNAME}    Set Variable    sssss
+    ${SERVICES PASSWORD}    Set Variable    ddddd
+    Task Request Setup
+    Next Request Should Not Succeed
+    Set Request Body    {}
+    POST    ${TASKS ENDPOINT}/subset
+    Response Status Code Should Equal    401
+    Next Request Should Succeed
+
+Test 2 - Boolean logic
+    [Documentation]    This automated check is a simple verification that all combinations for the four booleans at the start of a subset filter request return the correct HTTP status code. Detailed verification of the returned contents are covered by the manual tests
+    [Tags]    ignore
+    Boolean Logic helper function    true    true    true    true    200
+    Boolean Logic helper function    true    true    true    false    200
+    Boolean Logic helper function    true    true    false    true    200
+    Boolean Logic helper function    true    true    false    false    200
+    Boolean Logic helper function    true    false    true    true    200
+    Boolean Logic helper function    true    false    true    false    200
+    Boolean Logic helper function    true    false    false    true    200
+    Boolean Logic helper function    true    false    false    false    400
+    Boolean Logic helper function    false    true    true    true    200
+    Boolean Logic helper function    false    true    true    false    200
+    Boolean Logic helper function    false    true    false    true    200
+    Boolean Logic helper function    false    true    false    false    200
+    Boolean Logic helper function    false    false    true    true    200
+    Boolean Logic helper function    false    false    true    false    200
+    Boolean Logic helper function    false    false    false    true    200
+    Boolean Logic helper function    false    false    false    false    400
+
+*** Keywords ***
+Boolean Logic helper function
+    [Arguments]    ${bool1}    ${bool2}    ${bool3}    ${bool4}    ${statuscode}
+    [Documentation]    Helper function for boolean logic testing
+    ${6}=    Build Baseline XML for Task Filter
+    ${5}=    Set Booleans for Task Filter    ${6}    ${bool1}    ${bool2}    ${bool3}    ${bool4}
+    ${xml}=    Add Task Filter to Task Filter Sequence    ${5}
+    ${xml}=    Get Xml    ${xml}
+    Task Request Setup for XML content
+    Next Request May Not Succeed
+    Set Request Body    ${xml}
+    POST    ${TASKS ENDPOINT}/subset
+    Response Status Code Should Equal    ${statuscode}
+    Next Request Should Succeed

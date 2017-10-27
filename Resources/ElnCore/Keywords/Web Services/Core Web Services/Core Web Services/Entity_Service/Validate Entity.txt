@@ -1,0 +1,42 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/validate
+...
+...               It validates the given entity definition. Note that this does not guarantee that an entity modification with the same data will succeed as the data while valid may not be acceptable when placed in context. An example the case of read only attribute values - changes to these values although not allowed will not be picked up by this function.
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags           Validate Entity
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+
+*** Test Cases ***
+Validate entity
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIEntityValidation
+    ${sapi_entity_definition}=    Build experiment DTO    TestProject    TestProject
+    ${sapi_entity_validation}=    Validate Entity    ${sapi_entity_definition}    false    200
+    # Checking expectations
+    Check Xml Element Value Contains    check experiment id value    ${sapi_entity_validation}    true    valid    elementNamespace=http://entity.services.ewb.idbs.com
+
+Validate entity with missing or invalid DTO
+    [Documentation]    
+    ...
+    ...    If the SAPIEntityDefinition is missing or invalid, then the HTTP status code 400 is returned to the client
+    # missing DTO
+    ${sapi_entity_validation}=    Validate Entity    ${EMPTY}    false    400
+    # wrong XML
+    ${sapi_entity_validation}=    Validate Entity    WrongXML    false    400
+    # invalid DTO: title attribute
+    ${sapi_entity_definition}=    Build experiment DTO    TestEntityName    ${EMPTY}
+    ${sapi_entity_validation}=    Validate Entity    ${sapi_entity_definition}    false    200
+    XMLLibrary.Check Xml Element Value Equals    Check element 'valid'    ${sapi_entity_validation}    false    valid    elementNamespace=http://entity.services.ewb.idbs.com
+
+*** Keywords ***

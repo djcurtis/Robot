@@ -1,0 +1,264 @@
+*** Settings ***
+Library           IDBSSelenium2Library
+Resource          general_resource.txt
+
+*** Variables ***
+${homepage-id}    homepage-body    # The id of the home page body
+${homepage-header-link}    xpath=//*[@class="ewb-application-image"]
+${activity-header-link}    xpath=//*[@id="ewb-header-link-home_label"]
+${homepage-frame-id}    home-page-container-frame
+${homepage-recent-items-list-locator}    ewb-homepage-recent-items-list
+${homepage-tagcloud-list-locator}    ewb-homepage-tag-list
+${homepage-url}    https://${SERVER}:${WEB_CLIENT_PORT}/EWorkbookWebApp/#goToHomePage
+
+*** Keywords ***
+Open Homepage
+    [Documentation]    Navigates to the homepage using the header link
+    RobustClick    ${activity-header-link}
+    Wait Until Page Contains Element    ${homepage-frame-id}    30s
+    Select Frame    ${homepage-frame-id}
+    Wait Until Page Contains Element    ${homepage-id}    30s
+    Unselect Frame
+
+Check Homepage is Open
+    [Documentation]    Verifies that the page contains the home page element
+    Select Homepage Frame
+    Wait Until Page Contains Element    ${homepage-id}    30s
+    Unselect Frame
+
+Homepage Recent Items Contains Name
+    [Arguments]    ${entityName}
+    [Documentation]    Verifies that the recent items panel in the home page view contains an entity with a given name.
+    ...
+    ...    Note that as a precondition, the homepage frame must already be entered
+    Wait Until Page Contains Element    xpath=//*[@id='ewb-homepage-recent-items-list']/div/div/div[@title='${entityName}']    30s
+
+Select Homepage Frame
+    Comment    Must call 'Unselect Frame' first to ensure that we are always at the top window, if not then 'Select Frame' may fail if we are already in the frame (or another frame)
+    Unselect Frame
+    Wait Until Keyword Succeeds    50s    3s    Select Frame    ${homepage-frame-id}
+
+Homepage Recent Items Panel is Present
+    Wait Until Page Contains Element    ${homepage-recent-items-list-locator}    30s
+
+Homepage Tags contains text
+    [Arguments]    ${tagText}
+    Wait Until Page Contains Element    xpath=//*[@id='ewb-homepage-tag-list']/span/a[text()='${tagText}']    30s
+
+Go To Homepage
+    RobustClick    ${activity-header-link}
+    Wait Until Page Contains Element    xpath=//div[contains(@class, 'ewb-panel-header-label') and text()="Activity"]
+
+Homepage Tags contain partial text
+    [Arguments]    ${tagText}
+    Wait Until Page Contains Element    xpath=//*[@id='ewb-homepage-tag-list']/span/a[contains(text(), '${tagText}')]    30s
+
+Homepage Feed Contains DRAFT SAVE entry for Entity
+    [Arguments]    ${entity name}
+    Homepage Feed Contains Action for Entity    ENTITY_DRAFT_SAVED    ${entity name}
+
+Homepage Feed Doesnt Contain DRAFT SAVE entry for Entity
+    [Arguments]    ${entity name}
+    Homepage Feed Doesnt Contain Action for Entity    ENTITY_DRAFT_SAVED    ${entity name}
+
+Homepage Feed Contains TAG_ADDED entry for Entity
+    [Arguments]    ${entity name}    ${tag text}
+    Homepage Feed Contains Action for Entity    TAG_ADDED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='TAG_ADDED']/*/div[@class='summary']/a[text()='${tag text}']    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain TAG_ADDED entry for Entity
+    [Arguments]    ${entity name}    ${tag text}
+    Homepage Feed Doesnt Contain Action for Entity    TAG_ADDED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='TAG_ADDED']/*/div[@class='summary']/a[text()='${tag text}']
+    Unselect Frame
+
+Homepage Feed Contains TAG_DELETED entry for Entity
+    [Arguments]    ${entity name}    ${tag text}
+    Homepage Feed Contains Action for Entity    TAG_DELETED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='TAG_DELETED']/*/div[@class='summary']/a[text()='${tag text}']    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain TAG_DELETED entry for Entity
+    [Arguments]    ${entity name}    ${tag text}
+    Homepage Feed Doesnt Contain Action for Entity    TAG_DELETED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='TAG_DELETED']/*/div[@class='summary']/a[text()='${tag text}']
+    Unselect Frame
+
+Homepage Feed Contains ENTITY_VERSION_SAVED entry for Entity
+    [Arguments]    ${entity name}    ${reason}
+    Homepage Feed Contains Action for Entity    ENTITY_VERSION_SAVED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='ENTITY_VERSION_SAVED' and @data-entity-name='${entity name}']/*/div[@class='summary' and contains(text(),'${reason}')]    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain ENTITY_VERSION_SAVED entry for Entity
+    [Arguments]    ${entity name}    ${reason}
+    Homepage Feed Doesnt Contain Action for Entity    ENTITY_VERSION_SAVED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='ENTITY_VERSION_SAVED' and @data-entity-name='${entity name}']/*/div[@class='summary' and contains(text(),'${reason}')]    30s
+    Unselect Frame
+
+Homepage Feed Contains DOCUMENT_SIGNED entry for Entity
+    [Arguments]    ${entity name}
+    Homepage Feed Contains Action for Entity    DOCUMENT_SIGNED    ${entity name}
+
+Homepage Feed Doesnt Contain DOCUMENT_SIGNED entry for Entity
+    [Arguments]    ${entity name}
+    Homepage Feed Doesnt Contain Action for Entity    DOCUMENT_SIGNED    ${entity name}
+
+Homepage Feed Contains COMMENT_ADDED entry for Entity
+    [Arguments]    ${entity name}    ${comment}
+    Homepage Feed Contains Action for Entity    COMMENT_ADDED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='COMMENT_ADDED' and @data-entity-name='${entity name}']/*/div/blockquote[contains(text(), '${comment}')]    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain COMMENT_ADDED entry for Entity
+    [Arguments]    ${entity name}    ${comment}
+    Homepage Feed Doesnt Contain Action for Entity    COMMENT_ADDED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='COMMENT_ADDED' and @data-entity-name='${entity name}']/*/div/blockquote[contains(text(), '${comment}')]
+    Unselect Frame
+
+Homepage Feed Contains COMMENT_UPDATED entry for Entity
+    [Arguments]    ${entity name}    ${comment}
+    Homepage Feed Contains Action for Entity    COMMENT_UPDATED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='COMMENT_UPDATED' and @data-entity-name='${entity name}']/*/div/blockquote[contains(text(), '${comment}')]    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain COMMENT_UPDATED entry for Entity
+    [Arguments]    ${entity name}    ${comment}
+    Homepage Feed Doesnt Contain Action for Entity    COMMENT_UPDATED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='COMMENT_UPDATED' and @data-entity-name='${entity name}']/*/div/blockquote[contains(text(), '${comment}')]
+    Unselect Frame
+
+Homepage Feed Contains COMMENT_DELETED entry for Entity
+    [Arguments]    ${entity name}    ${comment}
+    Homepage Feed Contains Action for Entity    COMMENT_DELETED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='COMMENT_DELETED' and @data-entity-name='${entity name}']/*/div/blockquote[contains(text(), '${comment}')]    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain COMMENT_DELETED entry for Entity
+    [Arguments]    ${entity name}    ${comment}
+    Homepage Feed Doesnt Contain Action for Entity    COMMENT_DELETED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='COMMENT_DELETED' and @data-entity-name='${entity name}']/*/div/blockquote[contains(text(), '${comment}')]
+    Unselect Frame
+
+Homepage Feed Contains STATUS_PROPERTY_CHANGED entry for Entity
+    [Arguments]    ${entity name}    ${old status}    ${new status}
+    Homepage Feed Contains Action for Entity    STATUS_PROPERTY_CHANGED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//*[@data-type='STATUS_PROPERTY_CHANGED' and @data-entity-name='${entity name}']/*/div[@class='summary']/div[@class='new-status']/em[text()='${new status}']    30s
+    Wait Until Page Contains Element    xpath=//*[@data-type='STATUS_PROPERTY_CHANGED' and @data-entity-name='${entity name}']/*/div[@class='summary']/div[@class='old-status']/em[text()='${old status}']    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain STATUS_PROPERTY_CHANGED entry for Entity
+    [Arguments]    ${entity name}    ${old status}    ${new status}
+    Homepage Feed Doesnt Contain Action for Entity    STATUS_PROPERTY_CHANGED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='STATUS_PROPERTY_CHANGED' and @data-entity-name='${entity name}']/*/div[@class='summary']/div[@class='new-status']/em[text()='${new status}']
+    Page Should Not Contain Element    xpath=//*[@data-type='STATUS_PROPERTY_CHANGED' and @data-entity-name='${entity name}']/*/div[@class='summary']/div[@class='old-status']/em[text()='${old status}']
+    Unselect Frame
+
+Homepage Feed Contains ALL_COMMENTS_DELETED entry for Entity
+    [Arguments]    ${entity name}
+    Homepage Feed Contains Action for Entity    ALL_COMMENTS_DELETED    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//div[@data-type='ALL_COMMENTS_DELETED' and @data-entity-name='${entity name}']    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain ALL_COMMENTS_DELETED entry for Entity
+    [Arguments]    ${entity name}
+    Homepage Feed Doesnt Contain Action for Entity    ALL_COMMENTS_DELETED    ${entity name}
+    Select Homepage Frame
+    Page Should Not Contain Element    xpath=//*[@data-type='ALL_COMMENTS_DELETED' and @data-entity-name='${entity name}']
+    Unselect Frame
+
+Homepage Feed Contains Action for Entity
+    [Arguments]    ${action type}    ${entity name}
+    Select Homepage Frame
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    xpath=//*[@data-type='${action type}' and contains(@data-entity-name,'${entity name}')]    60s
+    #Handle potential sync issues between actions and them appearing on the activity feed
+    ${status2}    ${value2}=    Run Keyword If    '${status}'=='FAIL'    Run Keyword And Ignore Error    Wait Until Element Is Visible    xpath=//button[@data-role="new-items-available"]
+    ...    timeout=60s
+    Run Keyword If    '${status}'=='FAIL' and '${status2}'=='PASS'    Robust Click    xpath=//button[@data-role="new-items-available"]    button
+    Run Keyword If    '${status}'=='FAIL' and '${status2}'=='PASS'    Wait Until Page Contains Element    xpath=//*[@data-type='${action type}' and contains(@data-entity-name,'${entity name}')]    30s
+    Run Keyword If    '${status}'=='FAIL' and '${status2}'=='FAIL'    Fail    Action "${action type}" for entity "${entity name}" was not found and no new activities to load were found
+    Unselect Frame
+
+Homepage Feed Contains Action for Entity At
+    [Arguments]    ${action type}    ${entity name}    ${position}
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//div[contains(@class,'large-12 small-11 columns content')]/div[${position}][contains(@data-type,'${action type}') and contains(@data-entity-name,'${entity name}')]    30s
+    Unselect Frame
+
+Homepage Feed Doesnt Contain Action for Entity
+    [Arguments]    ${action type}    ${entity name}
+    Select Homepage Frame
+    Wait Until Page Does Not Contain Element    xpath=//*[@data-type='${action type}' and @data-entity-name='${entity name}']    10s
+    Unselect Frame
+
+Homepage Feed Has New Items Present
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//button[@data-role='new-items-available']    60s
+    Unselect Frame
+
+Homepage Feed Show New Items
+    Select Homepage Frame
+    Robust Click    xpath=//button[@data-role='new-items-available']
+    Unselect Frame
+
+Homepage Feed Has Older Items
+    Select Homepage Frame
+    Wait Until Page Contains Element    xpath=//button[@data-role='show-older-items']    30s
+    Unselect Frame
+
+Homepage Feed Show Older Items
+    Select Homepage Frame
+    Robust Click    xpath=//button[@data-role='show-older-items']
+    Unselect Frame
+
+Recent Items List Contains Item In Position
+    [Arguments]    ${Position}    ${Name}
+    [Documentation]    Confirms the presence of an entity identified by *${Name}* is present in the Recent Items list in the position identified by *${Position}*.
+    ...
+    ...    *${Name}* = The case sensitive name of the entity you are looking for
+    ...    *${Position}* = The position in the recent users list you expect the item to occupy, the top of the list has the value *1*, the second has the value *2*, the ninth in the list has the value *9*, etc.
+    Wait Until Page Contains Element    xpath=//div[contains(@id,'ewb-homepage-recent-items-list')]/div[${Position}]/div/div[2]/div/a[text() ="${Name}"]    30s
+
+Recent Items List Doesnt Contain Item In Position
+    [Arguments]    ${Position}    ${Name}
+    [Documentation]    Confirms that an entity identified by *${Name}* is not present in the Recent Items list in the position identified by *${Position}*.
+    ...
+    ...    *${Name}* = The case sensitive name of the entity you are looking for
+    ...    *${Position}* = The position in the recent users list you expect the item to not occupy, the top of the list has the value *1*, the second has the value *2*, the ninth in the list has the value *9*, etc.
+    Wait Until Page Does Not Contain Element    xpath=//div[contains(@id,'ewb-homepage-recent-items-list')]/div[${Position}]/div/div[2]/div/a[text() ="${Name}"]    30s
+
+Click Recent Item Link
+    [Arguments]    ${Name}
+    [Documentation]    Clicks on the link in the recent items list identified by *${Name}*.
+    ...
+    ...    *${Name}* = The text name of the link you wish to click.
+    Robust Click    xpath=//div[contains(@id,'ewb-homepage-recent-items-list')]//a[text()="${Name}"]
+    Unselect Frame
+    Run Keyword And Ignore Error    Robust Click    okButton
+
+Click Homepage Tag
+    [Arguments]    ${Tag_Text}
+    [Documentation]    Keyword clicks on a tag identified by *${Tag_Text}* on the user homepage.
+    ...
+    ...    _Before using this keyword the page must be on the homepage, the CDC Job must have been run for th etag to be available and the homepage frame must have been selected. Use the keywords *Run CDC Job*, *Open Homepage* and *Select Homepage Frame*_
+    ...
+    ...    *${Tag_Text}* = The case sensitive text of the tag you wish to click.
+    Robust Click    xpath=//div[contains(@id,'ewb-homepage-tag-list')]/span/a[text() = "${Tag_Text}"]
+    Wait Until Keyword Succeeds    60s    1s    Select Window    IDBS E-WorkBook - Items tagged with ${Tag_Text}
+    Wait Until Page Contains Element    xpath=//div[contains(@class,'ewb-label-for ewb-panel-header-label')]/i[contains(text(),'${Tag_Text}')]    30s

@@ -1,0 +1,255 @@
+*** Settings ***
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+POST Test Request - Experiment
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+
+POST Test Request - Report
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_report_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+
+POST Test Request - Template
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_template_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Log    ${workflow tasks JSON}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+
+POST Test Request - Project
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_project}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}    400
+
+POST Test Request - Group
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    ${wf_group}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}    400
+
+POST Test Request - Root
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS And Expect Error    BY_ENTITY_ID    1    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}    400
+
+Set Actioning Record - Experiment
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Set Actioning Record
+    Set Actioning Record    ${new task id}    ${wf_experiment_1}
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    Validate Task    ${workflow tasks JSON}    actioning_record_id=${wf_experiment_1}
+    Validate Task    ${workflow tasks JSON}    actioning_record_path=/Root/Workflow WS Group/WF_PROJECT1/WF_EXPERIMENT_1
+
+Set Actioning Record - Report
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Set Actioning Record
+    Set Actioning Record    ${new task id}    ${wf_report_1}
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    Validate Task    ${workflow tasks JSON}    actioning_record_id=${wf_report_1}
+    Validate Task    ${workflow tasks JSON}    actioning_record_path=/Root/Workflow WS Group/WF_PROJECT1/WF_REPORT_1
+
+Set Actioning Record - Template
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Set Actioning Record
+    Set Actioning Record    ${new task id}    ${wf_template_1}
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    Validate Task    ${workflow tasks JSON}    actioning_record_id=${wf_template_1}
+    Validate Task    ${workflow tasks JSON}    actioning_record_path=/Root/Workflow WS Group/WF_PROJECT1/WF_TEMPLATE_1
+
+Set Actioning Record - Project
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Set Actioning Record
+    Set Actioning Record And Expect Error    ${new task id}    ${wf_project}    403
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+
+Set Actioning Record - Group
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Set Actioning Record
+    Set Actioning Record And Expect Error    ${new task id}    ${wf_group}    403
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+
+Set Actioning Record - Root
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    TEST    Test 1: a    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ...    {"name": "1", "value": "a"}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    Test Configuration    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get and Validate Workflow
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1
+    # Accept Task
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    Accept Task    ${new task id}
+    # Set Actioning Record
+    Set Actioning Record And Expect Error    ${new task id}    1    403
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_type=TEST
+    Validate Task    ${workflow tasks JSON}    object=a
+    Validate Task    ${workflow tasks JSON}    test=1

@@ -1,0 +1,349 @@
+*** Settings ***
+Resource          add_image_items_to_experiments.txt
+Resource          add_items_to_experiments.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Library           OperatingSystem
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Library           CheckPDFLibrary
+Library           IDBSHttpLibrary
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../../Libraries/Core Web Services/Entity XMLConfiguration/entity_xml_configuration_resource.txt
+Resource          ../../../../Libraries/Core Web Services/User Settings/user_setting_resource.txt
+Resource          ../../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+# Library           EntityAPILibrary
+Library           String
+
+*** Variables ***
+${default_data_image_item_dir}    input\\default data\\images
+${default_data_configuration_dir}    input\\default data\\configuration
+${basic_record_config}    input\\other\\basic experiment config - print publish configuration.xml
+${rest_api_host}    ${SERVER}
+
+*** Keywords ***
+Assert Pdf As Expected
+    [Arguments]    ${experiment_id}    ${expected_pdf}    ${actual_pdf}=${CURDIR}\\${TEST NAME}.pdf
+    [Documentation]    Creates a PDF from an experment, saves it to ${actual_pdf} and compares it with ${expected_pdf}, failing if there is no match
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${experiment_id} The experiment id
+    ...
+    ...    ${expected_pdf} The PDF file to compare with the saved PDF
+    ...
+    ...    ${actual_pdf} The file where to save the experiment PDF
+    ...
+    ...    *Return value*
+    ...    none
+    ...
+    ...    *Precondition*
+    ...    none
+    ...
+    ...    *Example*
+    ...    none
+    ${rest_api_host}=    Set Variable    ${SERVER}
+    ${pdf_entity_id}=    EntityAPILibrary.Create Pdf    ${experiment_id}    5 Minutes
+    ${pdf_entity_version_id}=    Get Entity Version ID    ${pdf_entity_id}
+    ${pdf_entity_data}=    Get Entity Data    ${pdf_entity_id}    ${pdf_entity_version_id}
+    Comment    ${actual_pdf}    String.Replace String    ${actual_pdf}    \\\\    \\
+    Save Response Body    ${actual_pdf}
+    Check Pdf File    Compare PDFs    ${actual_pdf}    ${expected_pdf}
+    Comment    Remove File    ${actual_pdf}
+
+Assert Without Regeneration Pdf As Expected
+    [Arguments]    ${pdf_entity_id}    ${expected_pdf}    ${actual_pdf}=${CURDIR}\\${TEST NAME}.pdf
+    [Documentation]    Extracts a PDF previously generated, saves it to ${actual_pdf} and compares it with ${expected_pdf}, failing if there is no match
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${experiment_id} The pdf entity id
+    ...
+    ...    ${expected_pdf} The PDF file to compare with the saved PDF
+    ...
+    ...    ${actual_pdf} The file where to save the experiment PDF
+    ...
+    ...    *Return value*
+    ...    none
+    ...
+    ...    *Precondition*
+    ...    none
+    ...
+    ...    *Example*
+    ...    none
+    ${pdf_entity_version_id}=    Get Entity Version ID    ${pdf_entity_id}
+    ${pdf_entity_data}=    Get Entity Data    ${pdf_entity_id}    ${pdf_entity_version_id}
+    Comment    ${actual_pdf}    String.Replace String    ${actual_pdf}    \\\\    \\
+    Save Response Body    ${actual_pdf}
+    Check Pdf File    Compare PDFs    ${actual_pdf}    ${expected_pdf}
+    Comment    Remove File    ${actual_pdf}
+
+Set Page Config
+    [Arguments]    ${v_margin}=15    ${h_margin}=15    ${orientation}=1    ${page_size}=A4    ${user_id}=${ADMIN ID}    # An orientation of 0 is portrait and 1 is landscape
+    [Documentation]    Sets the ful lpage config
+    ...
+    ...    *Arguments*
+    ...    ${v_margin} The vertical margin (default 15)
+    ...
+    ...    ${h_margin} The horizontal margin (default 15)
+    ...
+    ...    ${orientation} The orienation (default portrait - 1)
+    ...
+    ...    ${page_size} The page size (default A4)
+    ...
+    ...    *Return value*
+    ...    None
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    Replace User Setting    vMargin    ${v_margin}
+    Replace User Setting    hMargin    ${h_margin}
+    Replace User Setting    orientation    ${orientation}
+    Replace User Setting    paperSize    ${page_size}
+
+Load Print Config - Basic Options Record Level
+    [Arguments]    ${experiment_inc_header}=true    ${experiment_inc_footer}=true    ${experiment_inc_experiment_attributes}=false
+    ${configuration_xml}=    Get File    ${pdf_content_test_data_root_folder}\\${basic_record_config}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [experiment_inc_header]    ${experiment_inc_header}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [experiment_inc_footer]    ${experiment_inc_footer}
+    ${configuration_xml}=    Replace String    ${configuration_xml}    [experiment_inc_experiment_attributes]    ${experiment_inc_experiment_attributes}
+    [Return]    ${configuration_xml}
+
+Set suite path variables
+    Comment    get the name of this test suite - just the last bit in the path, which is delimited by stops, but there is an annoying dot in our test names....
+    ${this_suite_name_part}=    Fetch From Right    ${SUITE_NAME}    .
+    ${this_suite_name}=    Set Variable    ${this_suite_name_part}
+    ${test_data_folder}=    Set Variable    ${pdf_content_test_data_root_folder}\\${this_suite_name}
+    ${expected_folder}=    Set Variable    ${pdf_content_expected_root_folder}\\${this_suite_name}
+    ${input_folder}=    Set Variable    ${test_data_folder}\\input
+    ${output_folder}=    Set Variable    ${OUTPUT_DIR}\\${this_suite_name}
+    Set Suite Variable    ${expected_folder}
+    Set Suite Variable    ${input_folder}
+    Set Suite Variable    ${output_folder}
+    Set Suite Variable    ${test_data_folder}
+    Set Suite Variable    ${this_suite_name}
+
+Setup standard suite
+    [Documentation]    Set up test suite variables, e.g., ${input_folder and ${output_folder}, and creates default group/project. Also, it sets the variables ${group_id} and ${project_id}.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    Set suite path variables
+    ${group_id}    ${project_id}=    SetUp Default Project
+    Set Suite Variable    ${group_id}
+    Set Suite Variable    ${project_id}
+    Set Page Config
+
+Configure Default Experiment
+    [Arguments]    ${experiment_id}
+    ${config_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_configuration_dir}
+    Comment    Setup config so some item properties there
+    ${item_properties_config_xml}=    Get File    ${config_dir}\\item display properties.xml
+    Replace Entity Config    ${experiment_id}    DISPLAY_ITEM_ATTRIBUTES    ${item_properties_config_xml}
+    ${print_publish_config_xml}=    Get File    ${config_dir}\\print publish configuration.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_publish_config_xml}
+
+Configure Simple Experiment
+    [Arguments]    ${experiment_id}
+    ${config_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_configuration_dir}
+    Comment    Setup config so NO item properties there
+    ${print_publish_config_xml}=    Get File    ${config_dir}\\print publish configuration simple.xml
+    Replace Entity Config    ${experiment_id}    PRINT_PUB_PDF_SETTINGS    ${print_publish_config_xml}
+
+Populate Default Experiment
+    [Arguments]    ${experiment_id}
+    [Documentation]    Pupulate the experiment with default data (some images), version save, and unlock it
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${experiment_id} id of experiment to pupulate
+    ...
+    ...    *Precondition*
+    ...    Experiment must exist
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    : FOR    ${index}    IN RANGE    3
+    \    Add JPEG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 300.jpg    JPG doc ${index}
+    : FOR    ${index}    IN RANGE    2
+    \    ${doc_id}=    Add JPEG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 300.jpg    Signed JPG doc ${index}
+
+Populate Simple Experiment
+    [Arguments]    ${experiment_id}
+    [Documentation]    Populate the experiment with default data (some images), version save, and unlock it
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${experiment_id} id of experiment to pupulate
+    ...
+    ...    *Precondition*
+    ...    Experiment must exist
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    ${image_document_id}=    Add JPEG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 300.jpg
+    Set Suite Variable    ${image_document_id}
+
+Populate Signed Item Experiment
+    [Arguments]    ${experiment_id}    ${number_of_items}=3
+    [Documentation]    Populate the experiment with three data (signed images), version save, and unlock it
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    ${experiment_id} id of experiment to pupulate
+    ...
+    ...    *Precondition*
+    ...    Experiment must exist
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    : FOR    ${index}    IN RANGE    ${number_of_items}
+    \    ${doc_id}=    Add JPEG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 300.jpg    Signed JPG doc ${index}
+    \    EntityAPILibrary.Lock Entity    ${experiment_id}
+    \    Sign Entity    ${experiment_id}    ${doc_id}
+    \    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Setup Default Project
+    ${Time}    Get Time
+    ${group_id}=    EntityAPILibrary.Ensure Group Is Present    1    PDF Content Acceptance
+    ${project_id}=    EntityAPILibrary.Create Project    ${group_id}    Project-${this_suite_name}-${Time}
+    Comment    \    \    Keep experiment name constant - it needs to match the expected PDF!
+    @{group_then_project}=    Create List    ${group_id}    ${project_id}
+    [Return]    @{group_then_project}
+
+Setup standard test case
+    [Documentation]    Setup standard test case, an experiment with some data, and version save it. Also, the Suite Variable ${experiment_id} is set.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${TEST NAME}
+    Configure Default Experiment    ${experiment_id}
+    Populate Default Experiment    ${experiment_id}
+    Set Suite Variable    ${experiment_id}
+
+Setup simple test case
+    [Documentation]    Setup simple test case, an experiment with some data, and version save it. Also, the Suite Variable ${experiment_id} is set.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${TEST NAME}
+    Configure Simple Experiment    ${experiment_id}
+    Populate Simple Experiment    ${experiment_id}
+    Set Suite Variable    ${experiment_id}
+
+Setup signed items test case
+    [Documentation]    Setup simple test case, an experiment with a single signed image document, and version save it. Also, the Suite Variable ${experiment_id} is set.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${TEST NAME}
+    Configure Default Experiment    ${experiment_id}
+    Populate Signed Item Experiment    ${experiment_id}
+    Set Suite Variable    ${experiment_id}
+
+Setup simple signed item test case
+    [Documentation]    Setup simple test case, an experiment with a single signed image document, and version save it. Also, the Suite Variable ${experiment_id} is set.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    *Precondition*
+    ...
+    ...    *Return value*
+    ...
+    ...    *Example*
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${TEST NAME}
+    Configure Simple Experiment    ${experiment_id}
+    Populate Signed Item Experiment    ${experiment_id}    1
+    Set Suite Variable    ${experiment_id}
+
+Teardown standard suite
+    Set Page Config
+    Delete System Setting    Signature/digitalSignatureLegalStatement
+    Delete System Setting    Signature/digitalSignatureImage
+
+Setup text item experiment
+    ${experiment_id}=    EntityAPILibrary.Create Experiment    ${project_id}    ${TEST NAME}
+    Configure Text and Image Exp    ${experiment_id}
+    Populate Image Experiment    ${experiment_id}
+    Set Suite Variable    ${experiment_id}
+
+Populate Image Experiment
+    [Arguments]    ${experiment_id}
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    Add JPEG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 300.jpg    JPG doc
+    Add PNG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 1500.png    PNG doc
+    comment    meh - 2 different way, the bottom one is for looping
+    ${image_dir}=    Set Variable    ${pdf_content_test_data_root_folder}\\${default_data_image_item_dir}
+    : FOR    ${index}    IN RANGE    3
+    \    Add JPEG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 300.jpg    JPG doc ${index}
+    : FOR    ${index}    IN RANGE    2
+    \    ${doc_id}=    Add PNG Item To Experiment    ${experiment_id}    ${image_dir}\\Test image 400 by 1500.png    PNG doc
+    \    EntityAPILibrary.Lock Entity    ${experiment_id}
+    \    Sign Entity    ${experiment_id}    ${doc_id}
+    \    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Non-Standard Suite Setup
+    ${this_suite_name_part}=    Fetch From Right    ${SUITE_NAME}    .
+    Set Suite Variable    ${this_suite_name}    ${this_suite_name_part}
+    Set Suite Variable    ${default_content_1_folder}    ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 1]
+    Set Suite Variable    ${default_content_2_folder}    ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 2]
+    Set Suite Variable    ${default_content_3_folder}    ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 3]
+    Set Suite Variable    ${default_content_4_folder}    ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 4]
+    Set Suite Variable    ${default_content_5_folder}    ${CURDIR}/../../../../Test Data/Core Web Services/Record Service/default content/[default content 5]
+    Set Suite Variable    ${expected_folder}    ${CURDIR}/../../../../Expected Results/Core Web Services/Record Service/PDF content acceptance/${APP_SERVER_OS}/${this_suite_name}
+    Set Suite Variable    ${output_folder}    ${OUTPUT_DIR}\\${this_suite_name}
+
+Non-Standard Test Setup
+    ${Time}    Get Time
+    ${GroupName}=    Set Variable    PDF Content Acceptance
+    ${ProjectName}=    Set Variable    Project-${this_suite_name}-${Time}
+    ${ExperimentName}=    Set Variable    ${TEST NAME}
+    ${groupID}=    EntityAPILibrary.Ensure Group Is Present    1    PDF Content Acceptance
+    ${projectID}=    EntityAPILibrary.Ensure Project Is Present    ${groupID}    ${ProjectName}
+    ${experimentID}=    EntityAPILibrary.Create Experiment    ${projectID}    ${ExperimentName}
+    ${ExpectedFilePath}=    Set Variable    one
+    ${OutputFilePath}=    Set Variable    two
+    Set Test Variable    ${ExpectedFilePath}    ${expected_folder}\\${TEST NAME}.pdf
+    Set Test Variable    ${OutputFilePath}    ${output_folder}\\${ExperimentName}.pdf
+    Set Test Variable    ${groupID}    ${groupID}
+    Set Test Variable    ${projectID}    ${projectID}
+    Set Test Variable    ${experimentID}    ${experimentID}
+
+Non-Standard Test Teardown
+    ${rest_api_host}=    Set Variable    ${SERVER}
+    EntityAPILibrary.Unlock Entity    ${experimentID}

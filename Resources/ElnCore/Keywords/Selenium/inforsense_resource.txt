@@ -1,0 +1,23 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains tagging functionality specific keywords using for testing this area of functionality.
+...               *Version: E-WorkBook Web Client 9.1.0*
+Resource          general_resource.txt
+
+*** Variables ***
+${Insert InforSense}    ewb-is-new-is-doc-command
+${document menu reload}    ewb-is-reload-view
+${document menu workflow}    ewb-is-wf-command
+${document menu view log}    ewb-is-view-log-cmd
+${document menu plugins}    ewb-is-view-plugins-cmd
+${pin checkbox}    xpath=//span[@id="ewb-attribute-editor-pinnedEntity"]/input
+
+*** Keywords ***
+Add InforSense Document
+    [Documentation]    Inserts a InforSense document from the Insert menu item
+    Open Insert Menu
+    Wait Until Keyword Succeeds    10s    0.1s    Element Should Contain    ${Insert InforSense}    InforSense Document    # Check Insert Menu Item
+    Robust Click    ${Insert InforSense}
+
+Click To Remove Menu
+    [Documentation]    Clicks on the screen to remove the menu drop down
+    Robust Click    ewb-record-header-panel

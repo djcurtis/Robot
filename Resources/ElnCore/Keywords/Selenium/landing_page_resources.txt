@@ -1,0 +1,387 @@
+*** Settings ***
+Documentation     A resource file containing IDBS defined keywords used for testing the IDBS E-WorkBook Web Client application. This resource file contains keywords used for validating the landing page functionality. This file is loaded by the common_resource.txt file which is automatically loaded when running tests through the Robot Framework.
+...
+...               *Version: E-WorkBook Web Client 9.3.0*
+Library           OracleLibrary
+Library           IDBSSelenium2Library
+Resource          general_resource.txt
+Resource          system_resource.txt
+Resource          attributes_resource.txt
+
+*** Variables ***
+${available template id prefix}    ewb-page-template-
+${available widget add button prefix}    ewb-landing-page-config-widget-add-
+${available widget prefix}    ewb-landing-page-config-widget-
+${available widgets tab container}    ewb-available-widgets-tab-parent    # The parent container for the tab anchor - this is the element containing the selected style for the tab
+${close landing page}    ewb-landing-page-close
+${config menu}    ewb-landing-page-menu-config
+${draft save landing page}    ewb-landing-page-draft-save
+${open action menu}    ewb-landing-page-menu-action
+${remove widget}    ewb-delete-widget-command
+${root layout panel prefix}    ewb-landing-page-root-    # The ID prefix of the root layout panel (the suffix should contain the id of the layout template)
+${save action menu}    xpath=//button[@id="ewb-landing-page-menu-action" and text()="Save As"]
+${selected tab class name}    ewb-landing-page-config-item-selected
+${version save landing page}    ewb-landing-page-version-save
+${change layout menu}    ewb-landing-page-menu-layouts
+
+*** Keywords ***
+Add Widget to Page
+    [Arguments]    ${widget id}    # The id of the widget to add
+    [Documentation]    Adds a new widget to the landing page
+    ...
+    ...    *Precondition*
+    ...    The landing page is open for edit
+    ...    The configuration view is open
+    ...
+    ...    Returns:*:
+    ...    ${widget index}: The index of the added widget
+    Check Configuration View is Visible
+    ${widget count} =    Get Widget Count
+    ${expected count after add} =    Evaluate    ${widget count} + 1
+    Log    Got widget count of ${widget count}, expecting new count after add of ${expected count after add}
+    Robust Click    ${available widget add button prefix}${widget id}
+    Comment    Some widgets take time to add, so keep evaluating for upto 50 seconds
+    Wait Until Keyword Succeeds    50s    1s    Expect Widget Count Equals    ${expected count after add}
+    ${widget index}=    Set Variable    ${expected count after add}
+    [Return]    ${widget index}    # The index of the added widget
+
+Change Page Layout
+    [Arguments]    ${layout id}    # The id of the layout to select
+    [Documentation]    Changes the layout template for a landing page.
+    ...
+    ...    *Precondition:*
+    ...    Landing page is open and the configuration view is displayed.
+    Log    Changing page layout to ${layout id} by clicking on element ${available template id prefix}${layout id}
+    Sleep    5s
+    Wait Until Keyword Succeeds    10s    0.1s    Robust Click    ${change layout menu}
+    ${prev_kw}=    Register Keyword To Run On Failure    Nothing
+    Wait Until Page Contains Element    ${available template id prefix}${layout id}
+    Robust Click    ${available template id prefix}${layout id}
+    Wait Until Page Contains Element    ${root layout panel prefix}${layout id}    10s
+    [Teardown]    Register Keyword To Run On Failure    ${prev_kw}
+
+Check Configuration View is Hidden
+    [Documentation]    Verifies that the configuration view is not currently visible.
+    Wait Until Element Text Contains    ${config menu}    Show Widgets
+
+Check Configuration View is Visible
+    [Documentation]    Checks whether the configuration view is visible
+    Wait Until Element Text Contains    ${config menu}    Hide Widgets    30s
+
+Check Landing Page is Locked
+    [Documentation]    Checks whether the landing page is in a locked state
+    Wait Until Element Is Visible    ${open action menu}    10s
+
+Check Landing Page is Unlocked
+    [Documentation]    Checks whether the current landing page is in an unlocked state
+    ${config text} =    Get Text    ${open action menu}
+    Should Be Equal As Strings    ${config text} =    Open
+
+Check Page Layout Is Selected
+    [Arguments]    ${layout id}
+    [Documentation]    Verifies that the selected page template matches the value given by ${layout id}
+    ${attrib}=    IDBSSelenium2Library.Get Element Attribute    ${root layout panel prefix}${layout id}@class
+    Should Match    ${attrib}    *ewb-page-template-selected*
+
+Check Widget Is Available
+    [Arguments]    ${widget id}    # The id of the widget to test for.
+    [Documentation]    Checks that the widget is available in the list of widgets to select from in the configuration page.
+    Page Should Contain Element    ${available widget prefix}${widget id}
+
+Draft Save Landing Page
+    Open Save Header Tool Menu
+    Robust Click    ${draft save landing page}
+    Wait For No Mask
+    Open Save Header Tool Menu
+    Wait Until Keyword Succeeds    30s    1s    Menu Option Should Not Be Enabled    Draft
+
+Delete Widget
+    [Arguments]    ${widget index}    # The index of the widget to delete
+    [Documentation]    Removes the widget from the page.
+    ...
+    ...    The ${widget index} variable supplied should be the index of the widget in the dom
+    ${widget count} =    Get Widget Count
+    Robust Click    xpath=(//div[contains(@class, 'ewb-view-box-container ')])[${widget index}]//img
+    Robust Click    ${remove widget}
+    ${expected count after del} =    Evaluate    ${widget count} - 1
+    Wait Until Keyword Succeeds    10s    2s    Expect Widget Count Equals    ${expected count after del}
+
+Expect Widget Count Equals
+    [Arguments]    ${expected widget count}
+    [Documentation]    Tests whether the page contains a certain number of widgets
+    ${widget count} =    Get Widget Count
+    Log    Expecting widget count of \ ${expected widget count}, got ${widget count}
+    ${fail}    Evaluate    ${widget count} != ${expected widget count}
+    Run Keyword If    ${fail}    Fail    Widget count does not meet expectation
+
+Get Widget Count
+    [Documentation]    Returns the number of widgets currently present on the landing page
+    ${widget count} =    Get Matching Xpath Count    //div[contains(@class, 'ewb-view-box-container')]
+    [Return]    ${widget count}    # The number of widgets on the page
+
+Hide Configuration Page
+    [Documentation]    Hides the configuration view.
+    ...
+    ...    *Precondition*
+    ...    The configuration view is visible
+    Check Configuration View is Visible
+    Robust Click    ${config menu}
+    Check Configuration View is Hidden
+
+Lock Landing Page
+    Comment    Wait Until Page Contains Element    ${open action menu}    10s
+    Wait Until Keyword Succeeds    10s    0.1s    Robust Click    ${open action menu}    #clicks the open button
+    Wait Until Keyword Succeeds    10s    0.1s    Robust Click    ${open action menu}    #if not locked then lock
+    ${result}=    Run Keyword and Ignore Error    Wait Until Page Contains Element    ${close landing page}    10s    #confirm lock by checking for save menu
+    Run Keyword If    ${result}!=('PASS', None)    Robust Click    ${open action menu}    #sometimes background processes prevent the clicking of the open menu action being performed so retry.
+    Run Keyword If    ${result}!=('PASS', None)    Page Should Contain Element    ${close landing page}
+    Sleep    5s
+
+Open Save Header Tool Menu
+    [Arguments]    ${number_of_retries}=5
+    ${number_of_retries}=    Evaluate    int(${number_of_retries})-1
+    Robust Click    ${save action menu}
+    ${status}    ${value}=    Run Keyword And Ignore Error    Wait Until Page Contains Element    ${context tool menu}    5s
+    Run Keyword If    '${status}'=='FAIL' and ${number_of_retries}>0    Open Save Header Tool Menu    ${number_of_retries}
+    Sleep    5s
+
+Show Configuration Page
+    Check Configuration View is Hidden
+    Robust Click    ${config menu}
+    Check Configuration View is Visible
+
+Stop Editing Page
+    Wait Until Keyword Succeeds    15s    1s    Open Save Header Tool Menu
+    Robust Click    ${close landing page}
+    Sleep    2s
+
+Version Save Landing Page
+    [Arguments]    ${username}    ${password}    ${save reason}    ${additional comments}=none
+    [Documentation]    Version saves the landing page
+    ...
+    ...    *Precondition*
+    ...    The page is open
+    Open Save Header Tool Menu
+    ${menu save status} =    IDBSSelenium2Library.Get Element Attribute    ${version save landing page}@class
+    Should Not Contain    ${menu save status}    x-item-disabled
+    Robust Click    ${version save landing page}
+    Dialog Should Be Present    Saving page
+    Select User Action Note    ${save reason}
+    Run Keyword Unless    '${additional comments}'=='none'    Input Text    xpath=//textarea[contains(@class,'ewb-textbox')]    ${additional comments}
+    Run Keyword Unless    '${additional comments}'=='none'    Textarea Should Contain    xpath=//textarea[contains(@class,'ewb-textbox')]    ${additional comments}
+    Authenticate Session    ${username}    ${password}
+    Sleep    5s
+    Wait Until Keyword Succeeds    5s    0.2s    Dialog Should Not Be Present    Saving Page
+    Wait Until Page Does Not Contain Element    xpath=//div[@class="gwt-Label" and text()="Saving..."]    30s
+    Wait Until Keyword Succeeds    10s    1s    Open Save Menu and Check Version Save Disabled
+
+Page Should Contain Widget
+    [Arguments]    ${widget title}
+    [Documentation]    Ensures a widget identified by ${widget title} is present on the page
+    Page Should Contain Element    xpath=//div[contains(@class, 'header-title') and text()="${widget title}"]
+
+Page Should Not Contain Widget
+    [Arguments]    ${widget title}
+    [Documentation]    Ensures a widget identified by ${widget title} is not present on page
+    Page Should Not Contain    xpath=//div[contains(@class,'header-title') and text()="${widget title}"]
+
+Check Position Of Widget
+    [Arguments]    ${widget caption}    ${layout id}    ${column index}    ${column position}
+    [Documentation]    Checks that a widget with a given identifier is present at a specific location within a landing page.
+    ...
+    ...    *Arguments:*
+    ...
+    ...    ${widget caption} The caption of the widget to test for
+    ...    ${layout id} The expected page identifier - this is the id of the layout that was applied to the page
+    ...    ${column index} The 1 based column index that the widget is expected to reside in
+    ...    ${column position} The 1 based position within the column that the widget is expected to reside in
+    ${title} =    Get Title of Widget At Position    ${widget caption}    ${layout id}    ${column index}    ${column position}
+    Run Keyword If    '${title}' != '${widget caption}'    Fail    Widget in column ${column index} at position ${column position} was ${title} but should have been ${widget caption}
+
+Get Title of Widget At Position
+    [Arguments]    ${widget caption}    ${layout id}    ${column index}    ${column position}
+    [Documentation]    Gets the title of the widget at a particular position within a particular column
+    Wait Until Page Contains Element    xpath=((//div[@id='${root layout panel prefix}${layout id}']/div)[${column index}]/div/*[contains(concat(' ', @class, ' '), 'ewb-view-box-container')])[${column position}]/div/div/div
+    ${title} =    Get Text    xpath=((//div[@id='${root layout panel prefix}${layout id}']/div)[${column index}]/div/*[contains(concat(' ', @class, ' '), 'ewb-view-box-container')])[${column position}]/div/div/div
+    [Return]    ${title}    # The title of the widget at that position
+
+Open Widget Menu
+    [Arguments]    ${column}    ${position}    ${layout id}
+    [Documentation]    Opens the widget menu for the widget located in ${column} and ${position}
+    ...
+    ...    *e.g.:* Column = 1 and Position = 2 means the second widget in the first column.
+    Robust Click    xpath=//div[@id=('ewb-landing-page-root-${layout id}')]/div[${column}]/div[${position}]/div/div[1]/span/img[@class='header-button']
+
+Check Widget Is Minimised
+    [Arguments]    ${column}    ${position}    ${layout id}
+    [Documentation]    This checks if a widget identified by ${column} and ${position} is minimised
+    ...
+    ...    ${column} is an integer value with the leftmost column being 1
+    ...    ${position} is an integer value with the top widget in a column being 1
+    Page Should Contain Element    xpath=//div[@id=('ewb-landing-page-root-${layout id}')]/div[${column}]/div[${position}]/div/div[2][contains(@style, ('display: none;'))]
+
+Check Widget Is Maximised
+    [Arguments]    ${column}    ${position}    ${layout id}
+    [Documentation]    This checks if a widget identified by ${column} and ${position} is maximised
+    ...
+    ...    ${column} is an integer value with the leftmost column being 1
+    ...    ${position} is an integer value with the top widget in a column being 1
+    Element Should Be Visible    xpath=//div[@id=('ewb-landing-page-root-${layout id}')]/div[${column}]/div[${position}]/div/div[2]/iframe
+
+Change Widget Caption
+    [Arguments]    ${column_no}    ${position_no}    ${new_caption}    ${single_column?}    ${layout id}
+    [Documentation]    Changes the caption of a widget identified by ${column_no} and ${position_no} to ${new_caption}
+    ...
+    ...    ${column_no} is an integer value identifying the column, with the leftmost column being column 1
+    ...    ${position_no} is an integer value identifying th eposition in a column, with the top position in a column being position 1
+    ...    ${single_column?} a YES or NO field, determining which action stream to follow as the paths for single column layout is different to other column layout paths
+    ...    ${new_caption} is the text value you want the widget caption to be changed to
+    Run Keyword If    '${single_column?}' == 'YES'    Open Widget Menu Single Column    ${position_no}
+    Run Keyword If    '${single_column?}' == 'NO'    Open Widget Menu    ${column_no}    ${position_no}    ${layout id}
+    Robust Click    ewb-widget-rename-caption
+    Wait Until Page Contains    Enter a value for the new caption    30s    #to make it robust enough for Chrome
+    Input Text    xpath=//div[@class=('ewbdialog-container')]/div[2]/div/div[3]/div/div/input    ${new_caption}
+    Textfield Should Contain    xpath=//div[@class=('ewbdialog-container')]/div[2]/div/div[3]/div/div/input    ${new_caption}
+    Click OK
+    Page Should Contain Widget    ${new_caption}
+
+Move Widget Between Columns
+    [Arguments]    ${layout_id}    ${column}    ${position}    ${new_column_number}
+    [Documentation]    This selects a widget identified by ${column} and ${position} and drags and drops it to another location within the landing page, moving by column number
+    ...
+    ...    ${layout_id} is the layout type (e.g.: 2cols-left, Single-Column, etc.)
+    ...    ${column} is an integer value identifying the column, with the leftmost column being column 1
+    ...    ${position} is an integer value identifying th eposition in a column, with the top position in a column being position 1
+    ...    ${new_column_number} is the column to be moved to, the leftmost column is 1
+    Comment    Call Selenium Api    mouseDownAt    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    0,0
+    Comment    Call Selenium Api    mouseMoveAt    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    ${x_movement},${y_movement}
+    Comment    Call Selenium Api    mouseUpAt    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    ${x_movement},${y_movement}
+    Run Keyword Unless    '${BROWSER}'=='SAFARI'    Drag And Drop    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/div[${column}]/div[${position}]/div/div[1]/div/div    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/div[${new_column_number}]/div/div
+    Run Keyword If    '${BROWSER}'=='SAFARI'    Drag And Drop Using Javascript    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/div[${column}]/div[${position}]/div/div[1]/div/div    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/div[${new_column_number}]/div/div    yoffset=0
+
+Move Widget In Column
+    [Arguments]    ${layout_id}    ${column}    ${position}    ${new_position}
+    [Documentation]    This selects a widget identified by ${column} and ${position} and drags and drops it to another location within the landing page, moving within a column
+    ...
+    ...    ${layout_id} is the layout type (e.g.: 2cols-left, Single-Column, etc.)
+    ...    ${column} is an integer value identifying the column, with the leftmost column being column 1
+    ...    ${position} is an integer value identifying th eposition in a column, with the top position in a column being position 1
+    ...    ${new_position} is the position in the current column to be moved to, e.g. moving the first widget to become the second widget would be 2
+    Comment    Call Selenium Api    mouseDownAt    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    0,0
+    Comment    Call Selenium Api    mouseMoveAt    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    ${x_movement},${y_movement}
+    Comment    Call Selenium Api    mouseUpAt    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    ${x_movement},${y_movement}
+    Drag And Drop    xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${position}]/x:div/x:div[1]/x:div/x:div    target=xpath=//div[@id=('${root layout panel prefix}${layout_id}')]/x:div[${column}]/x:div[${new_position}]
+
+Minimise Widget
+    [Arguments]    ${column}    ${position}    ${single_column?}    ${layout id}
+    [Documentation]    Minimises a widget identified by ${column} and ${position}
+    ...
+    ...    ${column} is an integer value identifying the column, with the leftmost column being column 1
+    ...    ${position} is an integer value identifying th eposition in a column, with the top position in a column being position 1
+    ...    ${single_column?} a YES or NO field, determining which action stream to follow as the paths for single column layout is different to other column layout paths
+    Run Keyword If    '${single_column?}' == 'YES'    Open Widget Menu Single Column    ${position}
+    Run Keyword If    '${single_column?}' == 'NO'    Open Widget Menu    ${column}    ${position}    ${layout id}
+    ${result}=    Run Keyword and Ignore Error    Wait Until Page Contains    Minimize    10s
+    Run Keyword If    ${result}!=('PASS', None) and '${single_column?}'=='YES'    Open Widget Menu Single Column    ${position}
+    Run Keyword If    ${result}!=('PASS', None) and '${single_column?}'=='YES'    Wait Until Page Contains    Minimize    10s
+    Run Keyword If    ${result}!=('PASS', None) and '${single_column?}'=='NO'    Open Widget Menu Single Column    ${position}
+    Run Keyword If    ${result}!=('PASS', None) and '${single_column?}'=='NO'    Wait Until Page Contains    Minimize    10s
+    Robust Click    ewb-widget-expand-collapse
+    Wait Five Seconds
+    Run Keyword If    '${single_column?}' == 'YES'    Check Widget Is Minimised Single Column    ${position}
+    Run Keyword If    '${single_column?}' == 'NO'    Check Widget Is Minimised    ${column}    ${position}    ${layout id}
+
+Maximise Widget
+    [Arguments]    ${column}    ${position}    ${single_column?}    ${layout id}
+    [Documentation]    Restores a widget identified by ${column} and ${position}
+    ...
+    ...    ${column} is an integer value identifying the column, with the leftmost column being column 1
+    ...    ${position} is an integer value identifying the position in a column, with the top position in a column being position 1
+    ...    ${single_column?} a YES or NO field, determining which action stream to follow as the paths for single column layout is different to other column layout paths
+    Run Keyword If    '${single_column?}' == 'YES'    Open Widget Menu Single Column    ${position}
+    Run Keyword If    '${single_column?}' == 'NO'    Open Widget Menu    ${column}    ${position}    ${layout id}
+    Page Should Contain    Restore
+    Robust Click    ewb-widget-expand-collapse
+    Wait Five Seconds
+    Run Keyword If    '${single_column?}' == 'YES'    Check Widget Is Maximised Single Column    ${position}
+    Run Keyword If    '${single_column?}' == 'NO'    Check Widget Is Maximised    ${column}    ${position}    ${layout id}
+
+Unlock Landing Page
+    [Documentation]    Unlocks the current lanidng page via the Stop Editing option
+    Open Save Header Tool Menu
+    Robust Click    ${close landing page}
+    Wait Until Page Contains Element    xpath=//*[@id='ewb-landing-page-menu-action' and text()='Open']    30s
+    Sleep    5s    #Landing pages are slow to close
+
+Open Landing Page Tile Menu
+    [Arguments]    ${title}
+    [Documentation]    Opens the tile menu on a Landing Page tile identified by ${title}
+    Robust Click    //table[@title='${title}']/tbody/tr[1]/td/table/tbody/tr/td[3]
+
+Delete Landing Page From Tile Menu
+    [Arguments]    ${title}
+    [Documentation]    Deletes a landing page from the tile menu identified by ${title}
+    Open Landing Page Tile Menu    ${title}
+    Robust Click    ewb-entity-command-delete
+
+Open Widget Menu Single Column
+    [Arguments]    ${position_no}
+    [Documentation]    Opens the widget menu of a widget identified by ${position} in the single column layout
+    ...
+    ...    *Use this keyword when in the single column layout as the paths are different to multiple column layouts.*
+    ...
+    ...    ${position} integer value, 1 is the widget at the top of the column, 2 is the second widget in column, etc.
+    Robust Click    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${position_no}]/div/div[1]/span/img[@class='header-button']
+
+Check Widget Is Maximised Single Column
+    [Arguments]    ${position}
+    [Documentation]    Checks that the widget identified by ${position} is maximised in a single column layout
+    ...
+    ...    *Use this keyword when the page is in a single column layout only*
+    ...
+    ...    ${position} integer value, 1 is the widget at the top of the column, 2 is the second widget in column, etc.
+    Element Should Be Visible    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${position}]/div/div[2]
+
+Check Widget Is Minimised Single Column
+    [Arguments]    ${position}
+    [Documentation]    Checks that the widget identified by ${position} is minimised in a single column layout
+    ...
+    ...    *Use this keyword when the page is in a single column layout only*
+    ...
+    ...    ${position} integer value, 1 is the widget at the top of the column, 2 is the second widget in column, etc.
+    Element Should Not Be Visible    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${position}]/div/div[2]
+
+Move Widget Single Column
+    [Arguments]    ${position}    ${x_movement}    ${y_movement}
+    [Documentation]    *Use this keyword when in the single page layout only*
+    ...
+    ...    This keyword grabs and moves a widget identified by ${position} in a single column layout by ${x_movement} and ${y_movement}
+    ...
+    ...    ${position} is an integer value identifying the position in a column, with the top position in a column being position 1
+    ...    ${x_movement} is the movement along the x-plane (left and right), +ve values move right (e.g.: +50), -ve values move left (e.g.: -70). Movement is measured in pixels.
+    ...    ${y_movement} is the movement aong the y-plane (up and down), +ve values move up (e.g.: +25), -ve values move down (e.g.: -35). Movement is measured in pixels.
+    Run Keyword Unless    '${OPERATING_SYSTEM}'=='OSX'    Drag And Drop By Offset    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${position}]/div/div[1]    ${x_movement}    ${y_movement}
+    Run Keyword If    '${OPERATING_SYSTEM}'=='OSX'    Drag And Drop By Offset Using Javascript    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${position}]/div/div[1]    ${x_movement}    ${y_movement}
+
+Get Title of Widget At Position Single Column
+    [Arguments]    ${widget caption}    ${column position}
+    Wait Until Page Contains Element    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${column position}]/div/div[1]/div/div
+    ${title}=    Get Text    xpath=//div[@id=('ewb-landing-page-root-Single-Column')]/div[${column position}]/div/div[1]/div/div
+    [Return]    ${title}
+
+Check Position of Widget Single Column
+    [Arguments]    ${widget caption}    ${column position}
+    ${title}=    Get Title of Widget At Position Single Column    ${widget caption}    ${column position}
+    Run Keyword If    '${title}' != '${widget caption}'    Fail
+
+Select Widget Frame By Name
+    [Arguments]    ${Widget Name}
+    [Documentation]    Selects a widget frame based on the title of the widget as displayed in the web client.
+    Wait Until Page Contains Element    xpath=//div[contains(@class, 'header-title') and text()="${Widget Name}"]
+    Select Frame    xpath=//div[contains(@class, 'header-title') and text()="${Widget Name}"]/../../../div[2]/iframe
+
+Open Save Menu and Check Version Save Disabled
+    Open Save Header Tool Menu
+    ${result}=    Run Keyword and Ignore Error    Menu Option Should Not Be Enabled    New Version
+    Run Keyword If    ${result}!=('PASS', None)    Open Save Header Tool Menu
+    Run Keyword If    ${result}!=('PASS', None)    Menu Option Should Not Be Enabled    New Version

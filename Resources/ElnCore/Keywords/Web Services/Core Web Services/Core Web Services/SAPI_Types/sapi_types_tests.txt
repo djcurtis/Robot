@@ -1,0 +1,279 @@
+*** Settings ***
+Resource          sapi_entity_types_resources.txt
+Resource          sapi_common_types_resource.txt
+Resource          sapi_cache_types_resource.txt
+Library           Collections
+Library           XMLLibrary
+
+*** Test Cases ***
+Test Build SAPIAttributeUpdateSequence
+    @{attributes}=    Create List    a=1    b=2    c=3
+    # Building xml
+    ${attributes_node}=    Build SAPIAttributeUpdateSequence    @{attributes}
+    # Checking expectations
+    ${sapi_attributes}=    XMLLibrary.Get Xml    ${attributes_node}    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count attributes    ${sapi_attributes}    3    attribute    elementNamespace=${ENTITY_XMLNS}
+
+Test Build SAPIDataUpdate
+    ${text_data}=    Set Variable    name='hello'
+    ${binary_data}=    Set Variable    TestBinary
+    # Building xml
+    ${data_node}=    Build SAPIDataUpdate    ${text_data}    ${binary_data}
+    # Checking expectations
+    ${sapi_data_update}=    XMLLibrary.Get Xml    ${data_node}    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value text data    ${sapi_data_update}    ${text_data}    dataText    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value binary data    ${sapi_data_update}    ${binary_data}    dataBinary    ${ENTITY_XMLNS}
+
+Test Build SAPIDataUpdate with empty text data
+    ${text_data}=    Set Variable    ${EMPTY}
+    ${binary_data}=    Set Variable    TestBinary
+    # Building xml
+    ${data_node}=    Build SAPIDataUpdate    ${text_data}    ${binary_data}
+    # Checking expectations
+    ${sapi_data_update}=    XMLLibrary.Get Xml    ${data_node}    ${ENTITY_XMLNS}
+    ${data_text_node_count}=    XMLLibrary.Get Xml Element Count    ${sapi_data_update}    dataText    ${ENTITY_XMLNS}
+    Should Be Equal As Integers    ${data_text_node_count}    0
+    XMLLibrary.Check Xml Element Value Equals    Value binary data    ${sapi_data_update}    ${binary_data}    dataBinary    ${ENTITY_XMLNS}
+
+Test Build SAPIDataUpdate with text data containing single quotes
+    ${text_data}=    Set Variable    a'b'c'd
+    ${binary_data}=    Set Variable    TestBinary
+    # Building xml
+    ${data_node}=    Build SAPIDataUpdate    ${text_data}    ${binary_data}
+    # Checking expectations
+    ${sapi_data_update}=    XMLLibrary.Get Xml    ${data_node}    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value text data    ${sapi_data_update}    ${text_data}    dataText    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value binary data    ${sapi_data_update}    ${binary_data}    dataBinary    ${ENTITY_XMLNS}
+
+Test Build SAPIDataInfo
+    ${mime_type}=    Set Variable    TestMimeType
+    ${file_type}=    Set Variable    TestFileType
+    ${data_type}=    Set Variable    TestDataType
+    # Building xml
+    ${data_info_node}=    Build SAPIDataInfo    ${mime_type}    ${file_type}    ${data_type}
+    # Checking expectations
+    ${sapi_data_info}=    XMLLibrary.Get Xml    ${data_info_node}    ${ENTITY_XMLNS}
+    @{mime_type_value}=    XMLLibrary.Get Element Attribute    ${sapi_data_info}    dataInfo    mimeType    ${ENTITY_XMLNS}
+    @{file_type_value}=    XMLLibrary.Get Element Attribute    ${sapi_data_info}    dataInfo    fileType    ${ENTITY_XMLNS}
+    @{data_type_value}=    XMLLibrary.Get Element Attribute    ${sapi_data_info}    dataInfo    dataType    ${ENTITY_XMLNS}
+    Should Match    ${mime_type}    @{mime_type_value}[0]
+    Should Match    ${file_type}    @{file_type_value}[0]
+    Should Match    ${data_type}    @{data_type_value}[0]
+
+Test Build SAPIDataUpdateInfo
+    ${text_data}=    Set Variable    TestText
+    ${binary_data}=    Set Variable    TestBinary
+    ${mime_type}=    Set Variable    TestMimeType
+    ${file_type}=    Set Variable    TestFileType
+    ${data_type}=    Set Variable    TestDataType
+    # Building xml
+    ${data_update_node}=    Build SAPIDataUpdate    ${text_data}    ${binary_data}
+    ${data_info_node}=    Build SAPIDataInfo    ${mime_type}    ${file_type}    ${data_type}
+    ${data_update_info_node}=    Build SAPIDataUpdateInfo    ${data_update_node}    ${data_info_node}
+    ${sapi_data_update_info}=    XMLLibrary.Get Xml    ${data_update_info_node}    ${ENTITY_XMLNS}
+    # Checking expectations
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${sapi_data_update_info}    data    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_data_update_info}    dataInfo    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value text data    ${sapi_data_update_info}    ${text_data}    dataText    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value binary data    ${sapi_data_update_info}    ${binary_data}    dataBinary    ${ENTITY_XMLNS}
+
+Test Build SAPIDataUpdateInfo with no data
+    ${mime_type}=    Set Variable    TestMimeType
+    ${file_type}=    Set Variable    TestFileType
+    ${data_type}=    Set Variable    TestDataType
+    # Building xml
+    ${data_update_node}=    Set Variable    ${EMPTY}
+    ${data_info_node}=    Build SAPIDataInfo    ${mime_type}    ${file_type}    ${data_type}
+    ${data_update_info_node}=    Build SAPIDataUpdateInfo    ${data_update_node}    ${data_info_node}
+    ${sapi_data_update_info}=    XMLLibrary.Get Xml    ${data_update_info_node}    ${ENTITY_XMLNS}
+    # Checking expectations
+    XMLLibrary.Check Xml Does Not Contain Element    Contains data element    ${sapi_data_update_info}    data    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_data_update_info}    dataInfo    ${ENTITY_XMLNS}
+
+Test Build SAPIEntityDefinition
+    ${text_data}=    Set Variable    TestText
+    ${binary_data}=    Set Variable    TestBinary
+    ${mime_type}=    Set Variable    TestMimeType
+    ${file_type}=    Set Variable    TestFileType
+    ${data_type}=    Set Variable    TestDataType
+    ${entity_name}=    Set Variable    TestEntityName
+    ${entity_type}=    Set Variable    EXPERIMENT
+    # Building xml
+    ${data_update_node}=    Build SAPIDataUpdate    ${text_data}    ${binary_data}
+    ${data_info_node}=    Build SAPIDataInfo    ${mime_type}    ${file_type}    ${data_type}
+    ${data_update_info_node}=    Build SAPIDataUpdateInfo    ${data_update_node}    ${data_info_node}
+    ${attributes_node}=    Build SAPIAttributeUpdateSequence    title=TestTitle    publishingState=Unpublished
+    ${entity_definition_node}=    Build SAPIEntityDefinition    ${entity_type}    ${entity_name}    ${data_update_info_node}    ${attributes_node}
+    ${sapi_entity_definition}=    XMLLibrary.Get Xml    ${entity_definition_node}    ${ENTITY_XMLNS}
+    # Checking expectations
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${sapi_entity_definition}    data    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_entity_definition}    dataInfo    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value text data    ${sapi_entity_definition}    ${text_data}    dataText    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Value binary data    ${sapi_entity_definition}    ${binary_data}    dataBinary    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count attributes    ${sapi_entity_definition}    2    attribute    ${ENTITY_XMLNS}
+
+Test Build SAPIExistingEntityInfo
+    ${source_entity_id}=    Set Variable    TestEntityId
+    ${entity_name}=    Set Variable    TestEntityName
+    ${sapi_attribute_update_sequence_node}=    Build SAPIAttributeUpdateSequence    title=TestTitle    publishingState=TestPublishingState
+    # Building xml
+    ${existing_entity_info_node}=    Build SAPIExistingEntityInfo    ${source_entity_id}    ${entity_name}    ${sapi_attribute_update_sequence_node}
+    ${existing_entity_info}=    XMLLibrary.Get Xml    ${existing_entity_info_node}    ${ENTITY_XMLNS}
+    # Checking expectations
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${existing_entity_info}    sourceEntityId    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${existing_entity_info}    entityName    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${existing_entity_info}    attributes    ${ENTITY_XMLNS}
+
+Test Build SAPIExistingEntityInfo with no entity name
+    ${source_entity_id}=    Set Variable    TestEntityId
+    ${entity_name}=    Set Variable    ${EMPTY}
+    ${sapi_attribute_update_sequence_node}=    Build SAPIAttributeUpdateSequence    title=TestTitle    publishingState=TestPublishingState
+    # Building xml
+    ${existing_entity_info_node}=    Build SAPIExistingEntityInfo    ${source_entity_id}    ${entity_name}    ${sapi_attribute_update_sequence_node}
+    ${existing_entity_info}=    XMLLibrary.Get Xml    ${existing_entity_info_node}    ${ENTITY_XMLNS}
+    # Checking expectations
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${existing_entity_info}    sourceEntityId    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Does Not Contain Element    Contains dataInfo element    ${existing_entity_info}    entityName    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${existing_entity_info}    attributes    ${ENTITY_XMLNS}
+
+Test Build SAPIExistingEntityInfo with no attributes
+    ${source_entity_id}=    Set Variable    TestEntityId
+    ${entity_name}=    Set Variable    TestEntityName
+    ${sapi_attribute_update_sequence_node}=    Set Variable    ${EMPTY}
+    # Building xml
+    ${existing_entity_info_node}=    Build SAPIExistingEntityInfo    ${source_entity_id}    ${entity_name}    ${sapi_attribute_update_sequence_node}
+    ${existing_entity_info}=    XMLLibrary.Get Xml    ${existing_entity_info_node}    ${ENTITY_XMLNS}
+    # Checking expectations
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${existing_entity_info}    sourceEntityId    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${existing_entity_info}    entityName    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Does Not Contain Element    Contains dataInfo element    ${existing_entity_info}    attributes    ${ENTITY_XMLNS}
+
+Test Build SAPIReplaceEntityInfo with sapi entity definition
+    ${entity_type}=    Set Variable    TestEntityType
+    ${entity_name}=    Set Variable    TestEntityName
+    ${sapi_data_update_info_node}=    Set Variable    ${EMPTY}
+    ${sapi_attribute_update_sequence_node}=    Build SAPIAttributeUpdateSequence    title=TestTitle    publishingState=TestPublishingState
+    ${sapi_entity_definition_node}=    Build SAPIEntityDefinition    ${entity_type}    ${entity_name}    ${sapi_data_update_info_node}    ${sapi_attribute_update_sequence_node}
+    ${sapi_replace_entity_info_node}=    Build SAPIReplaceEntityInfo    ${sapi_entity_definition_node}
+    ${sapi_replace_entity_info}=    XMLLibrary.Get Xml    ${sapi_replace_entity_info_node}    ${ENTITY_XMLNS}
+    # Checks if elements exist
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${sapi_replace_entity_info}    entityType    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_replace_entity_info}    entityName    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_replace_entity_info}    attributes    ${ENTITY_XMLNS}
+    # Checks elements values
+    XMLLibrary.Check Xml Element Value Equals    Entity type value    ${sapi_replace_entity_info}    ${entity_type}    entityType    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Entity name value    ${sapi_replace_entity_info}    ${entity_name}    entityName    ${ENTITY_XMLNS}
+
+Test Build SAPIReplaceEntityInfo with sapi existing entity info
+    ${source_entity_id}=    Set Variable    TestEntityId
+    ${entity_name}=    Set Variable    TestEntityName
+    ${sapi_attribute_update_sequence_node}=    Build SAPIAttributeUpdateSequence    title=TestTitle    publishingState=TestPublishingState
+    # Building xml
+    ${existing_entity_info_node}=    Build SAPIExistingEntityInfo    ${source_entity_id}    ${entity_name}    ${sapi_attribute_update_sequence_node}
+    ${sapi_replace_entity_info_node}=    Build SAPIReplaceEntityInfo    ${EMPTY}    ${existing_entity_info_node}
+    ${sapi_replace_entity_info}=    XMLLibrary.Get Xml    ${sapi_replace_entity_info_node}    ${ENTITY_XMLNS}
+    # Checks if elements exist
+    XMLLibrary.Check Xml Contains Element    Contains data element    ${sapi_replace_entity_info}    sourceEntityId    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_replace_entity_info}    entityName    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_replace_entity_info}    attributes    ${ENTITY_XMLNS}
+    # Checks elements values
+    XMLLibrary.Check Xml Element Value Equals    Entity type value    ${sapi_replace_entity_info}    ${source_entity_id}    sourceEntityId    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Entity name value    ${sapi_replace_entity_info}    ${entity_name}    entityName    ${ENTITY_XMLNS}
+
+Test Build SAPISignOff
+    ${role}=    Set Variable    TestRole
+    ${reason}=    Set Variable    TestReason
+    ${sapi_user_action_info_node}=    Build SAPIUserActionInfo    ${reason}
+    ${sapi_id_sequence_node}=    Build SAPIIdSequence    TestId1    TestId2    TestId3
+    ${sapi_sign_off_node}=    Build SAPISignOff    ${role}    ${sapi_user_action_info_node}    ${sapi_id_sequence_node}
+    # Building xml
+    ${sapi_sign_off}=    XMLLibrary.Get Xml    ${sapi_sign_off_node}    ${ENTITY_XMLNS}
+    # Checks if elements exist
+    XMLLibrary.Check Xml Contains Element    Contains user action info element    ${sapi_sign_off}    entities    ${ENTITY_XMLNS}
+    XMLLibrary.Check Xml Contains Element    Contains dataInfo element    ${sapi_sign_off}    signer    ${ENTITY_XMLNS}
+    # Checks elements values
+    @{ids}=    XMLLibrary.Get Element Value    ${sapi_sign_off}    ${COMMON_XMLNS}    id
+    Length Should Be    ${ids}    3
+    @{reason_actual_value}=    XMLLibrary.Get Element Attribute    ${sapi_sign_off}    signer    reason    ${ENTITY_XMLNS}
+    Should Be Equal    ${reason}    @{reason_actual_value}[0]
+    @{role_actual_value}=    XMLLibrary.Get Element Attribute    ${sapi_sign_off}    signOff    role    ${ENTITY_XMLNS}
+    Should Be Equal    ${role}    @{role_actual_value}[0]
+
+Test SAPIInboxDetail
+    ${inbox_entity_id}=    Set Variable    TestId
+    ${entity_type}=    Set Variable    TestEntityType
+    ${file_type}=    Set Variable    TestFileType
+    ${mime_type}=    Set Variable    TestMimeType
+    ${data_type}=    Set Variable    TestDataType
+    ${sapi_inbox_detail_node}=    Build SAPIInboxDetail    ${inbox_entity_id}    ${entity_type}    ${file_type}    ${mime_type}    ${data_type}
+    ${sapi_inbox_detail}=    XMLLibrary.Get Xml    ${sapi_inbox_detail_node}    ${CACHE_XMLNS}
+    # Check expectations
+    XMLLibrary.Check Xml Element Value Equals    Check element value    ${sapi_inbox_detail}    ${inbox_entity_id}    inboxId    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Check element value    ${sapi_inbox_detail}    ${entity_type}    entityTypeName    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Check element value    ${sapi_inbox_detail}    ${file_type}    fileType    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Check element value    ${sapi_inbox_detail}    ${mime_type}    mimeType    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Value Equals    Check element value    ${sapi_inbox_detail}    ${data_type}    dataType    ${CACHE_XMLNS}
+
+Test SAPIInboxDetailSequence
+    ${inbox_entity_id}=    Set Variable    TestInboxEntityId
+    ${entity_type}=    Set Variable    TestEntityType
+    ${file_type}=    Set Variable    TestFileType
+    ${mime_type}=    Set Variable    TestMimeType
+    ${data_type}=    Set Variable    TestDataType
+    ${inbox_detail_1}=    Create List    ${inbox_entity_id}    ${entity_type}    ${file_type}    ${mime_type}    ${data_type}
+    ${inbox_detail_2}=    Create List    TestInboxEntityId2    TestEntityType2    TestFileType2    TestMimeType2    TestDataType2
+    ${sapi_inbox_detail_sequence_node}=    Build SAPIInboxDetailSequence    ${inbox_detail_1}    ${inbox_detail_2}
+    ${sapi_inbox_detail}=    XMLLibrary.Get Xml    ${sapi_inbox_detail_sequence_node}    ${CACHE_XMLNS}
+    # Check expectations
+    XMLLibrary.Check Xml Element Count    Count item element    ${sapi_inbox_detail}    2    item    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count item element    ${sapi_inbox_detail}    2    inboxId    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count item element    ${sapi_inbox_detail}    2    entityTypeName    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count item element    ${sapi_inbox_detail}    2    fileType    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count item element    ${sapi_inbox_detail}    2    mimeType    ${CACHE_XMLNS}
+    XMLLibrary.Check Xml Element Count    Count item element    ${sapi_inbox_detail}    2    dataType    ${CACHE_XMLNS}
+    # Check element values
+    @{value}=    XMLLibrary.Get Element Value    ${sapi_inbox_detail}    ${CACHE_XMLNS}    inboxId
+    Should Be Equal As Strings    @{value}[0]    ${inbox_entity_id}
+    Should Be Equal As Strings    @{value}[1]    TestInboxEntityId2
+    @{value}=    XMLLibrary.Get Element Value    ${sapi_inbox_detail}    ${CACHE_XMLNS}    entityTypeName
+    Should Be Equal As Strings    @{value}[0]    ${entity_type}
+    Should Be Equal As Strings    @{value}[1]    TestEntityType2
+    @{value}=    XMLLibrary.Get Element Value    ${sapi_inbox_detail}    ${CACHE_XMLNS}    fileType
+    Should Be Equal As Strings    @{value}[0]    ${file_type}
+    Should Be Equal As Strings    @{value}[1]    TestFileType2
+    @{value}=    XMLLibrary.Get Element Value    ${sapi_inbox_detail}    ${CACHE_XMLNS}    mimeType
+    Should Be Equal As Strings    @{value}[0]    ${mime_type}
+    Should Be Equal As Strings    @{value}[1]    TestMimeType2
+    @{value}=    XMLLibrary.Get Element Value    ${sapi_inbox_detail}    ${CACHE_XMLNS}    dataType
+    Should Be Equal As Strings    @{value}[0]    ${data_type}
+    Should Be Equal As Strings    @{value}[1]    TestDataType2
+
+Test Build SAPICommit DRAFT
+    ${entity_id}=    Set Variable    TestEntityId
+    ${version}=    Set Variable    DRAFT
+    ${sapi_commit_node}=    Build SAPICommit    ${entity_id}    ${version}
+    ${sapi_commit_dto}=    XMLLibrary.Get Xml    ${sapi_commit_node}    ${ENTITY_XMLNS}
+    # Check expectations
+    @{attribute_entityId}=    XMLLibrary.Get Element Attribute    ${sapi_commit_dto}    commit    entityId    ${ENTITY_XMLNS}
+    Should Be Equal    ${entity_id}    @{attribute_entityId}[0]
+    @{attribute_version}=    XMLLibrary.Get Element Attribute    ${sapi_commit_dto}    commit    entityVersionType    ${ENTITY_XMLNS}
+    Should Be Equal    ${version}    @{attribute_version}[0]
+    XMLLibrary.Check Xml Element Count    Count userActionInfo element    ${sapi_commit_dto}    0    userActionInfo    ${ENTITY_XMLNS}
+
+Test Build SAPICommit VERSION
+    ${entity_id}=    Set Variable    TestEntityId
+    ${version}=    Set Variable    VERSION
+    ${reason}=    Set Variable    TestReason
+    ${additional_comment}=    Set Variable    TestAdditionalComment
+    ${sapi_commit_node}=    Build SAPICommit    ${entity_id}    ${version}    ${reason}    ${additional_comment}
+    ${sapi_commit_dto}=    XMLLibrary.Get Xml    ${sapi_commit_node}    ${ENTITY_XMLNS}
+    # Check expectations
+    @{attribute_entityId}=    XMLLibrary.Get Element Attribute    ${sapi_commit_dto}    commit    entityId    ${ENTITY_XMLNS}
+    Should Be Equal    ${entity_id}    @{attribute_entityId}[0]
+    @{attribute_version}=    XMLLibrary.Get Element Attribute    ${sapi_commit_dto}    commit    entityVersionType    ${ENTITY_XMLNS}
+    Should Be Equal    ${version}    @{attribute_version}[0]
+    XMLLibrary.Check Xml Element Count    Count userActionInfo element    ${sapi_commit_dto}    1    userActionInfo    ${ENTITY_XMLNS}
+    @{attribute_reason}=    XMLLibrary.Get Element Attribute    ${sapi_commit_dto}    userActionInfo    reason    ${ENTITY_XMLNS}
+    Should Be Equal    ${reason}    @{attribute_reason}[0]
+    @{attribute_version}=    XMLLibrary.Get Element Attribute    ${sapi_commit_dto}    userActionInfo    additionalComment    ${ENTITY_XMLNS}
+    Should Be Equal    ${additional_comment}    @{attribute_version}[0]

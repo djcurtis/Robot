@@ -1,0 +1,91 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.
+...
+...               This resource file contains queries that have timestamp filters conditions. \
+...
+...               The queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+
+*** Keywords ***
+Run Timestamp Datatype Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}
+    [Documentation]    This keyword will execute a number queries that have a timestamp filter condition. \
+    ...
+    ...    This is testing HUB-API-SSP-QUE-QLC.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    - ${term path} = The path to the term to be queried.
+    ...    - ${stringColumn} = The name of a string property in the term in ${term path}.
+    ...    - ${timestampColumn} = The name of a timestamp property in the term in ${term path}.
+    # select timestamp property
+    Execute Data Query and Verify Values    SELECT ${timestampColumn} FROM ${term path}    1340357649000    949363200000    1340392376000    1336604400000    1336604400000
+    ...    ${null value}    ${null value}
+    # = operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} = TO_TIMESTAMP('22-06-2012 09:34:09','DD-MM-YYYY HH24:MI:SS')    Mixed Case String,1340357649000
+    # != operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn} FROM ${term path} AS t WHERE t.${timestampColumn} != TO_TIMESTAMP('09-05-2012 23:00:00', 'DD-MM-YYYY HH24:MI:SS')    Mixed Case String    Mixed Case String    ${null value}
+    # > operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} > TO_TIMESTAMP('02-01-2000','MM-DD-YYYY')    Mixed Case String,1340357649000    ${null value},1340392376000    string with %,1336604400000    ${null value},1336604400000
+    # < operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} < TO_TIMESTAMP('22-06-2012 14:00:04','DD-MM-YYYY HH24:MI:SS')    Mixed Case String,1340357649000    Mixed Case String,949363200000    string with %,1336604400000    ${null value},1336604400000
+    # OR operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} = TO_TIMESTAMP('09-05-2012 23:00:00', 'DD-MM-YYYY HH24:MI:SS') OR t.${timestampColumn} > TO_TIMESTAMP('22-06-2012','DD-MM-YYYY')    Mixed Case String,1340357649000    ${null value},1340392376000    string with %,1336604400000    ${null value},1336604400000
+    # AND operator
+    Execute Data Query and Verify Values    SELECT ${stringColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} != TO_TIMESTAMP('09-05-2012 23:00:00', 'DD-MM-YYYY HH24:MI:SS') AND t.${timestampColumn} != TO_TIMESTAMP('22-06-2012','DD-MM-YYYY')    Mixed Case String,1340357649000    Mixed Case String,949363200000    ${null value},1340392376000
+    # ORDER BY operator
+    Execute Data Query and Verify Values (Unsorted)    SELECT ${stringColumn},${timestampColumn} FROM ${term path} ORDER BY ${timestampColumn},${stringColumn}    Mixed Case String,949363200000    string with %,1336604400000    ${null value},1336604400000    Mixed Case String,1340357649000    ${null value},1340392376000
+    ...    string with 'quotes',${null value}    ${null value},${null value}
+    # COUNT() and DISTINCT() functions
+    Execute Data Query and Verify Values    SELECT COUNT(*), COUNT(${timestampColumn}), COUNT(DISTINCT ${timestampColumn}) FROM ${term path}    7,5,4
+    # IN() function
+    Execute Data Query and Verify Values    SELECT ${stringColumn} FROM ${term path} AS t WHERE t.${timestampColumn} IN (TO_TIMESTAMP('22-06-2012 09:34:09','DD-MM-YYYY HH24:MI:SS'),TO_TIMESTAMP('22-06-2012 19:12:56','DD-MM-YYYY HH24:MI:SS'), TO_TIMESTAMP('01-02-2000 00:00:00','DD-MM-YYYY HH24:MI:SS'))    Mixed Case String    Mixed Case String    ${null value}
+
+Run Timestamp Datatype Parameterised Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}
+    [Documentation]    This keyword will execute a number queries that have a timestamp filter condition. \
+    ...
+    ...    All queries will be executed in parameterised form.
+    ...
+    ...    This is testing HUB-API-SSP-QUE-QLC.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    - ${term path} = The path to the term to be queried.
+    ...    - ${stringColumn} = The name of a string property in the term in ${term path}.
+    ...    - ${timestampColumn} = The name of a timestamp property in the term in ${term path}.
+    # select timestamp property
+    @{parameterised query 1}=    Create List    SELECT ${timestampColumn} FROM ${term path}    java.lang.String,p,22-06-2012 09:34:09
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 1}    1340357649000    949363200000    1340392376000    1336604400000    1336604400000
+    ...    ${null value}    ${null value}
+    # = operator
+    @{parameterised query 2}=    Create List    SELECT ${stringColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} = TO_TIMESTAMP(:p,'DD-MM-YYYY HH24:MI:SS')    java.lang.String,p,22-06-2012 09:34:09
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 2}    Mixed Case String,1340357649000
+    # != operator
+    @{parameterised query 3}=    Create List    SELECT ${stringColumn} FROM ${term path} AS t WHERE t.${timestampColumn} != TO_TIMESTAMP(:p,'DD-MM-YYYY HH24:MI:SS')    java.lang.String,p,09-05-2012 23:00:00
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 3}    Mixed Case String    Mixed Case String    ${null value}
+    # > operator
+    @{parameterised query 4}=    Create List    SELECT ${stringColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} > TO_TIMESTAMP(:p,'MM-DD-YYYY')    java.lang.String,p,02-01-2000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 4}    Mixed Case String,1340357649000    ${null value},1340392376000    string with %,1336604400000    ${null value},1336604400000
+    # < operator
+    @{parameterised query 5}=    Create List    SELECT ${stringColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} < TO_TIMESTAMP(:p,'DD-MM-YYYY HH24:MI:SS')    java.lang.String,p,22-06-2012 14:00:04
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 5}    Mixed Case String,1340357649000    Mixed Case String,949363200000    string with %,1336604400000    ${null value},1336604400000
+    # OR operator
+    @{parameterised query 6}=    Create List    SELECT ${stringColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} = TO_TIMESTAMP(:p,'DD-MM-YYYY HH24:MI:SS') OR t.${timestampColumn} > TO_TIMESTAMP(:q,'DD-MM-YYYY')    java.lang.String,p,09-05-2012 23:00:00    java.lang.String,q,22-06-2012
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 6}    Mixed Case String,1340357649000    ${null value},1340392376000    string with %,1336604400000    ${null value},1336604400000
+    # AND operator
+    @{parameterised query 7}=    Create List    SELECT ${stringColumn},${timestampColumn} FROM ${term path} AS t WHERE t.${timestampColumn} != TO_TIMESTAMP(:p,'DD-MM-YYYY HH24:MI:SS') AND t.${timestampColumn} != TO_TIMESTAMP(:q,'DD-MM-YYYY')    java.lang.String,p,09-05-2012 23:00:00    java.lang.String,q,22-06-2012
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 7}    Mixed Case String,1340357649000    Mixed Case String,949363200000    ${null value},1340392376000
+    # ORDER BY operator
+    @{parameterised query 8}=    Create List    SELECT ${stringColumn},${timestampColumn} FROM ${term path} ORDER BY ${timestampColumn},${stringColumn}
+    Execute Parameterised Data Query And Verify Values (Unsorted)    ${parameterised query 8}    Mixed Case String,949363200000    string with %,1336604400000    ${null value},1336604400000    Mixed Case String,1340357649000    ${null value},1340392376000
+    ...    string with 'quotes',${null value}    ${null value},${null value}
+    # COUNT() and DISTINCT() functions
+    @{parameterised query 9}=    Create List    SELECT COUNT(*), COUNT(${timestampColumn}), COUNT(DISTINCT ${timestampColumn}) FROM ${term path}    java.lang.String,p,22-06-2012 10:34:09
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 9}    7,5,4
+    # IN() function
+    Comment    Now deprecated following fix to QC17138 - java.sql.Timestamp replaced by java.util.Date class    @{parameterised query 10}=    Create List    SELECT ${stringColumn} FROM ${term path} AS t WHERE t.${timestampColumn} IN (:p)    java.sql.Timestamp,p,1340357649000,1340392376000,949363200000
+    @{parameterised query 10}=    Create List    SELECT ${stringColumn} FROM ${term path} AS t WHERE t.${timestampColumn} IN (:p)    java.util.Date,p,1340357649000,1340392376000,949363200000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 10}    Mixed Case String    Mixed Case String    ${null value}

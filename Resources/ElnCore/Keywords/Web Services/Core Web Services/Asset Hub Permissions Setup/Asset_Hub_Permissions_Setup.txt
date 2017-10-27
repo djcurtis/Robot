@@ -1,0 +1,365 @@
+*** Settings ***
+Documentation     *A suite of tests which creates the data for the EWB thick client asset hub permissions tests.*\n\nThe following variables must be set before running this suite:\n- ${SERVER} - The application server to connect to\n- ${WEB_SERVICE_PORT} - The web service port to use\n- ${SERVICES USERNAME} - The username used to create the data (should be a user with administration priviledges)\n- ${SERVICES PASSWORD} - The password of the user used to create the data\n- ${ASSET_HUB_PREFIX} - The prefix of the asset hub database\n-${ENTITY_ROLE_ASSIGNMENT_ID} - The entity ID of the entity to apply entity roles to (1 = Root)
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+
+*** Variables ***
+${SERVER}         VPCS-EWB08
+${WEB_SERVICE_PORT}    8443
+${SERVICES USERNAME}    Administrator
+${SERVICES PASSWORD}    Administrator
+${ASSET_HUB_PREFIX}    M26
+${ENTITY_ROLE_ASSIGNMENT_ID}    1    # 1 = Root
+
+*** Test Cases ***
+Create User Roles
+    [Documentation]    Creates the user roles for EWB thick client asset hub permissions tests.
+    Create Role    No Asset Write    No Asset Write    No permissions to write to asset hub    true
+    Add Role Permission    No Asset Write    ${ASSET_HUB_PREFIX}_READ_ASSET
+    Create Role    No Asset Read    No Asset Read    No permissions to read to asset hub    true
+    Add Role Permission    No Asset Read    ${ASSET_HUB_PREFIX}_WRITE_ASSET
+    Create Role    All Asset System Permissions    All Asset System Permisssions    Permissions to both read and write to asset hub    true
+    Add Role Permission    All Asset System Permissions    ${ASSET_HUB_PREFIX}_WRITE_ASSET
+    Add Role Permission    All Asset System Permissions    ${ASSET_HUB_PREFIX}_READ_ASSET
+    Create Role    No Asset System Permissions    No Asset System Permissions    No permissions to read or write toasset hub    true
+
+Create Entity Roles
+    [Documentation]    Creates the entity roles for EWB thick client asset hub permissions tests.
+    Create Role    All Asset Entity Permissions    All Asset Entity Permissions    All Asset Hub Entity Permissions    false
+    Add Role Permission    All Asset Entity Permissions    ${ASSET_HUB_PREFIX}_EDIT_ASSET
+    Add Role Permission    All Asset Entity Permissions    ${ASSET_HUB_PREFIX}_DELETE_ASSET
+    Add Role Permission    All Asset Entity Permissions    ${ASSET_HUB_PREFIX}_VIEW_ASSET
+    Create Role    No Asset Entity Permission    No Asset Entity Permission    No Asset Hub Entity Permissions    false
+    Create Role    Asset Edit Only    Asset Edit Only    Asset Edit Entity Permission Only    false
+    Add Role Permission    Asset Edit Only    ${ASSET_HUB_PREFIX}_EDIT_ASSET
+    Create Role    Asset Edit & Delete Only    Asset Edit & Delete Only    Asset Edit & Delete Entity Permissions Only    false
+    Add Role Permission    Asset Edit & Delete Only    ${ASSET_HUB_PREFIX}_EDIT_ASSET
+    Add Role Permission    Asset Edit & Delete Only    ${ASSET_HUB_PREFIX}_DELETE_ASSET
+    Create Role    Asset Edit & View Only    Asset Edit & View Only    Asset Edit & View Entity Permissions Only    false
+    Add Role Permission    Asset Edit & View Only    ${ASSET_HUB_PREFIX}_EDIT_ASSET
+    Add Role Permission    Asset Edit & View Only    ${ASSET_HUB_PREFIX}_VIEW_ASSET
+    Create Role    Asset Delete & View Only    Asset Delete & View Only    Asset Delete & View Entity Permissions Only    false
+    Add Role Permission    Asset Delete & View Only    ${ASSET_HUB_PREFIX}_DELETE_ASSET
+    Add Role Permission    Asset Delete & View Only    ${ASSET_HUB_PREFIX}_VIEW_ASSET
+    Create Role    Asset View Only    Asset View Only    Asset View Entity Permission Only    false
+    Add Role Permission    Asset View Only    ${ASSET_HUB_PREFIX}_VIEW_ASSET
+    Create Role    Asset Delete Only    Asset Delete Only    Asset Delete Entity Permission Only    false
+    Add Role Permission    Asset Delete Only    ${ASSET_HUB_PREFIX}_DELETE_ASSET
+
+Create Users
+    [Documentation]    Creates the users for EWB thick client asset hub permissions tests.
+    Create User    USER001    aBc123    Asset Permissions User 001    testing@idbs.com    Testing
+    Create User    USER002    aBc123    Asset Permissions User 002    testing@idbs.com    Testing
+    Create User    USER003    aBc123    Asset Permissions User 003    testing@idbs.com    Testing
+    Create User    USER004    aBc123    Asset Permissions User 004    testing@idbs.com    Testing
+    Create User    USER005    aBc123    Asset Permissions User 005    testing@idbs.com    Testing
+    Create User    USER006    aBc123    Asset Permissions User 006    testing@idbs.com    Testing
+    Create User    USER007    aBc123    Asset Permissions User 007    testing@idbs.com    Testing
+    Create User    USER008    aBc123    Asset Permissions User 008    testing@idbs.com    Testing
+    Create User    USER009    aBc123    Asset Permissions User 009    testing@idbs.com    Testing
+    Create User    USER010    aBc123    Asset Permissions User 010    testing@idbs.com    Testing
+    Create User    USER011    aBc123    Asset Permissions User 011    testing@idbs.com    Testing
+    Create User    USER012    aBc123    Asset Permissions User 012    testing@idbs.com    Testing
+    Create User    USER013    aBc123    Asset Permissions User 013    testing@idbs.com    Testing
+    Create User    USER014    aBc123    Asset Permissions User 014    testing@idbs.com    Testing
+    Create User    USER015    aBc123    Asset Permissions User 015    testing@idbs.com    Testing
+    Create User    USER016    aBc123    Asset Permissions User 016    testing@idbs.com    Testing
+    Create User    USER017    aBc123    Asset Permissions User 017    testing@idbs.com    Testing
+    Create User    USER018    aBc123    Asset Permissions User 018    testing@idbs.com    Testing
+    Create User    USER019    aBc123    Asset Permissions User 019    testing@idbs.com    Testing
+    Create User    USER020    aBc123    Asset Permissions User 020    testing@idbs.com    Testing
+    Create User    USER021    aBc123    Asset Permissions User 021    testing@idbs.com    Testing
+    Create User    USER022    aBc123    Asset Permissions User 022    testing@idbs.com    Testing
+    Create User    USER023    aBc123    Asset Permissions User 023    testing@idbs.com    Testing
+    Create User    USER024    aBc123    Asset Permissions User 024    testing@idbs.com    Testing
+    Create User    USER025    aBc123    Asset Permissions User 025    testing@idbs.com    Testing
+    Create User    USER026    aBc123    Asset Permissions User 026    testing@idbs.com    Testing
+    Create User    USER027    aBc123    Asset Permissions User 027    testing@idbs.com    Testing
+    Create User    USER028    aBc123    Asset Permissions User 028    testing@idbs.com    Testing
+    Create User    USER029    aBc123    Asset Permissions User 029    testing@idbs.com    Testing
+    Create User    USER030    aBc123    Asset Permissions User 030    testing@idbs.com    Testing
+    Create User    USER031    aBc123    Asset Permissions User 031    testing@idbs.com    Testing
+    Create User    USER032    aBc123    Asset Permissions User 032    testing@idbs.com    Testing
+
+Create User Groups
+    [Documentation]    Creates the user groups for EWB thick client asset hub permissions tests.
+    Create User Group    GROUP01    Asset Hub User Group 01
+    Add User Group Member    GROUP01    USER025
+    Create User Group    GROUP02    Asset Hub User Group 02
+    Add User Group Member    GROUP02    USER026
+    Create User Group    GROUP03    Asset Hub User Group 03
+    Add User Group Member    GROUP03    USER027
+    Create User Group    GROUP04    Asset Hub User Group 04
+    Add User Group Member    GROUP04    USER028
+    Create User Group    GROUP05    Asset Hub User Group 05
+    Add User Group Member    GROUP05    USER029
+    Create User Group    GROUP06    Asset Hub User Group 06
+    Add User Group Member    GROUP06    USER030
+    Create User Group    GROUP07    Asset Hub User Group 07
+    Add User Group Member    GROUP07    USER031
+    Create User Group    GROUP08    Asset Hub User Group 08
+    Add User Group Member    GROUP08    USER032
+
+Assign User Roles
+    [Documentation]    Assigns user roles to users for EWB thick client asset hub permissions tests.
+    Assign User System Role    USER001    No Asset Write
+    Assign User System Role    USER001    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER002    No Asset Write
+    Assign User System Role    USER002    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER003    No Asset Write
+    Assign User System Role    USER003    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER004    No Asset Write
+    Assign User System Role    USER004    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER005    No Asset Write
+    Assign User System Role    USER005    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER006    No Asset Write
+    Assign User System Role    USER006    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER007    No Asset Write
+    Assign User System Role    USER007    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER008    No Asset Write
+    Assign User System Role    USER008    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER009    No Asset Read
+    Assign User System Role    USER009    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER010    No Asset Read
+    Assign User System Role    USER010    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER011    No Asset Read
+    Assign User System Role    USER011    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER012    No Asset Read
+    Assign User System Role    USER012    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER013    No Asset Read
+    Assign User System Role    USER013    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER014    No Asset Read
+    Assign User System Role    USER014    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER015    No Asset Read
+    Assign User System Role    USER015    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER016    No Asset Read
+    Assign User System Role    USER016    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER017    No Asset System Permissions
+    Assign User System Role    USER017    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER018    No Asset System Permissions
+    Assign User System Role    USER018    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER019    No Asset System Permissions
+    Assign User System Role    USER019    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER020    No Asset System Permissions
+    Assign User System Role    USER020    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER021    No Asset System Permissions
+    Assign User System Role    USER021    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER022    No Asset System Permissions
+    Assign User System Role    USER022    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER023    No Asset System Permissions
+    Assign User System Role    USER023    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER024    No Asset System Permissions
+    Assign User System Role    USER024    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER025    All Asset System Permissions
+    Assign User System Role    USER025    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER026    All Asset System Permissions
+    Assign User System Role    USER026    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER027    All Asset System Permissions
+    Assign User System Role    USER027    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER028    All Asset System Permissions
+    Assign User System Role    USER028    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER029    All Asset System Permissions
+    Assign User System Role    USER029    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER030    All Asset System Permissions
+    Assign User System Role    USER030    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER031    All Asset System Permissions
+    Assign User System Role    USER031    BIOBOOK_FUNCTIONS
+    Assign User System Role    USER032    All Asset System Permissions
+    Assign User System Role    USER032    BIOBOOK_FUNCTIONS
+
+Assign Entity Roles To Users
+    [Documentation]    Assigns entity roles to users for EWB thick client asset hub permissions tests.
+    Assign User Entity Role    USER001    All Asset Entity Permissions    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER001    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER001    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER001    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER001    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER001    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER002    No Asset Entity Permission    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER002    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER002    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER002    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER002    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER002    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER003    Asset Edit Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER003    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER003    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER003    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER003    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER003    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER004    Asset Edit & Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER004    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER004    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER004    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER004    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER004    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER005    Asset Edit & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER005    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER005    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER005    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER005    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER005    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER006    Asset Delete & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER006    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER006    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER006    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER006    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER006    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER007    Asset View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER007    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER007    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER007    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER007    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER007    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER008    Asset Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER008    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER008    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER008    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER008    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER008    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER009    All Asset Entity Permissions    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER009    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER009    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER009    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER009    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER009    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER010    No Asset Entity Permission    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER010    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER010    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER010    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER010    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER010    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER011    Asset Edit Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER011    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER011    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER011    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER011    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER011    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER012    Asset Edit & Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER012    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER012    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER012    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER012    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER012    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER013    Asset Edit & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER013    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER013    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER013    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER013    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER013    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER014    Asset Delete & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER014    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER014    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER014    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER014    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER014    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER015    Asset View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER015    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER015    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER015    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER015    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER015    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER016    Asset Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER016    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER016    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER016    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER016    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER016    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER017    All Asset Entity Permissions    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER017    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER017    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER017    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER017    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER017    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER018    No Asset Entity Permission    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER018    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER018    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER018    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER018    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER018    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER019    Asset Edit Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER019    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER019    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER019    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER019    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER019    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER020    Asset Edit & Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER020    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER020    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER020    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER020    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER020    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER021    Asset Edit & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER021    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER021    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER021    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER021    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER021    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER022    Asset Delete & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER022    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER022    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER022    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER022    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER022    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER023    Asset View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER023    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER023    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER023    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER023    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER023    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER024    Asset Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER024    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER024    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER024    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER024    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Entity Role    USER024    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+
+Assign Entity Roles To User Groups
+    [Documentation]    Assigns entity roles for user groups for EWB thick client asset hub permissions tests.
+    Assign User Group Entity Role    GROUP01    All Asset Entity Permissions    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP01    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP01    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP01    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP01    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP01    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP02    No Asset Entity Permission    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP02    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP02    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP02    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP02    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP02    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP03    Asset Edit Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP03    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP03    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP03    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP03    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP03    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP04    Asset Edit & Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP04    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP04    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP04    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP04    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP04    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP05    Asset Edit & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP05    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP05    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP05    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP05    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP05    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP06    Asset Delete & View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP06    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP06    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP06    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP06    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP06    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP07    Asset View Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP07    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP07    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP07    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP07    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP07    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP08    Asset Delete Only    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP08    View Role    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP08    Experiment Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP08    Report Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP08    Template Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}
+    Assign User Group Entity Role    GROUP08    Spreadsheet Admin    ${ENTITY_ROLE_ASSIGNMENT_ID}

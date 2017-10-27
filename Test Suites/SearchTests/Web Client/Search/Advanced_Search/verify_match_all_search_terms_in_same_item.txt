@@ -1,0 +1,235 @@
+*** Settings ***
+Documentation     Verify_Match_ALL_Search_Terms_In_The_Same_Item is created for Sh-1222 story
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     Reload Page
+Library           DateTime
+Library           EntityAPILibrary
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../../Libraries/IDBS Spreadsheet/common_spreadsheet_keywords.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/quantrix_web_resource.txt
+
+*** Test Cases ***
+Verify Two Record Items
+    [Documentation]    Verify Two Record Items
+    ...
+    ...    Is to ensure that record record combination return result if all criterias are match in one record
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group1Name}    Experiment|Title|is|Experiment 1    Experiment|Status|is|Started
+    Select Match Conditions    ALL ITEM
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment 1
+    Click Advanced Search Link
+    Perform Advanced Search    ${EMPTY}    Experiment|Title|is|Experiment 2
+    Click Search Button
+    Verify Blank Search Result
+
+Verify Two Items
+    [Documentation]    Verify Two Items
+    ...
+    ...    Is to ensure result are returned when all criterias are match in the same item
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group1Name}    Document|Type|is|text document    Document|Tag|is|tag
+    Select Match Conditions    ALL ITEM
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment 1
+    Click Advanced Search Link
+    Perform Advanced Search    ${EMPTY}    Document|Type|is|Web Link
+    Click Search Button
+    Verify Blank Search Result
+
+Verify Two Items And One Record
+    [Documentation]    Verify Two Items And One Record
+    ...
+    ...    Is to ensure result is returned when criterias are match in the same document for the record
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group1Name}    Document|Type|is|text document    Document|Tag|is|tag    Experiment|Title|is|Experiment 1
+    Select Match Conditions    ALL ITEM
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment 1
+
+Verify Three Items For Different Documents One Record
+    [Documentation]    Verify Three Items For Different Documents One Record
+    ...
+    ...    Is to ensure no result returned when search tiles are for the different items in the same record
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group1Name}    Document|Type|is|Text    Document|Tag|is|tag    Experiment|Title|is|Experiment 1    Document|Type|is|Web Link
+    Select Match Conditions    ALL ITEM
+    Click Search Button
+    Verify Blank Search Result
+
+Verify One Item For Many Document One Record
+    [Documentation]    Verify One Item For Many Document One Record
+    ...
+    ...    Is to ensure more then one record can be returned
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|starts with|${group1Name}    Document|Tag|is|tag    Experiment|Title|is|Experiment 1
+    Select Match Conditions    ALL ITEM
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment 1    Experiment 1
+
+Verify Two Items Free Text
+    [Documentation]    Verify Two Items Free Text
+    ...
+    ...    This scenario is to verify working correctly with free text search
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    "Experiment 1"    Group|Name|is|${group1Name}    Document|Tag|is|tag2    Document|Type|is|Web Link
+    Select Match Conditions    ALL ITEM
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment 1
+
+Verify Two Documents One Measure One Record
+    [Documentation]    Verify Two Documents One Measure One Record
+    ...
+    ...    Is to verify if measure and item property are in the same document and have record specified, then result should be returned
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group2Name}    Any Record|Name|starts with|Experi    Document|Item Type|is|other
+    Select Match Conditions    ALL ITEM
+    Execute Advanced Catalog Search    Dictionary 1222|measure1|measure1|is|TEXTFIELD|5    Dictionary 1222|object1|object1|is|TEXTFIELD|obj
+    Verify Search Result List Exact By Title    Experiment 2
+
+Verify Two Different Measure One Record
+    [Documentation]    Verify Two Different Measure One Record
+    ...
+    ...    Is to ensure that data is searchable by 2+ different measure in one record since both of the measures are in the same item
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group2Name}    Any Record|Name|starts with|Experi
+    Select Match Conditions    ALL ITEM
+    Execute Advanced Catalog Search    Dictionary 1222|measure1|measure1|is|TEXTFIELD|5    Dictionary 1222|object1|object1|is|TEXTFIELD|obj6
+    Verify Search Result List Exact By Title    Experiment 2
+
+Verify Two Measures Different Item One Record
+    [Documentation]    Verify two Measures Different Item One Record
+    ...
+    ...    Is to ensure that no record returned if search by measure and property set for different items in the same record
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group2Name}    Any Record|Name|starts with|Experi    Document|Tag|is|tag
+    Select Match Conditions    ALL ITEM
+    Execute Advanced Catalog Search    Dictionary 1222|measure1|measure1|is|TEXTFIELD|5    Dictionary 1222|object1|object1|is|TEXTFIELD|obj
+    Verify Blank Search Result
+
+Verify One Measure Two Items
+    [Documentation]    Verify One Measure Two Items
+    ...
+    ...    Is to ensure spreadsheet searchable by measure and item's options
+    ...
+    ...    Created for story SH-1262
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group2Name}    Document|Item Type|is|Other    Document|Tag|is|tag3
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary 1222|measure1|measure1|is|TEXTFIELD|5    Dictionary 1222|object1|object1|is|TEXTFIELD|obj
+    Verify Search Result List Exact By Title    Experiment 2
+    Edit Advanced Term Text Value And Operator    Tag    is    tag3    is    tag
+    Click Search Button
+    Click Search Button
+    Verify Blank Search Result
+
+Verify One Measure One Items
+    [Documentation]    Verify One Measure One Items
+    ...
+    ...    Is to ensure combination of measure, item and record return correct result
+    ...
+    ...    Created for story SH-1262
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group2Name}    Document|Item Type|is|Other    Experiment|Title|is|Experiment 2
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary 1222|measure1|measure1|is|TEXTFIELD|5    Dictionary 1222|object1|object1|is|TEXTFIELD|obj
+    Verify Search Result List Exact By Title    Experiment 2
+
+Verify One Measure Two Item Criteria One Record
+    [Documentation]    Verify One Measure Two Item Criteria One Record
+    ...
+    ...    Is to verify experiment is not returned when measure and item property are in the same record, but in different items
+    ...
+    ...    Created for story SH-1262
+    [Tags]    SRCH-ADV
+    Perform Advanced Search    ${EMPTY}    Group|Name|is|${group2Name}    Document|Tag|is|tag    Any Record|Name|starts with|Experi    Document|Tag|is|tag3
+    Select Match Conditions    ALL MEASURE
+    Execute Advanced Catalog Search    Dictionary 1222|measure1|measure1|is|TEXTFIELD|5    Dictionary 1222|object1|object1|is|TEXTFIELD|obj
+    Verify Blank Search Result
+
+*** Keywords ***
+setup
+    [Documentation]    group
+    ...    - project 1
+    ...    - experiment 1 - version saved
+    ...    - document 1 (Text) tag is 'tag'
+    ...    - document 2 (Web Link) tag is 'tag', 'tag2'
+    ...
+    ...    group 2 (to verify spreadsheet relation)
+    ...    - project 1
+    ...    - experiment 1
+    ...    - document 1 (Text)
+    ...    - document 2 (Web Link)
+    ...    - spreadsheet
+    ${currentDate}=    Get Current Date
+    ${disctionaryName}=    Set Variable    Dictionary 1222
+    ${measure}=    set variable    /IDBS-Applications/Core/Results Hub/Measure
+    ${measureId}=    Get Term Guid From Catalog Webservice    ${measure}
+    ${object}=    set variable    /IDBS-Applications/Core/Results Hub/Object
+    ${objectId}=    Get Term Guid From Catalog Webservice    ${object}
+    ${dictionaryId}=    Create Root Element    DICTIONARY    ${disctionaryName}    some description    true
+    Set Suite Variable    ${dictionaryId}
+    ${measure1}=    Create Property JSON    measure1    STRING    Key    true    true
+    ${allProps}=    Create Properties JSON    ${measure1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    measure1    measure1    true    {"inheritedTerm":[{"inheritedTermPath":"${measure}","inheritedTermId":"${measureId}"}]}
+    ...    ${allProps}
+    ${object1}=    Create Property JSON    object1    STRING    Key    true    true
+    ${allProps}=    Create Properties JSON    ${object1}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    object1    object1    true    {"inheritedTerm":[{"inheritedTermPath":"${object}","inheritedTermId":"${objectId}"}]}
+    ...    ${allProps}
+    ${group1Name}=    Set Variable    Group ${currentDate}
+    ${group2Name}=    Set Variable    Group ${currentDate}2
+    ${group1Id}=    EntityAPILibrary.Ensure Group Is Present    1    ${group1Name}
+    ${project1Id}=    EntityAPILibrary.Create Project    ${group1Id}    project 1
+    ${group2Id}=    EntityAPILibrary.Ensure Group Is Present    1    ${group2Name}
+    Set Suite Variable    ${group1Name}
+    Set Suite Variable    ${group2Name}
+    Set Suite Variable    ${group2Id}
+    Set Suite Variable    ${group1Id}
+    ${project2Id}=    EntityAPILibrary.Create Project    ${group2Id}    Project 1
+    #group 1 experiment 1
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment 1    Started
+    ${textDocumentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    text document
+    ${linkDocumentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    https://ewb.com
+    EntityAPILibrary.Add Tag    ${linkDocumentId}    tag
+    EntityAPILibrary.Add Tag    ${linkDocumentId}    tag2
+    EntityAPILibrary.Add Tag    ${textDocumentId}    tag
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    #group 2 experiment 1
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${project2Id}    Experiment 1    Started
+    ${textDocumentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    text document
+    ${linkDocumentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    https://ewb.com
+    EntityAPILibrary.Add Tag    ${linkDocumentId}    tag
+    EntityAPILibrary.Add Tag    ${linkDocumentId}    tag2
+    EntityAPILibrary.Add Tag    ${textDocumentId}    tag
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    #group 2 experiment 1
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${project2Id}    Experiment 2    Started
+    ${spreadsheetId}=    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${experimentId}    ${CURDIR}/Test_Data/MeasureObject.ewbss
+    Designer Open Browser To Entity    ${experimentId}    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    2    1
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    Sleep    40s
+    ${textDocumentId}=    EntityAPILibrary.Create Text Document    ${experimentId}    text document
+    ${linkDocumentId}=    EntityAPILibrary.Create Web Link Document    ${experimentId}    https://ewb.com
+    EntityAPILibrary.Add Tag    ${linkDocumentId}    tag
+    EntityAPILibrary.Add Tag    ${linkDocumentId}    tag2
+    EntityAPILibrary.Add Tag    ${textDocumentId}    tag
+    EntityAPILibrary.Add Tag    ${spreadsheetId}    tag3
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+
+teardown
+    [Documentation]    remove all created data and close browser
+    Delete Element    ${dictionaryId}
+    : FOR    ${group}    IN    ${group1Id}    ${group2Id}
+    \    EntityAPILibrary.Unlock Entity And Children    ${group}
+    \    EntityAPILibrary.Delete Entity    ${group}    As intended    As intended
+    close browser

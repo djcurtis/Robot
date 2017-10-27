@@ -1,0 +1,107 @@
+*** Settings ***
+Documentation     Test suite is for SH-947 story
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        Navigate Search Screen
+Test Teardown     Reload Page
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/UI/Search_Page/advanced_search_term.txt
+Resource          ../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Library           EntityAPILibrary
+Library           DateTime
+
+*** Test Cases ***
+Verify UI Controls For Template Property
+    [Documentation]    Verify UI Controls For Template Property
+    ...    - verify controls before selecting template
+    ...    - select template and verify controls
+    ...    - change template and verify controls
+    [Tags]    SRCH-ADV
+    Open 'New Search Term' Dialog
+    Get New Navigator Advanced Search Ready To Populate    Experiment    Template
+    Set New Template Search Term    ${groupName}/Project A/Template TA-1
+    Verify Template Search Term Window Controls    Experiment    Template TA-1    /Root/${groupName}/Project A
+    Get New Navigator Advanced Search Ready To Populate    Experiment    Template
+    Set New Template Search Term    ${groupName}/Project A/Experiment EA-1
+    Verify Template Search Term Window Controls    Experiment    Experiment EA-1    /Root/${groupName}/Project A
+
+Verify Search By Template Result
+    [Documentation]    Verify Search By Template Result
+    ...    - Execute Search be template
+    ...    - verify correct result
+    [Tags]    SRCH-ADV
+    Perform Search By Templates    Experiment|${groupName}/Project A/Template TA-1
+    Verify Advanced Search Items    Template|is|Template TA-1
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment EB-1
+
+Verify Search By Template Edit Popup
+    [Documentation]    Verify Search By Template Edit \ Popup
+    ...    - Performe advanced search by template
+    ...    - edit template name via from Search page
+    ...    - click 'Search' button and verify result
+    [Tags]    SRCH-ADV
+    Perform Search By Templates    Experiment|${groupName}/Project A/Template TA-1
+    Click Search Button
+    Edit Advanced Template Term PickList Value    Template TA-1    ${groupName}/Project A/Experiment EA-1
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment EB-2
+
+Verify Search Saved And Restored Correctly
+    [Documentation]    Verify Search Saved And Restored Correctly
+    ...    - Perform advanced search by Template
+    ...    - save search
+    ...    - reload page and restore search
+    ...    - click 'Search' button and verify result
+    [Tags]    SRCH-ADV
+    Perform Search By Templates    Experiment|${groupName}/Project A/Template TA-1
+    Save Search Via UI    TemplateSearch    Search for the template
+    Reload page
+    Restore Saved Search    TemplateSearch    0
+    Verify Advanced Search Items    Template|is|Template TA-1
+    Click Search Button
+    Verify Search Result List Exact By Title    Experiment EB-1
+
+*** Keywords ***
+setup
+    [Documentation]    Creating Data according following structure
+    ...
+    ...    - group
+    ...    - *project*
+    ...    - \ template TA-1
+    ...    - template TC-1
+    ...    - experiment EA-1
+    ...    - report RA-1
+    ...    - experiment EB-1 from template TA-1
+    ...    - experiment EB-2 from experiment EA-1
+    ${currentDate}=    Get Current Date
+    ${groupName}=    set variable    AGroup ${currentDate}
+    ${groupId}=    EntityAPILibrary.Create Group    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectA}=    EntityAPILibrary.Create Project    ${groupId}    Project A
+    ${templateTA1}=    EntityAPILibrary.Create Template    ${projectA}    Template TA-1    Planned
+    EntityAPILibrary.Version Save    ${templateTA1}    Data Added
+    ${templateTC1}=    EntityAPILibrary.Create Template    ${projectA}    Template TC-1    Planned
+    EntityAPILibrary.Version Save    ${templateTC1}    Data Added
+    ${experimentEA1}=    EntityAPILibrary.Create Experiment    ${projectA}    Experiment EA-1    Completed
+    EntityAPILibrary.Version Save    ${experimentEA1}    Data Added
+    ${reportRA1}=    EntityAPILibrary.Create Report    ${projectA}    Report RA-1    Completed
+    ${experimentEB1}=    EntityAPILibrary.Create Entity From Template    EXPERIMENT    ${projectA}    ${templateTA1}    Experiment EB-1    title:::Experiment EB-1
+    ...    statusName:::Started
+    EntityAPILibrary.Version Save    ${experimentEB1}    Data Added
+    ${experimentEB2}=    EntityAPILibrary.Create Entity From Template    EXPERIMENT    ${projectA}    ${experimentEA1}    Experiment EB-2    title:::Experiment EB-2
+    ...    statusName:::Started
+    EntityAPILibrary.Version Save    ${experimentEB2}    Data Added
+    Delete All Searches Via API
+    Open Browser to EWB Login
+    User credentials
+
+teardown
+    [Documentation]    Delete all created test data
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    Delete All Searches Via API
+    Close browser

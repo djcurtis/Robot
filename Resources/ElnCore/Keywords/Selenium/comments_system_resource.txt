@@ -1,0 +1,333 @@
+*** Settings ***
+Documentation     A resource file containing the automation framework system level keywords that are required for the comments automated test functionality
+Library           IDBSSelenium2Library
+Library           String
+
+*** Variables ***
+${Record Level Comment Number}    ${EMPTY}    # to store the number of record comments as "x Comments"
+${New Comment}    xpath=//textarea[contains(@class, 'ewb-comment-box-text-area')]
+${Post}           xpath=//a[text()="Post" and @id="ewb-comments-post-accept-link"]
+${Clear}          xpath=//a[text()="Clear" and @id="ewb-comments-post-cancel-link"]
+${Cancel}         xpath=//a[text()="Cancel" and @id="ewb-comments-post-cancel-link"]
+${Reply Element}    xpath=//a[text()="Reply" and @id="ewb-comments-post-accept-link"]
+${REPLY BUTTON ID}    ewb-comments-post-accept-link
+${Close Comments Window}    closeDialog
+${NEW COMMENT ID VIEW}    ${EMPTY}
+${NEW COMMENT ID EDIT}    ${EMPTY}
+${LATEST COMMENT ID VIEW}    ${EMPTY}
+${LATEST COMMENT ID EDIT}    ${EMPTY}
+${LATEST REPLY ID VIEW}    ${EMPTY}
+${LATEST REPLY ID EDIT}    ${EMPTY}
+${COMMENT 1}      ${EMPTY}
+${COMMENT 2}      ${EMPTY}
+${COMMENT 3}      ${EMPTY}
+${COMMENT 4}      ${EMPTY}
+${COMMENT 5}      ${EMPTY}
+${EDIT COMMENT TEMP}    ${EMPTY}
+${DELETE COMMENT TEMP}    ${EMPTY}
+${EDIT REPLY TEMP}    ${EMPTY}
+${DELETE REPLY TEMP}    ${EMPTY}
+${COMMENT 1 DELETE}    ${EMPTY}
+${COMMENT 2 DELETE}    ${EMPTY}
+${COMMENT 3 DELETE}    ${EMPTY}
+${COMMENT 4 DELETE}    ${EMPTY}
+${COMMENT 5 DELETE}    ${EMPTY}
+${COMMENT 1 EDIT}    ${EMPTY}
+${COMMENT 2 EDIT}    ${EMPTY}
+${COMMENT 3 EDIT}    ${EMPTY}
+${COMMENT 4 EDIT}    ${EMPTY}
+${COMMENT 5 EDIT}    ${EMPTY}
+${REPLY 1}        ${EMPTY}
+${REPLY 2}        ${EMPTY}
+${REPLY 3}        ${EMPTY}
+${REPLY 4}        ${EMPTY}
+${REPLY 5}        ${EMPTY}
+${REPLY 1 EDIT}    ${EMPTY}
+${REPLY 2 EDIT}    ${EMPTY}
+${REPLY 3 EDIT}    ${EMPTY}
+${REPLY 4 EDIT}    ${EMPTY}
+${REPLY 5 EDIT}    ${EMPTY}
+${REPLY 1 DELETE}    ${EMPTY}
+${REPLY 2 DELETE}    ${EMPTY}
+${REPLY 3 DELETE}    ${EMPTY}
+${REPLY 4 DELETE}    ${EMPTY}
+${REPLY 5 DELETE}    ${EMPTY}
+${REPLY FIELD ID}    ${EMPTY}
+${REPLY FIELD EDIT ID}    ${EMPTY}
+${TEMP REPLY ID}    ${EMPTY}
+${root comment number}    ${EMPTY}
+${root comment number edit}    ${EMPTY}
+${current comment field}    ${EMPTY}
+${current comment edit field}    ${EMPTY}
+${current reply field}    ${EMPTY}
+${current reply edit field}    ${EMPTY}
+${comment element present}    ${EMPTY}
+${reply element present}    ${EMPTY}
+
+*** Keywords ***
+Set Comment Edit ID
+    [Documentation]    *Used during "Add New Comment" keyword only*
+    ${NEW COMMENT ID EDIT TEMP}    Set Variable If    "${NEW COMMENT ID VIEW}" == "commentView0"    commentEdit0    "${NEW COMMENT ID VIEW}" == "commentView1"    commentEdit1    "${NEW COMMENT ID VIEW}" == "commentView2"
+    ...    commentEdit2    "${NEW COMMENT ID VIEW}" == "commentView3"    commentEdit3    "${NEW COMMENT ID VIEW}" == "commentView4"    commentEdit4    "${NEW COMMENT ID VIEW}" == "commentView5"
+    ...    commentEdit5    "${NEW COMMENT ID VIEW}" == "commentView6"    commentEdit6    "${NEW COMMENT ID VIEW}" == "commentView7"    commentEdit7    "${NEW COMMENT ID VIEW}" == "commentView8"
+    ...    commentEdit8    "${NEW COMMENT ID VIEW}" == "commentView9"    commentEdit9    "${NEW COMMENT ID VIEW}" == "commentView10"    commentEdit10
+    ${NEW COMMENT ID EDIT}    Set Global Variable    ${NEW COMMENT ID EDIT TEMP}
+
+Set Comment Number ID
+    [Documentation]    *Used during "Add New Comment" keyword only*
+    Comment    Set Test Variable    ${comment element present}    TRUE
+    Comment    No ID Check
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    1
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    2
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    3
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    4
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    5
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    6
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    7
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    8
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    9
+    Comment    Run Keyword If    '${comment element present}'=='TRUE'    Last ID Check    10
+    ${xpath_count}=    Get Matching Xpath Count    //div[not(contains(@id, '.')) and contains(@class, 'ewb-comments-comment') and contains(@id, 'comment')]
+    ${last_comment_id}=    Run Keyword If    int(${xpath_count})>0    IDBSSelenium2Library.Get Element Attribute    xpath=(//div[contains(@class, 'ewb-comments-comment') and contains(@id, 'comment') and not(contains(@id, '.'))])[${xpath_count}]@id
+    ${last_comment_id}=    Set Variable If    '${last_comment_id}'!='None'    ${last_comment_id}    comment0
+    ${last_comment_id}=    Replace String    ${last_comment_id}    comment    ${EMPTY}
+    ${last_comment_id}=    Evaluate    (int(${last_comment_id}))+1
+    ${LATEST COMMENT ID VIEW}    Set Variable    commentView${last_comment_id}
+    ${LATEST COMMENT ID EDIT}    Set Variable    commentEdit${last_comment_id}
+    ${DELETE COMMENT TEMP}    Set Variable    deleteAnchor${last_comment_id}
+    ${EDIT COMMENT TEMP}    Set Variable    editAnchor${last_comment_id}
+    Set Global Variable    ${LATEST COMMENT ID VIEW}    ${LATEST COMMENT ID VIEW}
+    Set Global Variable    ${LATEST COMMENT ID EDIT}    ${LATEST COMMENT ID EDIT}
+    Set Global Variable    ${DELETE COMMENT TEMP}    ${DELETE COMMENT TEMP}
+    Set Global Variable    ${EDIT COMMENT TEMP}    ${EDIT COMMENT TEMP}
+
+No ID Check
+    ${status}    ${value} =    Run Keyword And Ignore Error    Page Should Contain Element    comment1
+    Run Keyword If    '${status}'=='FAIL'    Set View and Edit ID    0
+    Run Keyword If    '${status}'=='FAIL'    Set Test Variable    ${comment element present}    FALSE
+    Run Keyword If    '${status}'=='PASS'    Set Test Variable    ${comment element present}    TRUE
+
+Last ID Check
+    [Arguments]    ${comment ID number}
+    ${status}    ${value} =    Run Keyword And Ignore Error    Page Should Contain Element    comment${comment ID number}    message=Element not found, checking next element    loglevel=NONE
+    Run Keyword If    '${status}'=='PASS'    Set View and Edit ID    ${comment ID number}
+    Run Keyword If    '${status}'=='PASS'    Set Test Variable    ${comment element present}    TRUE
+    Run Keyword If    '${status}'=='FAIL'    Set Test Variable    ${comment element present}    FALSE
+
+Set View and Edit ID
+    [Arguments]    ${id number}
+    ${id correct}    Set Variable    If    "${id number}" == "0"    1    "${id number}" == "1"    2
+    ...    "${id number}" == "2"    3    "${id number}" == "3"    4    "${id number}" == "4"    5
+    ...    "${id number}" == "5"    6    "${id number}" == "6"    7    "${id number}" == "7"    8
+    ...    "${id number}" == "8"    9    "${id number}" == "9"    10    "${id number}" == "10"    11
+    ${LATEST COMMENT ID VIEW}    Set Variable If    "${id number}" == "0"    xpath=//div[@id='comment1']/div/div    "${id number}" == "1"    xpath=//div[@id='comment2']/div/div    "${id number}" == "2"
+    ...    xpath=//div[@id='comment3']/div/div    "${id number}" == "3"    xpath=//div[@id='comment4']/div/div    "${id number}" == "4"    xpath=//div[@id='comment5']/div/div    "${id number}" == "5"
+    ...    xpath=//div[@id='comment6']/div/div    "${id number}" == "6"    xpath=//div[@id='comment7']/div/div    "${id number}" == "7"    xpath=//div[@id='comment8']/div/div    "${id number}" == "8"
+    ...    xpath=//div[@id='comment9']/div/div    "${id number}" == "9"    xpath=//div[@id='comment10']/div/div    "${id number}" == "10"    xpath=//div[@id='comment11']/div/div
+    ${LATEST COMMENT ID EDIT}    Set Variable If    "${id number}" == "0"    xpath=//div[@id='comment1']/div/textarea    "${id number}" == "1"    xpath=//div[@id='comment2']/div/textarea    "${id number}" == "2"
+    ...    xpath=//div[@id='comment3']/div/textarea    "${id number}" == "3"    xpath=//div[@id='comment4']/div/textarea    "${id number}" == "4"    xpath=//div[@id='comment5']/div/textarea    "${id number}" == "5"
+    ...    xpath=//div[@id='comment6']/div/textarea    "${id number}" == "6"    xpath=//div[@id='comment7']/div/textarea    "${id number}" == "7"    xpath=//div[@id='comment8']/div/textarea    "${id number}" == "8"
+    ...    xpath=//div[@id='comment9']/div/textarea    "${id number}" == "9"    xpath=//div[@id='comment10']/div/textarea    "${id number}" == "10"    xpath=//div[@id='comment11']/div/textarea
+    ${DELETE COMMENT TEMP}    Set Variable If    "${id number}" == "0"    deleteAnchor1    "${id number}" == "1"    deleteAnchor2    "${id number}" == "2"
+    ...    deleteAnchor3    "${id number}" == "3"    deleteAnchor4    "${id number}" == "4"    deleteAnchor5    "${id number}" == "5"
+    ...    deleteAnchor6    "${id number}" == "6"    deleteAnchor7    "${id number}" == "7"    deleteAnchor8    "${id number}" == "8"
+    ...    deleteAnchor9    "${id number}" == "9"    deleteAnchor10    "${id number}" == "10"    deleteAnchor11
+    ${EDIT COMMENT TEMP}    Set Variable If    "${id number}" == "0"    editAnchor1    "${id number}" == "1"    editAnchor2    "${id number}" == "2"
+    ...    editAnchor3    "${id number}" == "3"    editAnchor4    "${id number}" == "4"    editAnchor5    "${id number}" == "5"
+    ...    editAnchor6    "${id number}" == "6"    editAnchor7    "${id number}" == "7"    editAnchor8    "${id number}" == "8"
+    ...    editAnchor9    "${id number}" == "9"    editAnchor10    "${id number}" == "10"    editAnchor11
+    Set Global Variable    ${LATEST COMMENT ID VIEW}    ${LATEST COMMENT ID VIEW}
+    Set Global Variable    ${LATEST COMMENT ID EDIT}    ${LATEST COMMENT ID EDIT}
+    Set Global Variable    ${DELETE COMMENT TEMP}    ${DELETE COMMENT TEMP}
+    Set Global Variable    ${EDIT COMMENT TEMP}    ${EDIT COMMENT TEMP}
+
+Comment Text Check
+    [Arguments]    ${comment number temp}
+    Wait Until Element Text Is    ${LATEST COMMENT ID VIEW}    ${COMMENT ${comment number temp}}    30s
+
+Reply Text Check
+    [Arguments]    ${temp reply number}
+    Wait Until Element Text Is    ${LATEST REPLY ID VIEW}    ${REPLY ${temp reply number}}    30s
+
+Edit Reply Button ID
+    ${REPLY BUTTON ID}    Set Variable    ${REPLY FIELD ID}
+    ${REPLY BUTTON ID}    Replace String    ${REPLY BUTTON ID}    commentView    ${EMPTY}
+    ${REPLY BUTTON ID}    Replace String    ${REPLY BUTTON ID}    .reply    ${EMPTY}
+    ${REPLY BUTTON ID}    Set Variable    xpath=//div[@id='postReply${REPLY BUTTON ID}']/descendant::a[@id='ewb-comments-post-accept-link']
+    Comment    ${REPLY BUTTON ID}    Set Variable If    "${REPLY FIELD ID}" == "commentView1.reply"    xpath=//div[@id='postReply1']/descendant::a[@id='ewb-comments-post-accept-link']    "${REPLY FIELD ID}" == "commentView2.reply"    xpath=//div[@id='postReply2']/descendant::a[@id='ewb-comments-post-accept-link']
+    ...    "${REPLY FIELD ID}" == "commentView3.reply"    xpath=//div[@id='postReply3']/descendant::a[@id='ewb-comments-post-accept-link']    "${REPLY FIELD ID}" == "commentView4.reply"    xpath=//div[@id='postReply4']/descendant::a[@id='ewb-comments-post-accept-link']    "${REPLY FIELD ID}" == "commentView5.reply"    xpath=//div[@id='postReply5']/descendant::a[@id='ewb-comments-post-accept-link']
+    ...    "${REPLY FIELD ID}" == "commentView6.reply"    xpath=//div[@id='postReply6']/descendant::a[@id='ewb-comments-post-accept-link']    "${REPLY FIELD ID}" == "commentView7.reply"    xpath=//div[@id='postReply7']/descendant::a[@id='ewb-comments-post-accept-link']    "${REPLY FIELD ID}" == "commentView8.reply"    xpath=//div[@id='postReply8']/descendant::a[@id='ewb-comments-post-accept-link']
+    ...    "${REPLY FIELD ID}" == "commentView9.reply"    xpath=//div[@id='postReply9']/descendant::a[@id='ewb-comments-post-accept-link']    "${REPLY FIELD ID}" == "commentView10.reply"    xpath=//div[@id='postReply10']/descendant::a[@id='ewb-comments-post-accept-link']
+    Comment    ${REPLY BUTTON ID} =    Set Variable    xpath=//a[@id='ewb-comments-post-accept-link' and text()="Reply"]
+    Set Global Variable    ${REPLY BUTTON ID}
+
+Set Reply Number ID
+    [Documentation]    *Used during "Add New Reply" keyword only*
+    Comment    Set Test Variable    ${comment element present}    TRUE
+    Get Root Comment Number Temp
+    Comment    No Reply ID Check
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    1
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    2
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    3
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    4
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    5
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    6
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    7
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    8
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    9
+    Comment    Run Keyword If    '${reply element present}'=='TRUE'    Last Reply ID Check    10
+    ${xpath_count}=    Get Matching Xpath Count    //div[contains(@class, 'ewb-comments-comment') and contains(@id, 'comment${TEMP REPLY ID}.')]
+    ${last_comment_id}=    Run Keyword If    int(${xpath_count})>0    IDBSSelenium2Library.Get Element Attribute    xpath=(//div[contains(@class, 'ewb-comments-comment') and contains(@id, 'comment${TEMP REPLY ID}.')])[${xpath_count}]@id
+    ${last_comment_id}=    Set Variable If    '${last_comment_id}'!='None'    ${last_comment_id}    comment${TEMP REPLY ID}.0
+    ${last_comment_id}=    Replace String    ${last_comment_id}    comment${TEMP REPLY ID}.    ${EMPTY}
+    ${last_comment_id}=    Evaluate    (int(${last_comment_id}))+1
+    ${last_comment_id}=    Set Variable    ${TEMP REPLY ID}.${last_comment_id}
+    ${LATEST REPLY ID VIEW}    Set Variable    commentView${last_comment_id}
+    ${LATEST REPLY ID EDIT}    Set Variable    commentEdit${last_comment_id}
+    ${EDIT REPLY TEMP}    Set Variable    editAnchor${last_comment_id}
+    ${DELETE REPLY TEMP}    Set Variable    deleteAnchor${last_comment_id}
+    Set Global Variable    ${LATEST REPLY ID VIEW}    ${LATEST REPLY ID VIEW}
+    Set Global Variable    ${LATEST REPLY ID EDIT}    ${LATEST REPLY ID EDIT}
+    Set Global Variable    ${EDIT REPLY TEMP}    ${EDIT REPLY TEMP}
+    Set Global Variable    ${DELETE REPLY TEMP}    ${DELETE REPLY TEMP}
+
+Get Root Comment Number Temp
+    ${TEMP REPLY ID}    Set Variable    ${root comment number}
+    ${TEMP REPLY ID}    Replace String    ${TEMP REPLY ID}    commentView    ${EMPTY}
+    Comment    ${TEMP REPLY ID}    Set Variable If    "${root comment number}" == "commentView1"    1    "${root comment number}" == "commentView2"    2
+    ...    "${root comment number}" == "commentView3"    3    "${root comment number}" == "commentView4"    4    "${root comment number}" == "commentView5"    5
+    ...    "${root comment number}" == "commentView6"    6    "${root comment number}" == "commentView7"    7    "${root comment number}" == "commentView8"    8
+    ...    "${root comment number}" == "commentView9"    9    "${root comment number}" == "commentView10"    10
+    Set Global Variable    ${TEMP REPLY ID}
+
+No Reply ID Check
+    ${status}    ${value} =    Run Keyword And Ignore Error    Page Should Contain Element    comment${TEMP REPLY ID}.1
+    Run Keyword If    '${status}'=='FAIL'    Set Reply View and Edit ID    0
+    Run Keyword If    '${status}'=='FAIL'    Set Test Variable    ${reply element present}    FALSE
+    Run Keyword If    '${status}'=='PASS'    Set Test Variable    ${reply element present}    TRUE
+
+Last Reply ID Check
+    [Arguments]    ${comment ID number}
+    ${status}    ${value} =    Run Keyword And Ignore Error    Page Should Contain Element    comment${TEMP REPLY ID}.${comment ID number}
+    Run Keyword If    '${status}'=='PASS'    Set Reply View and Edit ID    ${comment ID number}
+    Run Keyword If    '${status}'=='PASS'    Set Test Variable    ${reply element present}    TRUE
+    Run Keyword If    '${status}'=='FAIL'    Set Test Variable    ${reply element present}    FALSE
+
+Set Reply View and Edit ID
+    [Arguments]    ${id number}
+    ${id correct}    Set Variable    If    "${id number}" == "0"    1    "${id number}" == "1"    2
+    ...    "${id number}" == "2"    3    "${id number}" == "3"    4    "${id number}" == "4"    5
+    ...    "${id number}" == "5"    6    "${id number}" == "6"    7    "${id number}" == "7"    8
+    ...    "${id number}" == "8"    9    "${id number}" == "9"    10    "${id number}" == "10"    11
+    ${LATEST REPLY ID VIEW}    Set Variable If    "${id number}" == "0"    ${root comment number}.1    "${id number}" == "1"    ${root comment number}.2    "${id number}" == "2"
+    ...    ${root comment number}.3    "${id number}" == "3"    ${root comment number}.4    "${id number}" == "4"    ${root comment number}.5    "${id number}" == "5"
+    ...    ${root comment number}.6    "${id number}" == "6"    ${root comment number}.7    "${id number}" == "7"    ${root comment number}.8    "${id number}" == "8"
+    ...    ${root comment number}.9    "${id number}" == "9"    ${root comment number}.10    "${id number}" == "10"    ${root comment number}.11
+    Get Root Comment Number Edit
+    ${LATEST REPLY ID EDIT}    Set Variable If    "${id number}" == "0"    ${root comment number edit}.1    "${id number}" == "1"    ${root comment number edit}.2    "${id number}" == "2"
+    ...    ${root comment number edit}.3    "${id number}" == "3"    ${root comment number edit}.4    "${id number}" == "4"    ${root comment number edit}.5    "${id number}" == "5"
+    ...    ${root comment number edit}.6    "${id number}" == "6"    ${root comment number edit}.7    "${id number}" == "7"    ${root comment number edit}.8    "${id number}" == "8"
+    ...    ${root comment number edit}.9    "${id number}" == "9"    ${root comment number edit}.10    "${id number}" == "10"    ${root comment number edit}.11
+    Log Edit and Delete Reply IDs
+    Set Global Variable    ${LATEST REPLY ID VIEW}    ${LATEST REPLY ID VIEW}
+    Set Global Variable    ${LATEST REPLY ID EDIT}    ${LATEST REPLY ID EDIT}
+
+Log Edit and Delete Reply IDs
+    ${EDIT REPLY TEMP}    Set Variable If    "${LATEST REPLY ID VIEW}" == "commentView1.1"    editAnchor1.1    "${LATEST REPLY ID VIEW}" == "commentView1.2"    editAnchor1.2    "${LATEST REPLY ID VIEW}" == "commentView1.3"
+    ...    editAnchor1.3    "${LATEST REPLY ID VIEW}" == "commentView1.4"    editAnchor1.4    "${LATEST REPLY ID VIEW}" == "commentView1.5"    editAnchor1.5    "${LATEST REPLY ID VIEW}" == "commentView1.6"
+    ...    editAnchor1.6    "${LATEST REPLY ID VIEW}" == "commentView1.7"    editAnchor1.7    "${LATEST REPLY ID VIEW}" == "commentView1.8"    editAnchor1.8    "${LATEST REPLY ID VIEW}" == "commentView1.9"
+    ...    editAnchor1.9    "${LATEST REPLY ID VIEW}" == "commentView1.10"    editAnchor1.10    "${LATEST REPLY ID VIEW}" == "commentView2.1"    editAnchor2.1    "${LATEST REPLY ID VIEW}" == "commentView2.2"
+    ...    editAnchor2.2    "${LATEST REPLY ID VIEW}" == "commentView2.3"    editAnchor2.3    "${LATEST REPLY ID VIEW}" == "commentView2.4"    editAnchor2.4    "${LATEST REPLY ID VIEW}" == "commentView2.5"
+    ...    editAnchor2.5    "${LATEST REPLY ID VIEW}" == "commentView2.6"    editAnchor2.6    "${LATEST REPLY ID VIEW}" == "commentView2.7"    editAnchor2.7    "${LATEST REPLY ID VIEW}" == "commentView2.8"
+    ...    editAnchor2.8    "${LATEST REPLY ID VIEW}" == "commentView2.9"    editAnchor2.9    "${LATEST REPLY ID VIEW}" == "commentView2.10"    editAnchor2.10    "${LATEST REPLY ID VIEW}" == "commentView3.1"
+    ...    editAnchor3.1    "${LATEST REPLY ID VIEW}" == "commentView3.2"    editAnchor3.2    "${LATEST REPLY ID VIEW}" == "commentView3.3"    editAnchor3.3    "${LATEST REPLY ID VIEW}" == "commentView3.4"
+    ...    editAnchor3.4    "${LATEST REPLY ID VIEW}" == "commentView3.5"    editAnchor3.5    "${LATEST REPLY ID VIEW}" == "commentView3.6"    editAnchor3.6    "${LATEST REPLY ID VIEW}" == "commentView3.7"
+    ...    editAnchor3.7    "${LATEST REPLY ID VIEW}" == "commentView3.8"    editAnchor3.8    "${LATEST REPLY ID VIEW}" == "commentView3.9"    editAnchor3.9    "${LATEST REPLY ID VIEW}" == "commentView3.10"
+    ...    editAnchor3.10    "${LATEST REPLY ID VIEW}" == "commentView4.1"    editAnchor4.1    "${LATEST REPLY ID VIEW}" == "commentView4.2"    editAnchor4.2    "${LATEST REPLY ID VIEW}" == "commentView4.3"
+    ...    editAnchor4.3    "${LATEST REPLY ID VIEW}" == "commentView4.4"    editAnchor4.4    "${LATEST REPLY ID VIEW}" == "commentView4.5"    editAnchor4.5    "${LATEST REPLY ID VIEW}" == "commentView4.6"
+    ...    editAnchor4.6    "${LATEST REPLY ID VIEW}" == "commentView4.7"    editAnchor4.7    "${LATEST REPLY ID VIEW}" == "commentView4.8"    editAnchor4.8    "${LATEST REPLY ID VIEW}" == "commentView4.9"
+    ...    editAnchor4.9    "${LATEST REPLY ID VIEW}" == "commentView4.10"    editAnchor4.10    "${LATEST REPLY ID VIEW}" == "commentView5.1"    editAnchor5.1    "${LATEST REPLY ID VIEW}" == "commentView5.2"
+    ...    editAnchor5.2    "${LATEST REPLY ID VIEW}" == "commentView5.3"    editAnchor5.3    "${LATEST REPLY ID VIEW}" == "commentView5.4"    editAnchor5.4    "${LATEST REPLY ID VIEW}" == "commentView5.5"
+    ...    editAnchor5.5    "${LATEST REPLY ID VIEW}" == "commentView5.6"    editAnchor5.6    "${LATEST REPLY ID VIEW}" == "commentView5.7"    editAnchor5.7    "${LATEST REPLY ID VIEW}" == "commentView5.8"
+    ...    editAnchor5.8    "${LATEST REPLY ID VIEW}" == "commentView5.9"    editAnchor5.9    "${LATEST REPLY ID VIEW}" == "commentView5.10"    editAnchor5.10    "${LATEST REPLY ID VIEW}" == "commentView6.1"
+    ...    editAnchor6.1    "${LATEST REPLY ID VIEW}" == "commentView6.2"    editAnchor6.2    "${LATEST REPLY ID VIEW}" == "commentView6.3"    editAnchor6.3    "${LATEST REPLY ID VIEW}" == "commentView6.4"
+    ...    editAnchor6.4    "${LATEST REPLY ID VIEW}" == "commentView6.5"    editAnchor6.5    "${LATEST REPLY ID VIEW}" == "commentView6.6"    editAnchor6.6    "${LATEST REPLY ID VIEW}" == "commentView6.7"
+    ...    editAnchor6.7    "${LATEST REPLY ID VIEW}" == "commentView6.8"    editAnchor6.8    "${LATEST REPLY ID VIEW}" == "commentView6.9"    editAnchor6.9    "${LATEST REPLY ID VIEW}" == "commentView6.10"
+    ...    editAnchor6.10    "${LATEST REPLY ID VIEW}" == "commentView7.1"    editAnchor7.1    "${LATEST REPLY ID VIEW}" == "commentView7.2"    editAnchor7.2    "${LATEST REPLY ID VIEW}" == "commentView7.3"
+    ...    editAnchor7.3    "${LATEST REPLY ID VIEW}" == "commentView7.4"    editAnchor7.4    "${LATEST REPLY ID VIEW}" == "commentView7.5"    editAnchor7.5    "${LATEST REPLY ID VIEW}" == "commentView7.6"
+    ...    editAnchor7.6    "${LATEST REPLY ID VIEW}" == "commentView7.7"    editAnchor7.7    "${LATEST REPLY ID VIEW}" == "commentView7.8"    editAnchor7.8    "${LATEST REPLY ID VIEW}" == "commentView7.9"
+    ...    editAnchor7.9    "${LATEST REPLY ID VIEW}" == "commentView7.10"    editAnchor7.10    "${LATEST REPLY ID VIEW}" == "commentView8.1"    editAnchor8.1    "${LATEST REPLY ID VIEW}" == "commentView8.2"
+    ...    editAnchor8.2    "${LATEST REPLY ID VIEW}" == "commentView8.3"    editAnchor8.3    "${LATEST REPLY ID VIEW}" == "commentView8.4"    editAnchor8.4    "${LATEST REPLY ID VIEW}" == "commentView8.5"
+    ...    editAnchor8.5    "${LATEST REPLY ID VIEW}" == "commentView8.6"    editAnchor8.6    "${LATEST REPLY ID VIEW}" == "commentView8.7"    editAnchor8.7    "${LATEST REPLY ID VIEW}" == "commentView8.8"
+    ...    editAnchor8.8    "${LATEST REPLY ID VIEW}" == "commentView8.9"    editAnchor8.9    "${LATEST REPLY ID VIEW}" == "commentView8.10"    editAnchor8.10    "${LATEST REPLY ID VIEW}" == "commentView9.1"
+    ...    editAnchor9.1    "${LATEST REPLY ID VIEW}" == "commentView9.2"    editAnchor9.2    "${LATEST REPLY ID VIEW}" == "commentView9.3"    editAnchor9.3    "${LATEST REPLY ID VIEW}" == "commentView9.4"
+    ...    editAnchor9.4    "${LATEST REPLY ID VIEW}" == "commentView9.5"    editAnchor9.5    "${LATEST REPLY ID VIEW}" == "commentView9.6"    editAnchor9.6    "${LATEST REPLY ID VIEW}" == "commentView9.7"
+    ...    editAnchor9.7    "${LATEST REPLY ID VIEW}" == "commentView9.8"    editAnchor9.8    "${LATEST REPLY ID VIEW}" == "commentView9.9"    editAnchor9.9    "${LATEST REPLY ID VIEW}" == "commentView9.10"
+    ...    editAnchor9.10    "${LATEST REPLY ID VIEW}" == "commentView10.1"    editAnchor10.1    "${LATEST REPLY ID VIEW}" == "commentView10.2"    editAnchor10.2    "${LATEST REPLY ID VIEW}" == "commentView10.3"
+    ...    editAnchor10.3    "${LATEST REPLY ID VIEW}" == "commentView10.4"    editAnchor10.4    "${LATEST REPLY ID VIEW}" == "commentView10.5"    editAnchor10.5    "${LATEST REPLY ID VIEW}" == "commentView10.6"
+    ...    editAnchor10.6    "${LATEST REPLY ID VIEW}" == "commentView10.7"    editAnchor10.7    "${LATEST REPLY ID VIEW}" == "commentView10.8"    editAnchor10.8    "${LATEST REPLY ID VIEW}" == "commentView10.9"
+    ...    editAnchor10.9    "${LATEST REPLY ID VIEW}" == "commentView10.10"    editAnchor10.10
+    ${DELETE REPLY TEMP}    Set Variable If    "${LATEST REPLY ID VIEW}" == "commentView1.1"    deleteAnchor1.1    "${LATEST REPLY ID VIEW}" == "commentView1.2"    deleteAnchor1.2    "${LATEST REPLY ID VIEW}" == "commentView1.3"
+    ...    deleteAnchor1.3    "${LATEST REPLY ID VIEW}" == "commentView1.4"    deleteAnchor1.4    "${LATEST REPLY ID VIEW}" == "commentView1.5"    deleteAnchor1.5    "${LATEST REPLY ID VIEW}" == "commentView1.6"
+    ...    deleteAnchor1.6    "${LATEST REPLY ID VIEW}" == "commentView1.7"    deleteAnchor1.7    "${LATEST REPLY ID VIEW}" == "commentView1.8"    deleteAnchor1.8    "${LATEST REPLY ID VIEW}" == "commentView1.9"
+    ...    deleteAnchor1.9    "${LATEST REPLY ID VIEW}" == "commentView1.10"    deleteAnchor1.10    "${LATEST REPLY ID VIEW}" == "commentView2.1"    deleteAnchor2.1    "${LATEST REPLY ID VIEW}" == "commentView2.2"
+    ...    deleteAnchor2.2    "${LATEST REPLY ID VIEW}" == "commentView2.3"    deleteAnchor2.3    "${LATEST REPLY ID VIEW}" == "commentView2.4"    deleteAnchor2.4    "${LATEST REPLY ID VIEW}" == "commentView2.5"
+    ...    deleteAnchor2.5    "${LATEST REPLY ID VIEW}" == "commentView2.6"    deleteAnchor2.6    "${LATEST REPLY ID VIEW}" == "commentView2.7"    deleteAnchor2.7    "${LATEST REPLY ID VIEW}" == "commentView2.8"
+    ...    deleteAnchor2.8    "${LATEST REPLY ID VIEW}" == "commentView2.9"    deleteAnchor2.9    "${LATEST REPLY ID VIEW}" == "commentView2.10"    deleteAnchor2.10    "${LATEST REPLY ID VIEW}" == "commentView3.1"
+    ...    deleteAnchor3.1    "${LATEST REPLY ID VIEW}" == "commentView3.2"    deleteAnchor3.2    "${LATEST REPLY ID VIEW}" == "commentView3.3"    deleteAnchor3.3    "${LATEST REPLY ID VIEW}" == "commentView3.4"
+    ...    deleteAnchor3.4    "${LATEST REPLY ID VIEW}" == "commentView3.5"    deleteAnchor3.5    "${LATEST REPLY ID VIEW}" == "commentView3.6"    deleteAnchor3.6    "${LATEST REPLY ID VIEW}" == "commentView3.7"
+    ...    deleteAnchor3.7    "${LATEST REPLY ID VIEW}" == "commentView3.8"    deleteAnchor3.8    "${LATEST REPLY ID VIEW}" == "commentView3.9"    deleteAnchor3.9    "${LATEST REPLY ID VIEW}" == "commentView3.10"
+    ...    deleteAnchor3.10    "${LATEST REPLY ID VIEW}" == "commentView4.1"    deleteAnchor4.1    "${LATEST REPLY ID VIEW}" == "commentView4.2"    deleteAnchor4.2    "${LATEST REPLY ID VIEW}" == "commentView4.3"
+    ...    deleteAnchor4.3    "${LATEST REPLY ID VIEW}" == "commentView4.4"    deleteAnchor4.4    "${LATEST REPLY ID VIEW}" == "commentView4.5"    deleteAnchor4.5    "${LATEST REPLY ID VIEW}" == "commentView4.6"
+    ...    deleteAnchor4.6    "${LATEST REPLY ID VIEW}" == "commentView4.7"    deleteAnchor4.7    "${LATEST REPLY ID VIEW}" == "commentView4.8"    deleteAnchor4.8    "${LATEST REPLY ID VIEW}" == "commentView4.9"
+    ...    deleteAnchor4.9    "${LATEST REPLY ID VIEW}" == "commentView4.10"    deleteAnchor4.10    "${LATEST REPLY ID VIEW}" == "commentView5.1"    deleteAnchor5.1    "${LATEST REPLY ID VIEW}" == "commentView5.2"
+    ...    deleteAnchor5.2    "${LATEST REPLY ID VIEW}" == "commentView5.3"    deleteAnchor5.3    "${LATEST REPLY ID VIEW}" == "commentView5.4"    deleteAnchor5.4    "${LATEST REPLY ID VIEW}" == "commentView5.5"
+    ...    deleteAnchor5.5    "${LATEST REPLY ID VIEW}" == "commentView5.6"    deleteAnchor5.6    "${LATEST REPLY ID VIEW}" == "commentView5.7"    deleteAnchor5.7    "${LATEST REPLY ID VIEW}" == "commentView5.8"
+    ...    deleteAnchor5.8    "${LATEST REPLY ID VIEW}" == "commentView5.9"    deleteAnchor5.9    "${LATEST REPLY ID VIEW}" == "commentView5.10"    deleteAnchor5.10    "${LATEST REPLY ID VIEW}" == "commentView6.1"
+    ...    deleteAnchor6.1    "${LATEST REPLY ID VIEW}" == "commentView6.2"    deleteAnchor6.2    "${LATEST REPLY ID VIEW}" == "commentView6.3"    deleteAnchor6.3    "${LATEST REPLY ID VIEW}" == "commentView6.4"
+    ...    deleteAnchor6.4    "${LATEST REPLY ID VIEW}" == "commentView6.5"    deleteAnchor6.5    "${LATEST REPLY ID VIEW}" == "commentView6.6"    deleteAnchor6.6    "${LATEST REPLY ID VIEW}" == "commentView6.7"
+    ...    deleteAnchor6.7    "${LATEST REPLY ID VIEW}" == "commentView6.8"    deleteAnchor6.8    "${LATEST REPLY ID VIEW}" == "commentView6.9"    deleteAnchor6.9    "${LATEST REPLY ID VIEW}" == "commentView6.10"
+    ...    deleteAnchor6.10    "${LATEST REPLY ID VIEW}" == "commentView7.1"    deleteAnchor7.1    "${LATEST REPLY ID VIEW}" == "commentView7.2"    deleteAnchor7.2    "${LATEST REPLY ID VIEW}" == "commentView7.3"
+    ...    deleteAnchor7.3    "${LATEST REPLY ID VIEW}" == "commentView7.4"    deleteAnchor7.4    "${LATEST REPLY ID VIEW}" == "commentView7.5"    deleteAnchor7.5    "${LATEST REPLY ID VIEW}" == "commentView7.6"
+    ...    deleteAnchor7.6    "${LATEST REPLY ID VIEW}" == "commentView7.7"    deleteAnchor7.7    "${LATEST REPLY ID VIEW}" == "commentView7.8"    deleteAnchor7.8    "${LATEST REPLY ID VIEW}" == "commentView7.9"
+    ...    deleteAnchor7.9    "${LATEST REPLY ID VIEW}" == "commentView7.10"    deleteAnchor7.10    "${LATEST REPLY ID VIEW}" == "commentView8.1"    deleteAnchor8.1    "${LATEST REPLY ID VIEW}" == "commentView8.2"
+    ...    deleteAnchor8.2    "${LATEST REPLY ID VIEW}" == "commentView8.3"    deleteAnchor8.3    "${LATEST REPLY ID VIEW}" == "commentView8.4"    deleteAnchor8.4    "${LATEST REPLY ID VIEW}" == "commentView8.5"
+    ...    deleteAnchor8.5    "${LATEST REPLY ID VIEW}" == "commentView8.6"    deleteAnchor8.6    "${LATEST REPLY ID VIEW}" == "commentView8.7"    deleteAnchor8.7    "${LATEST REPLY ID VIEW}" == "commentView8.8"
+    ...    deleteAnchor8.8    "${LATEST REPLY ID VIEW}" == "commentView8.9"    deleteAnchor8.9    "${LATEST REPLY ID VIEW}" == "commentView8.10"    deleteAnchor8.10    "${LATEST REPLY ID VIEW}" == "commentView9.1"
+    ...    deleteAnchor9.1    "${LATEST REPLY ID VIEW}" == "commentView9.2"    deleteAnchor9.2    "${LATEST REPLY ID VIEW}" == "commentView9.3"    deleteAnchor9.3    "${LATEST REPLY ID VIEW}" == "commentView9.4"
+    ...    deleteAnchor9.4    "${LATEST REPLY ID VIEW}" == "commentView9.5"    deleteAnchor9.5    "${LATEST REPLY ID VIEW}" == "commentView9.6"    deleteAnchor9.6    "${LATEST REPLY ID VIEW}" == "commentView9.7"
+    ...    deleteAnchor9.7    "${LATEST REPLY ID VIEW}" == "commentView9.8"    deleteAnchor9.8    "${LATEST REPLY ID VIEW}" == "commentView9.9"    deleteAnchor9.9    "${LATEST REPLY ID VIEW}" == "commentView9.10"
+    ...    deleteAnchor9.10    "${LATEST REPLY ID VIEW}" == "commentView10.1"    deleteAnchor10.1    "${LATEST REPLY ID VIEW}" == "commentView10.2"    deleteAnchor10.2    "${LATEST REPLY ID VIEW}" == "commentView10.3"
+    ...    deleteAnchor10.3    "${LATEST REPLY ID VIEW}" == "commentView10.4"    deleteAnchor10.4    "${LATEST REPLY ID VIEW}" == "commentView10.5"    deleteAnchor10.5    "${LATEST REPLY ID VIEW}" == "commentView10.6"
+    ...    deleteAnchor10.6    "${LATEST REPLY ID VIEW}" == "commentView10.7"    deleteAnchor10.7    "${LATEST REPLY ID VIEW}" == "commentView10.8"    deleteAnchor10.8    "${LATEST REPLY ID VIEW}" == "commentView10.9"
+    ...    deleteAnchor10.9    "${LATEST REPLY ID VIEW}" == "commentView10.10"    deleteAnchor10.10
+    Set Global Variable    ${EDIT REPLY TEMP}    ${EDIT REPLY TEMP}
+    Set Global Variable    ${DELETE REPLY TEMP}    ${DELETE REPLY TEMP}
+
+Get Root Comment Number Edit
+    ${root comment number edit}    Set Variable If    "{root comment number}" == "commentView1"    "commentEdit1"    "{root comment number}" == "commentView2"    "commentEdit2"    "{root comment number}" == "commentView3"
+    ...    "commentEdit3"    "{root comment number}" == "commentView4"    "commentEdit4"    "{root comment number}" == "commentView5"    "commentEdit5"    "{root comment number}" == "commentView6"
+    ...    "commentEdit6"    "{root comment number}" == "commentView7"    "commentEdit7"    "{root comment number}" == "commentView8"    "commentEdit8"    "{root comment number}" == "commentView9"
+    ...    "commentEdit9"    "{root comment number}" == "commentView10"    "commentEdit10"
+    ${root comment number edit}    Set Global Variable    ${root comment number edit}
+
+Get Reply ID
+    [Arguments]    ${comment number temp}
+    ${root comment number}    IDBSSelenium2Library.Get Element Attribute    xpath=//div[text()="${COMMENT ${comment number temp}}"]@id
+    Set Global Variable    ${root comment number}
+    ${REPLY FIELD ID}    Set Variable    ${root comment number}.reply
+    Comment    ${REPLY FIELD ID}    Set Variable If    "${root comment number}" == "commentView1"    commentView1.reply    "${root comment number}" == "commentView2"    commentView2.reply
+    ...    "${root comment number}" == "commentView3"    commentView3.reply    "${root comment number}" == "commentView4"    commentView4.reply    "${root comment number}" == "commentView5"    commentView5.reply
+    ...    "${root comment number}" == "commentView6"    commentView6.reply    "${root comment number}" == "commentView7"    commentView7.reply    "${root comment number}" == "commentView8"    commentView8.reply
+    ...    "${root comment number}" == "commentView9"    commentView9.reply    "${root comment number}" == "commentView10"    commentView10.reply
+    Set Global Variable    ${REPLY FIELD ID}
+
+Get Reply Edit ID
+    [Arguments]    ${reply view temp}
+    ${reply view temp}=    Replace String    ${reply view temp}    commentView    commentEdit
+    ${REPLY FIELD EDIT ID}    Set Variable    ${reply view temp}
+    Comment    ${REPLY FIELD EDIT ID}    Set Variable If    "${reply view temp}" == "commentView1.reply"    commentEdit1.reply    "${reply view temp}" == "commentView2.reply"    commentEdit2.reply
+    ...    "${reply view temp}" == "commentView3.reply"    commentEdit3.reply    "${reply view temp}" == "commentView4.reply"    commentEdit4.reply    "${reply view temp}" == "commentView5.reply"    commentEdit5.reply
+    ...    "${reply view temp}" == "commentView6.reply"    commentEdit6.reply    "${reply view temp}" == "commentView7.reply"    commentEdit7.reply    "${reply view temp}" == "commentView8.reply"    commentEdit8.reply
+    ...    "${reply view temp}" == "commentView9.reply"    commentEdit9.reply    "${reply view temp}" == "commentView10.reply"    commentEdit10.reply
+    Set Global Variable    ${REPLY FIELD EDIT ID}

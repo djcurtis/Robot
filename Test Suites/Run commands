@@ -1,0 +1,2 @@
+pybot -d results "Tests/ElnCore/Web Client/Access Control/Login.robot"
+pybot -d results -i TAGNAME "Tests/ElnCore/Web Client/Access Control/Login.robot"

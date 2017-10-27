@@ -1,0 +1,127 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint: /services/1.0/records/{entityId}/publish
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+Library           CheckPDFLibrary
+Library           IDBSHttpLibrary
+# Library           EntityAPILibrary
+Resource          ../Entity_Service/rest_entity_service_resource.txt
+
+*** Test Cases ***
+Check Can Publish Record
+    [Documentation]    A successful call returns the HTTP status 200 and the entity id of the created PDF. The record PDF is added to the record PDF folder
+    ${experiment_name}=    Set Variable    PRE-S001
+    ${experiment_id}=    Create Publishable Experiment    ${experiment_name}    ${project_id}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${publish_response}=    Publish Record    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${pdf_response}=    Get Published Record PDF    ${experiment_id}    ${entity_version_id}
+    Save Response Body    ${output_folder}\\${TEST NAME}.pdf
+    Check Pdf File    Compare PDFs    ${expected_folder}\\${APP_SERVER_OS}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf    comparison_mode=Text
+
+Check Publish Record Fails If Entity Does Not Exist
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${pdf_id}=    Publish Record    EWB-SAPI-SSP-RES-PRE-S003    404
+    Response Body Should Contain    Resource not found for given ID: Requested entity does not exist
+
+Check Publish Record Fails If Not of Type Record
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ${template_name}=    Set Variable    PRE-S004
+    ${template_id}=    EntityAPILibrary.Create Template    ${project_id}    ${template_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${project_id}
+    ${pdf_id}=    Publish Record    ${project_id}    400
+    Response Body Should Contain    [entity] is not a record
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${project_id}
+
+Check Publish Record Fails Without OPEN or EDIT_<ENTITY_TYPE> permissions
+    [Documentation]    A client requires the OPEN_<ENTITY_TYPE> \ OR EDIT_<ENTITY_TYPE> permissions. If it does not have them, then the HTTP status code 403 is returned to the client
+    ${name}=    Set Variable    CUSTOM_PRE-S007
+    ${experiment_id}=    Create Publishable Experiment    PRE-S007    ${project_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${role_name}=    Create Custom PDF Role    ${name}
+    ${remove_permission}=    Remove Role Permission    ${role_name}    OPEN_EXPERIMENT
+    ${remove_permission}=    Remove Role Permission    ${role_name}    EDIT_EXPERIMENT
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    Switching default user...    INFO
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    Log    Create PDF...    INFO
+    ${pdf_id}=    Publish Record    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: Need create PDF, PDF_FOLDER and either record OPEN or EDIT permissions
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}
+
+Check Cannot Create PDF Without CREATE_PDF permission
+    [Documentation]    A client requires the CREATE_PDF permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${name}=    Set Variable    CUSTOM_PRE-S009
+    ${experiment_id}=    Create Publishable Experiment    PRE-S009    ${project_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${role_name}=    Create Custom PDF Role    ${name}
+    ${remove_permission}=    Remove Role Permission    ${role_name}    CREATE_PDF
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    Switching default user...    INFO
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    Log    Create PDF...    INFO
+    ${pdf_id}=    Publish Record    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: Need create PDF, PDF_FOLDER and either record OPEN or EDIT permissions
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}
+
+Check Cannot Publish Record If Not Locked
+    [Documentation]    If the entity is not locked, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    PRE-S005
+    ${experiment_id}=    Create Publishable Experiment    ${experiment_name}    ${project_id}
+    ${publish_response}=    Publish Record    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: [entity] must be locked
+
+Check Cannot Publish Record If Not Version
+    [Documentation]    If the entity is not locked, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    PRE-S006
+    ${experiment_id}=    Create Draft Experiment    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${publish_response}=    Publish Record    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: [entity] must be of type VERSION
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+
+Check Cannot Create PDF Without INITIATE_PUBLISHING permission
+    [Documentation]    A client requires the CREATE_PDF permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${name}=    Set Variable    CUSTOM_PRE-S010
+    ${experiment_id}=    Create Publishable Experiment    PRE-S010    ${project_id}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${role_name}=    Create Custom PDF Role    ${name}
+    ${remove_permission}=    Remove Role Permission    ${role_name}    INITIATE_PUBLISHING
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    Switching default user...    INFO
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    Log    Create PDF...    INFO
+    ${pdf_id}=    Publish Record    ${experiment_id}    403
+    Response Body Should Contain    Authorization failure: Need INITIATE_PUBLISHING permission
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    Run Keyword And Ignore Error    Delete Custom PDF Role    ${role_name}
+
+*** Keywords ***
+Create Draft Experiment
+    [Arguments]    ${experiment_name}
+    [Documentation]    Helper keyword that creates a publishable experiment
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${lock_response}=    EntityAPILibrary.Lock Entity    ${experiment_id}
+    ${add_link_response}    Add Web Link Entity    ${experiment_id}    http://weblink.htm
+    ${commit_response}=    Commit Draft Entity    ${experiment_id}
+    ${lock_response}=    EntityAPILibrary.Unlock Entity    ${experiment_id}
+    [Return]    ${experiment_id}

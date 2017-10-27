@@ -1,0 +1,205 @@
+*** Settings ***
+Documentation     Catalog Term Property Value Pick-List
+...
+...               suite created from story SH-941
+Suite Setup       setup
+Suite Teardown    teardown
+Test Setup        setup test
+Test Teardown     Reload Page
+Default Tags      NO_IE
+Resource          ../../../../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../../Libraries/IDBS Spreadsheet/common_spreadsheet_keywords.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/quantrix_web_resource.txt
+Resource          ../../../../../../Libraries/IDBS Spreadsheet/searching/embedded_search_keywords.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_result_ui.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Verfiy Search By String Number And Integer Values
+    [Documentation]    Verify Search By String Number And Integer Values
+    ...    - Execute search by catalog property STRING value
+    ...    - Verify result is returned
+    ...    - Execute search by catalog property NUMBER value
+    ...    - Verify result is returned
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Execute Advanced Catalog Search    TestDictionary|person|lastname|is|PICKLIST|Malih
+    Verify Search Result List Exact By Title    String Experiment
+    Reload Page
+    Execute Advanced Catalog Search    TestDictionary|states|statenumber|is|PICKLIST|3
+    Verify Search Result List Exact By Title    Integer Experiment
+    Reload Page
+    Execute Advanced Catalog Search    TestDictionary|person|lastname|is|PICKLIST|Malih    TestDictionary|states|statenumber|is|PICKLIST|3
+    Verify Blank Search Result
+
+Verify No PickList For Chemistry Image Binary And AutoID Values
+    [Documentation]    Verify No Pick-List For Chemistry Image Binary And AutoID Values
+    ...    - Open 'New Search Term' dialog
+    ...    - Select Chemistry property
+    ...    - Verify Text filed for value property
+    ...    - Repeat same actions for Image, Binary
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Open 'New Search Term' Dialog
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    unexpected    string
+    Verify Search Term List Exact    string
+
+Verfiy PickList By String Number Values
+    [Documentation]    Verify Pick-List By String Number Value
+    ...    - Open 'New Search Term'
+    ...    - Select STRING property in Catalog
+    ...    - Verify Pick List Value are sorted
+    ...    - Verify same \ for NUMBER
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Open 'New Search Term' Dialog
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    person    lastname
+    Verify Value PickList Items    Korol    Malih    Shapar
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    person    age
+    Verify Value TextField Present
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    states    statenumber
+    Verify Value PickList Items    1    2    3
+
+Verify START WITH Operator
+    [Documentation]    Verify START WITH Operator
+    ...    - Open 'New Search Term' Dialog
+    ...    - Select String catalog property
+    ...    - Set operator to 'Start with'
+    ...    - Verify no Pick-List
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Open 'New Search Term' Dialog
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    person    lastname
+    IDBSSelenium2Library.select from list    ${operatorDropDown}    starts with
+    Verify Value TextField Present
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    person    lastname
+    IDBSSelenium2Library.select from list    ${operatorDropDown}    starts with
+    Verify Value TextField Present
+
+Verify Insert Into Value TextField Possibility
+    [Documentation]    Verify Insert Into Value TextField Possibility
+    ...    - open 'New Search Term' dialog
+    ...    - Select String property in Catalog
+    ...    - \ Verify possibility to add value into the value Pick List
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Execute Advanced Catalog Search    TestDictionary|states|statenumber|is|TEXTFIELDPICKLIST|5    TestDictionary|person|lastname|is|TEXTFIELDPICKLIST|Shapar2
+    Verify Blank Search Result
+    Verify Advanced Search Items    Name|starts with|${groupName}    lastname|is|Shapar2    statenumber|is|5
+
+Verify By Linked Property
+    [Documentation]    Verify By Linked Property
+    ...    - Open 'New Search term' dialog
+    ...    - Navigate Catalog -> TestDictionary -> states -> person
+    ...    - Verify Items in value list correct and order is correct
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Open 'New Search Term' Dialog
+    Get New Catalog Advanced Search Ready To Populate    TestDictionary    states    person
+    Verify Value PickList Items    Korol    Malih    Shapar
+
+Verify By Inheritance Property Not From Results Hub Term
+    [Documentation]    Verify By Inheritance Property Not From Results Hub Term
+    ...    - color is dictionary term which are not inherited from ../Results Hub/Measure
+    ...    - verify it is not in Catalog > TestDictionary
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Open 'New Search Term' Dialog
+    Select Catalog Dictionary By Name    TestDictionary
+    Verify Dictionary Term List Does Not Contain    TestDictionary    color
+
+Verify PickList In Advanced Term Item
+    [Documentation]    Verify Pick-List In Advanced Term Item
+    ...    - Create string and number advanced search term in search screen
+    ...    - verify pick-list for edit popup
+    ...    - edit advanced search term value
+    [Tags]    SRCH-ADV    BROWSER_REGRESSION
+    Execute Advanced Catalog Search    TestDictionary|person|lastname|is|PICKLIST|Malih    TestDictionary|states|statenumber|is|PICKLIST|3
+    Edit Advanced Term PickList Value    lastname    is    Malih    Korol
+    Edit Advanced Term PickList Value    statenumber    is    3    2
+    Verify Advanced Term PickList Value    lastname    is    Korol    Korol|Malih|Shapar
+    Verify Advanced Term PickList Value    statenumber    is    2    1|2|3
+
+*** Keywords ***
+setup
+    [Documentation]    - Create one dictionary with 4 terms using API
+    ...    - Create Group with project and 2 experiments with one spreadsheet per one
+    ...    - Versioned save experiments
+    ${disctionaryName}=    set variable    TestDictionary
+    Set Suite Variable    ${disctionaryName}
+    Ensure Catalog Element does not exist    TestDictionary
+    ${inheritanceName}=    set variable    /IDBS-Applications/Core/Results Hub/Measure
+    ${inheritanceId}=    Get Term Guid From Catalog Webservice    ${inheritanceName}
+    ${inheritanceNameNonMeasure}=    set variable    /IDBS-Applications/Core/Basic/Code
+    ${inheritanceIDNonMeasure}=    Get Term Guid From Catalog Webservice    ${inheritanceNameNonMeasure}
+    ${dictionaryId}=    Create Root Element    DICTIONARY    TestDictionary    some description    true
+    Set Suite Variable    ${dictionaryId}
+    ${lastName}=    Create Property JSON    lastname    STRING    Key    true    true
+    ${firstName}=    Create Property JSON    age    NUMBER    Description text    false    false
+    ${allProps}=    Create Properties JSON    ${lastName}    ${firstName}
+    ${personTermId}=    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    person    person description    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}    ${allProps}
+    ${stateNumber}=    Create Property JSON    statenumber    NUMBER    Key    true    true
+    ${addState}=    Create Property JSON    abbrstate    STRING    Description text    false    false
+    ${person}=    Create Property JSON    person    STRING    Desc    false    false
+    ...    link_term_path=/TestDictionary/person
+    ${allProps}=    Create Properties JSON    ${stateNumber}    ${addState}    ${person}
+    ${statusTermId}=    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    states    term decription    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}    ${allProps}
+    ${color}=    Create Property JSON    color    STRING    Key    true    true
+    ${size}=    Create Property JSON    size    NUMBER    Key    false    false
+    ${allProps}=    Create Properties JSON    ${color}    ${size}
+    ${colorTermId}=    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    color    Color descr    true
+    ...    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceNameNonMeasure}","inheritedTermId":"${inheritanceIDNonMeasure}"}]}    ${allProps}
+    ${string}=    Create Property JSON    string    STRING    Key    true    true
+    ${chemistry}=    Create Property JSON    chemistry    CHEMISTRY    Key    false    false
+    ${image}=    Create Property JSON    image    IMAGE    Key    false    false
+    ${binary}=    Create Property JSON    binary    BINARY    Key    false    false
+    ${allProps}=    Create Properties JSON    ${string}    ${chemistry}    ${image}    ${binary}
+    Create Non-Root Concrete Term With Inheritance    ${dictionaryId}    TERM    unexpected    term decription    true    {"inheritedTerm":[{"inheritedTermPath":"${inheritanceName}","inheritedTermId":"${inheritanceId}"}]}
+    ...    ${allProps}
+    Create Tuple 2 Properties    ${colorTermId}    color    GREEN    GREEN    true    true
+    ...    size    10
+    Create Tuple 2 Properties    ${personTermId}    lastname    Shapar    Shapar    true    true
+    ...    age    15
+    Create Tuple 2 Properties    ${personTermId}    lastname    Malih    Malih    true    false
+    ...    age    25
+    Create Tuple 2 Properties    ${personTermId}    lastname    Korol    Korol    true    false
+    ...    age    40
+    Create Tuple 3 Properties    ${statusTermId}    statenumber    3    3    true    false
+    ...    abbrstate    NY    person    Shapar
+    Create Tuple 3 Properties    ${statusTermId}    statenumber    1    1    true    true
+    ...    abbrstate    Colorado    person    Shapar
+    Create Tuple 3 Properties    ${statusTermId}    statenumber    2    2    true    false
+    ...    abbrstate    Alabana    person    Malih
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    Catalog project
+    ${intExperimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Integer Experiment    Started
+    ${intSpreadSheetId}=    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${intExperimentId}    ${CURDIR}/Test_Data/IntSpreadSheet.ewbss
+    ${stringExperimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    String Experiment    Started
+    ${stringSpreadSheetId}=    EntityAPILibrary.Insert Idbs Spreadsheet Document    ${stringExperimentId}    ${CURDIR}/Test_Data/StringSpreadSheet.ewbss
+    Designer Open Browser To Entity    ${intExperimentId}    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    2    1
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    Sleep    20s
+    Go To Experiment    ${stringExperimentId}
+    Start Spreadsheet Lite Editor    1
+    Sleep    3s
+    Type to Cell in Editor    Table1    0    2    1
+    Exit Spreadsheet Lite Editor    180s
+    Version Save Record    ${SERVICES USERNAME}    ${SERVICES PASSWORD}    Data Added
+    sleep    20s
+
+teardown
+    [Documentation]    Delete all created test case data
+    Delete Element    ${dictionaryId}
+    Comment    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    Comment    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    close browser
+
+setup test
+    Navigate Search Screen
+    Perform Advanced Search    ${EMPTY}    Group|Name|starts with|${groupName}

@@ -1,0 +1,185 @@
+*** Settings ***
+Library           IDBSHttpLibrary
+Resource          ../../../../Libraries/Web Client/Selenium/comments_resource.txt
+Resource          ../../../../Libraries/Web Client/Selenium/general_resource.txt
+Library           EntityAPILibrary
+
+*** Keywords ***
+Restore Entity From History
+    [Arguments]    ${entityId}    ${versionId}
+    [Documentation]    Restore Entity From History
+    ...    - restore entity(with ${entityID} id) from history using API
+    ...    - ${versionId} - it is ID of the version, which need to be restored
+    ...    - after this keyword execution entity should be saved (draft or versioned) and unlocked
+    EntityAPILibrary.Lock Entity    ${entityId}
+    ${uri}=    Set Variable    /ewb/services/1.0/entities/${entityId}/versions?entityVersionId=${versionId}
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    204
+
+Edit Text Document And Draft Save
+    [Arguments]    ${parentId}    ${documentId}    ${newText}
+    [Documentation]    Edit Text Document And Draft Save
+    ...    - lock entity
+    ...    - edit document text
+    ...    - verify status code
+    ...    - draft save
+    ...    - unlock entity
+    ...
+    ...
+    ...    ${parentId} - document's parent Id
+    ...    ${documentId} - id of the documnet to be edited
+    ...    ${newText} - new document text
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${documentId}/data/text?dataType=HTML_TEXT&mimeType=text%2Fhtml&fileType=.html
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    Set Request Body    <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><p>${newText}</p></body></html>
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+    Draft Save    ${parentId}
+    Unlock Entity And Children    ${parentId}
+
+Edit Text Document And Do Not Save
+    [Arguments]    ${parentId}    ${documentId}    ${newText}
+    [Documentation]    Edit Text Document And Do Not Save
+    ...    - update document text content
+    ...    - verify status
+    ...
+    ...    ${parentId} - document's parent Id
+    ...    ${documentId} - id of the documnet to be edited
+    ...    ${newText} - new document text
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${documentId}/data/text?dataType=HTML_TEXT&mimeType=text%2Fhtml&fileType=.html
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    Set Request Body    <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><p>${newText}</p></body></html>
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+
+Edit Text Document And Version Save
+    [Arguments]    ${parentId}    ${documentId}    ${newText}
+    [Documentation]    Edit Text Document And Version Save
+    ...    - lock entity
+    ...    - edit document text
+    ...    - verify status code
+    ...    - version save
+    ...    - unlock entity
+    ...
+    ...
+    ...    ${parentId} - document's parent Id
+    ...    ${documentId} - id of the documnet to be edited
+    ...    ${newText} - new document text
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${documentId}/data/text?dataType=HTML_TEXT&mimeType=text%2Fhtml&fileType=.html
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    Set Request Body    <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><p>${newText}</p></body></html>
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+    Version Save    ${parentId}    Data Added
+    Unlock Entity And Children    ${parentId}
+
+Create Text Document
+    [Arguments]    ${parentId}    ${itemName}
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${parentId}/children
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    ${body}    Set Variable    <?xml version="1.0" encoding="UTF-8"?><entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>TEXT_DOCUMENT</entityType><entityName>${itemName}</entityName><attributes><attribute><name>itemType</name><values><value>${itemName}</value></values></attribute><attribute><name>publishingState</name><values><value>Unpublished</value></values></attribute><attribute><name>caption</name><values><value></value></values></attribute></attributes><data><data><dataText></dataText></data><dataInfo mimeType="text/html" fileType=".html" dataType="HTML_TEXT"/></data></entityDefinition>
+    log    ${body}
+    Set Request Body    ${body}
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+    ${responceBody}=    Get Response Body
+    [Return]    ${responceBody}
+
+Create Web Link Document
+    [Arguments]    ${parentId}    ${itemName}    ${linkText}    ${caption}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${parentId}/children
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    ${body}    Set Variable    <?xml version="1.0" encoding="UTF-8"?><entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>DOCUMENT</entityType><entityName>${itemName}</entityName><attributes><attribute><name>itemType</name><values><value>${itemName}</value></values></attribute><attribute><name>publishingState</name><values><value>Unpublished</value></values></attribute><attribute><name>caption</name><values><value>${caption}</value></values></attribute></attributes><data><data><dataText>${linkText}</dataText></data><dataInfo mimeType="application/x-url" fileType=".url" dataType="WEB_LINK"/></data></entityDefinition>
+    log    ${body}
+    Set Request Body    ${body}
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+    ${responceBody}=    Get Response Body
+    [Return]    ${responceBody}
+
+Edit Unlock Text Document And Do Not Save
+    [Arguments]    ${parentId}    ${documentId}    ${newText}
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${documentId}/data/text?dataType=HTML_TEXT&mimeType=text%2Fhtml&fileType=.html
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    Set Request Body    <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><p>${newText}</p></body></html>
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+
+Delete Document
+    [Arguments]    ${parentID}    ${documentId}
+    EntityAPILibrary.Lock Entity    ${parentID}
+    ${versionId}=    EntityAPILibrary.Get Current Version Id    ${documentId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${documentId}?entityVersionId=${versionId}
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    IDBSHttpLibrary.DELETE    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    204
+
+Edit Entity KeyWord
+    [Arguments]    ${entityId}    ${keyword}    ${title}    ${status}
+    EntityAPILibrary.Lock Entity    ${entityId}
+    ${versionId}=    EntityAPILibrary.Get Current Version Id    ${entityId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${entityId}?entityVersionId=${versionId}
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    ${body}    Set Variable    <?xml version="1.0" encoding="utf-8"?><entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>EXPERIMENT</entityType><entityName>${title}</entityName><attributes><attribute><name>keywords</name><values><value>${keyword}</value></values></attribute><attribute><name>statusName</name><values><value>${status}</value></values></attribute><attribute><name>title</name><values><value>${title}</value></values></attribute></attributes></entityDefinition>
+    log    ${body}
+    Set Request Body    ${body}
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+
+Edit Item Type And Caption
+    [Arguments]    ${parentId}    ${itemId}    ${itemType}    ${caption}    ${publishState}
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${versionId}=    EntityAPILibrary.Get Current Version Id    ${itemId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${itemId}?entityVersionId=${versionId}
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    ${body}    Set Variable    <?xml version="1.0" encoding="utf-8"?><entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>DOCUMENT</entityType><entityName>${caption}</entityName><attributes><attribute><name>publishingState</name><values><value>${publishState}</value></values></attribute><attribute><name>caption</name><values><value>${caption}</value></values></attribute><attribute><name>itemType</name><values><value>${itemType}</value></values></attribute></attributes></entityDefinition>
+    log    ${body}
+    Set Request Body    ${body}
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK
+
+Edit Item Entity Attributes
+    [Arguments]    ${parentId}    ${entityId}    ${caption}    ${itemtype}
+    [Documentation]    Edit Text Document Attributes: Type and Caption:
+    ...
+    ...    ${parentId} - document's parent Id
+    ...    ${documentId} - id of the text document to be edited
+    ...    ${caption} - new text document caption
+    ...    ${itemtype} - new text document item type
+    EntityAPILibrary.Lock Entity    ${parentId}
+    ${versionId}=    EntityAPILibrary.Get Current Version Id    ${entityId}
+    ${uri}=    Set Variable    /ewb/services/1.0/cache/entities/${entityId}?entityVersionId=${versionId}
+    Create HTTP Context    ${SERVER}:${WEB_SERVICE_PORT}    ${WEB_SERVICE_HTTP_SCHEME}
+    Set Basic Auth    ${SERVICES USERNAME}    ${SERVICES PASSWORD}
+    Set Request Header    content-type    application/xml
+    ${body}    Set Variable    <?xml version="1.0" encoding="UTF-8"?> <entityDefinition xmlns="http://entity.services.ewb.idbs.com"><entityType>TEXT_DOCUMENT</entityType><entityName>${caption}</entityName><attributes><attribute><name>allowDropUpdate</name><values><value>false</value></values></attribute><attribute><name>allowedDataType</name><values><value></value></values></attribute><attribute><name>allowedFileType</name><values><value></value></values></attribute><attribute><name>annotations</name><values/></attribute><attribute><name>caption</name><values><value>${caption}</value></values></attribute><attribute><name>copiedFrom</name><values><value></value></values></attribute><attribute><name>hasDataExchangeTables</name><values><value>false</value></values></attribute><attribute><name>hasLinkedDataFields</name><values><value>false</value></values></attribute><attribute><name>itemType</name><values><value>${itemtype}</value></values></attribute><attribute><name>link</name><values/></attribute><attribute><name>pinnedEntity</name><values><value>false</value></values></attribute><attribute><name>preregisteredids</name><values/></attribute><attribute><name>publishingState</name><values><value>Unpublished</value></values></attribute><attribute><name>registeredids</name><values/></attribute><attribute><name>sequentialEdit</name><values><value>false</value></values></attribute></attributes></entityDefinition>
+    log    ${body}
+    Set Request Body    ${body}
+    post    ${uri}
+    IDBSHttpLibrary.Response Status Code Should Equal    200 OK

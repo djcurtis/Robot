@@ -1,0 +1,192 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/{taskid}/userpool/candidates* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - Call by user who doesn't have permissions to see this information for the current task
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "Administrator"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # TODO - Need correct user, this might be suitable but can't tell for sure
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    5    403
+    # Validate Task Status
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 2 - Non Existent Task
+    #Try to Get details with a dummy GUID
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    20    404
+
+Test 3 - Unexpected Characters In TaskID
+    #Requesting with a series of unexpected characters in the TaskID, expect a 40x not a 50x
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Uppercase
+    ${new task id}=    Set Variable    FFFF69b05bd411e2ae4e0023ae89b843
+    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    20    404
+    #non hex letters
+    ${new task id}=    Set Variable    QWER69b05bd411e2ae4e0023ae89b843
+    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    20    404
+    #Symbols
+    ${new task id}=    Set Variable    !'%[]*()d411e2ae4e0023ae89b843ee
+    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    20    404
+
+Test 4 - TaskID is too long
+    #Try to use a TaskID that is too long, expect a 404 error not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843ffffffffffff
+    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    20    404
+
+Test 5 - Unexpected Characters In Prefix
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Try to get user list using symbols in the prefix, should be handled (i.e. no error)
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too    ${new task id}    '@[]()$    5
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 6 - Non Numeric Value for Number of Records
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Try to get user list using symbols in the prefix, should be handled (i.e. no error)
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    abc    404
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 7 - Zero for Number of Records
+    [Documentation]    Marked as ignore because dev want this scenario to be supported
+    [Tags]    ignore
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Try to get user list using zero for the number of records
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    0    400
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 8 - Negative Value for Number of Records
+    #Note, currently failing due to QC16446
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Try to get user list using negative value for the number of records
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    -5    400
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 9 - Decimal Value for Number of Records
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Try to get user list using decimal value for the number of records
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    3.6    404
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 10 - Very Large Value for Number of Records
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Try to get user list using a very large value for the number of records
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    123456789123    404
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 11 - Call Endpoint as user without valid credentials
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "Administrator"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task ID
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Call As non existent user
+    ${SERVICES USERNAME}    Set Variable    ssss
+    ${SERVICES PASSWORD}    Set Variable    ssss
+    ${ResponseJSON}=    Get Candidates For Assigning A Task Too And Expect Error    ${new task id}    ${null}    5    401
+    # Validate Task Status
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW

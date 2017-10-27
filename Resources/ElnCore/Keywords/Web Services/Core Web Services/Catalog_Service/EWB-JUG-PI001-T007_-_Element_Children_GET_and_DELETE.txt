@@ -1,0 +1,87 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+Force Tags        Catalog Service
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+07-01 - GET all children
+    ${new element id} =    Create Root Element    DICTIONARY    ChildRoot1    ChildRoot1    true
+    Create Non-Root Element    ${new element id}    TERM    ChildTerm1    ChildTerm1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildTerm2    ChildTerm2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildTerm3    ChildTerm3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Get Element Children    ${new element id}
+
+07-02 - GET all children invalid ID
+    Get Element Children And Expect Error    12300000123    404
+
+07-03 - DELETE single child dictionary
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild1    DELETEChild1    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    Delete Child Elements    ${new element id}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild1    /DELETEChild1    true
+
+07-04 - DELETE two child dictionaries
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild2    DELETEChild2    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary2    ChildDictionary2    true
+    Delete Child Elements    ${new element id}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild2    /DELETEChild2    true
+
+07-05 - DELETE ten child dictionaries
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild3    DELETEChild3    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary2    ChildDictionary2    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary3    ChildDictionary3    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary4    ChildDictionary4    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary5    ChildDictionary5    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary6    ChildDictionary6    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary7    ChildDictionary7    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary8    ChildDictionary8    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary9    ChildDictionary9    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary10    ChildDictionary10    true
+    Delete Child Elements    ${new element id}    45s
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild3    /DELETEChild3    true
+
+07-06 - DELETE single child term
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild4    DELETEChild4    true
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary1    ChildDictionary1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Delete Child Elements    ${new element id}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild4    /DELETEChild4    true
+
+07-07 - DELETE two child terms
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild5    DELETEChild5    true
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary1    ChildDictionary1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary2    ChildDictionary2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Delete Child Elements    ${new element id}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild5    /DELETEChild5    true
+
+07-08 - DELETE ten child terms
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild6    DELETEChild6    true
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary1    ChildDictionary1    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary2    ChildDictionary2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary3    ChildDictionary3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary4    ChildDictionary4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary5    ChildDictionary5    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary6    ChildDictionary6    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary7    ChildDictionary7    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary8    ChildDictionary8    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary9    ChildDictionary9    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary10    ChildDictionary10    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Delete Child Elements    ${new element id}    45s
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild6    /DELETEChild6    true
+
+07-09 - DELETE two children 1 dictionary 1 term
+    ${new element id} =    Create Root Element    DICTIONARY    DELETEChild7    DELETEChild7    true
+    Create Non-Root Element    ${new element id}    DICTIONARY    ChildDictionary1    ChildDictionary1    true
+    Create Non-Root Element    ${new element id}    TERM    ChildDictionary2    ChildDictionary2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Delete Child Elements    ${new element id}
+    Validate Root Element    ${new element id}    dictionary    ${new element id}    DELETEChild7    /DELETEChild7    true
+
+07-10 - DELETE invalid id
+    Delete Child Elements And Expect Error    12300000123    404
+
+07-11 - DELETE children from term
+    ${new element id} =    Create Root Element    TERM    DELETEChild8    DELETEChild8    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Delete Child Elements And Expect Error    ${new element id}    400
+    Validate Root Element    ${new element id}    term    ${new element id}    DELETEChild8    /DELETEChild8    true

@@ -1,0 +1,78 @@
+*** Settings ***
+Documentation     Created for story SH-1296
+Suite Setup       setup
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+
+*** Test Cases ***
+Verify Document Is Not Searchable
+    [Documentation]    Verify Document Is Not Searchable
+    ...    - verify document \ is not searchable by sumbols
+    [Template]    SearchAPILibrary.Execute Search And Verify No Result
+    <!    all    Group|name|is|"${groupName}"
+
+Verify Document Is Searchable By Text
+    [Documentation]    Verify Document Is Searchable By Text
+    ...    - verify that document could be searchable by text
+    ...    - searchable documents are
+    ...    - Word (*.doc, *docx)
+    ...    - \ Excel (*.xls, *.xlsx)
+    ...    - \ pdf
+    ...    - Text Items (different encodings:UTF, ANSI, WIN-1251?)
+    [Template]    SearchAPILibrary.Execute Search And Verify Data Name
+    ${experiments_list}    qwerty    all    Group|name|is|"${groupName}"
+    ${experiments_list}    русские    all    Group|name|is|"${groupName}"
+    ${experiments_list}    qwe*    all    Group|name|is|"${groupName}"
+    ${experiments_list}    *we*    all    Group|name|is|"${groupName}"
+    ${experiments_list}    \\"<! \ \ Не проходит\\"    all    Group|name|is|"${groupName}"
+    ${experiments_list}    123456    all    Group|name|is|"${groupName}"
+    ${experiments_list}    (<scri*    all    Group|name|is|"${groupName}"
+
+*** Keywords ***
+setup
+    [Documentation]    group5
+    ...    - project 5
+    ...    - experiment 5-0 - add *.Doc file -> save Version
+    ...    - experiment 5-1 - add *.Docx file -> save Version
+    ...    - experiment 5-2 - add *.xls file -> save Version
+    ...    - experiment 5-3 - add *.xlsx file -> save Version
+    ...    - experiment 5-4 - add *.ppt file -> save Version
+    ...    - experiment 5-5 - add *.pptx file -> save Version
+    ...    - experiment 5-6 - add *.pdf file -> save Version
+    ...    - experiment 5-7 - add *.txt file in Unicode-> save Version
+    ...    - experiment 5-8 - add *.txt file in ANSI-> save Version
+    ...    - experiment 5-9 - add *.txt file with Cyrillic letters-> save Version
+    ${wait}=    Set Variable    20s
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate} 5
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    Set Suite Variable    ${groupName}
+    ${project1Id}=    EntityAPILibrary.Create Project    ${groupId}    project 5-2
+    ${experimentCount}=    set variable    0
+    @{experiments}=    Create List
+    : FOR    ${file}    IN    ${CURDIR}/test_data/DocumentSearch.docx    ${CURDIR}/test_data/DocumentSearch.pdf    ${CURDIR}/test_data/DocumentSearch.doc    ${CURDIR}/test_data/DocumentSearch.xls
+    ...    ${CURDIR}/test_data/DocumentSearch.xlsx    ${CURDIR}/test_data/DocumentSearch.ppt    ${CURDIR}/test_data/DocumentSearch.pptx    ${CURDIR}/test_data/DocumentSearch.txt
+    \    ${experiment}=    EntityAPILibrary.Create Experiment    ${project1Id}    Experiment ${experimentCount}    Started
+    \    Append To List    ${experiments}    Experiment ${experimentCount}
+    \    EntityAPILibrary.Create Generic Document    ${experiment}    ${file}
+    \    Version Save    ${experiment}    Data Added
+    Reverse List    ${experiments}
+    ${experiments_list}=    Set Variable    ${experiments[0]}
+    ${list_len}=    Get Length    ${experiments}
+    :FOR    ${i}    IN RANGE    1    ${list_len}
+    \    ${experiments_list}=    Set Variable    ${experiments_list}|${experiments[${i}]}
+    Set Suite Variable    ${experiments_list}
+    Set Suite Variable    @{experiments}
+    Set Suite Variable    ${experimentCount}
+    @{experiments}=    Reverse List    ${experiments}
+    sleep    ${wait}
+
+teardown
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+    close browser

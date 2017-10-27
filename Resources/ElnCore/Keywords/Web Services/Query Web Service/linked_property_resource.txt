@@ -1,0 +1,29 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that have a linked property. \ \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+
+*** Keywords ***
+Run Linked Property Query
+    [Arguments]    ${term path}    ${link path}    ${linkPropertyColumn}    ${link stringColumn}    ${link numberColumn}    ${link booleanColumn}
+    ...    ${link timestampColumn}    ${term stringColumn}    ${term booleanColumn}    ${term floatColumn}
+    [Documentation]    This keyword will execute a number queries that use a linked property. \ \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${link path} = The path the link term. \n- ${linkPropertyColumn} = The name of the linked property in the term in ${term path}.\n- ${link stringColumn} = The name of the string property in the term in ${link path}.\n- ${link numberColumn} = The name of the number property in the term in ${link path}.\n- ${link booleanColumn} = The name of the boolean property in the term in ${link path}.\n- ${link timestampColumn} = The name of the timestamp property in the term in ${link path}.\n- ${term stringColumn} = The name of the string property in the term in ${term path}. \n- ${term booleanColumn} = The name of the boolean property in the term in ${term path}.\n- ${term floatColumn} = The name of the float property in the term in ${term path}.\n
+    # INNER JOIN
+    Execute Data Query and Verify Values    SELECT lp.${link stringColumn} FROM ${term path} AS tp INNER JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID    LinkDataOne Tuple1    LinkDataOne Tuple1    LinkDataOne Tuple1    LinkDataTwo Tuple1    LinkDataTwo Tuple1
+    ...    LinkDataTwo Tuple2
+    # INNER JOIN with number filter condition (> operator)
+    Execute Data Query and Verify Values    SELECT tp.${term booleanColumn}, lp.${link numberColumn} FROM ${term path} AS tp INNER JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID WHERE lp.${link numberColumn} < 70000    T,55556    F,55556    ${null value},55556    F,66667    T,66667
+    # LEFT JOIN
+    Execute Data Query and Verify Values    SELECT tp.${term stringColumn}, lp.${link booleanColumn} FROM ${term path} AS tp LEFT JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID    Mixed Case String,T    Mixed Case String,T    ${null value},T    ${null value},F    string with 'quotes',F
+    ...    string with %,T    ${null value},${null value}
+    # LEFT JOIN with boolean filter condition (= operator)
+    Execute Data Query and Verify Values    SELECT tp.${term stringColumn}, lp.${link booleanColumn} FROM ${term path} AS tp LEFT JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID WHERE lp.${link booleanColumn} = 'T'    Mixed Case String,T    Mixed Case String,T    ${null value},T    string with %,T
+    # RIGHT JOIN
+    Execute Data Query and Verify Values    SELECT tp.${term floatColumn}, lp.${link stringColumn} FROM ${term path} AS tp RIGHT JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID    ${null value},LinkDataOne Tuple1    -219.2,LinkDataOne Tuple1    0.1,LinkDataOne Tuple1    ${null value},LinkDataOne Tuple2    -0.001,LinkDataTwo Tuple1
+    ...    0.1,LinkDataTwo Tuple1    3.001,LinkDataTwo Tuple2    ${null value},LinkDataTwo Tuple3
+    # RIGHT JOIN with string filter condition (LIKE operator)
+    Execute Data Query and Verify Values    SELECT tp.${term floatColumn}, lp.${link stringColumn} FROM ${term path} AS tp RIGHT JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID WHERE lp.${link stringColumn} LIKE '%3'    ${null value},LinkDataTwo Tuple3
+    # FULL JOIN
+    Execute Data Query and Verify Values    SELECT tp.${term stringColumn}, lp.${link stringColumn} FROM ${term path} AS tp FULL JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID    Mixed Case String,LinkDataOne Tuple1    Mixed Case String,LinkDataOne Tuple1    ${null value},LinkDataOne Tuple1    ${null value},LinkDataTwo Tuple1    string with 'quotes',LinkDataTwo Tuple1
+    ...    string with %,LinkDataTwo Tuple2    ${null value},${null value}    ${null value},LinkDataOne Tuple2    ${null value},LinkDataTwo Tuple3
+    # FULL JOIN with timestamp filter condition (= operator)
+    Execute Data Query and Verify Values    SELECT tp.${term stringColumn}, lp.${link stringColumn} FROM ${term path} AS tp FULL JOIN ${link path} AS lp ON tp.${linkPropertyColumn} = lp.TUPLE_GUID WHERE lp.${link timestampColumn} = TO_TIMESTAMP('02-01-2000','MM-DD-YYYY')    ${null value},LinkDataTwo Tuple3    Mixed Case String,LinkDataOne Tuple1    Mixed Case String,LinkDataOne Tuple1    ${null value},LinkDataOne Tuple1

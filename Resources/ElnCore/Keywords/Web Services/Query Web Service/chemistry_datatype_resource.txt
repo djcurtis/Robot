@@ -1,0 +1,146 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that have chemistry structures filters conditions. \ \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+Resource          ../Tuple Web Service/tuple_services_resource.txt
+
+*** Keywords ***
+Run Chemistry Datatype Query - NonInh
+    [Arguments]    ${term path}    ${stringColumn}    ${structureColumn}
+    [Documentation]    *****Querying Non Inherited Chemistry Property*****\n\nThis keyword will execute a number queries that have a chemistry filter condition. \\nThis is testing HUB-API-SSP-QUE-QLC. \n\n*Arguments*\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a STRING property in the term in ${term path}. In this scenario, this should be a unique identifier for the structure to be queried.\n- ${structureColumn}= The name of the CHEMISTRY property in the term in ${term path}.\n\n*Query Structures*\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\Test Data\Hubtech\Asset Hub\Query Web Service - where the query molecule files are stored.
+    # Basic Sanity Check to confirm all the query testdata is present
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path}    NonInhMol_0001    NonInhMol_0002    NonInhMol_0003    NonInhMol_0004    NonInhMol_0005
+    ...    NonInhMol_0006    NonInhMol_0007    NonInhMol_0008    NonInhMol_0009    NonInhMol_0010    NonInhMol_0011
+    ...    NonInhMol_0012    NonInhMol_0013    NonInhMol_0014    NonInhMol_0015    NonInhMol_0016    NonInhMol_0017
+    ...    NonInhMol_0018    NonInhMol_0019    NonInhMol_0020    NonInhMol_0021    NonInhMol_0022    NonInhMol_0023
+    ...    NonInhMol_0024
+    # Structure Doesn't Exists - test works    #current generic defect
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where ${structureColumn} is NULL    NonInhMol_0015
+    # Structure Exists - test works    #current generic defect
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where ${structureColumn} is not NULL    NonInhMol_0001    NonInhMol_0002    NonInhMol_0003    NonInhMol_0004    NonInhMol_0005
+    ...    NonInhMol_0006    NonInhMol_0007    NonInhMol_0008    NonInhMol_0009    NonInhMol_0010    NonInhMol_0011
+    ...    NonInhMol_0012    NonInhMol_0013    NonInhMol_0014    NonInhMol_0016    NonInhMol_0017    NonInhMol_0018
+    ...    NonInhMol_0019    NonInhMol_0020    NonInhMol_0021    NonInhMol_0022    NonInhMol_0023    NonInhMol_0024
+    # has SubStructure - Ignore: \ Basic Benzene Ring Check (SMILES code)
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1    NonInhMol_0001    NonInhMol_0003    NonInhMol_0004    NonInhMol_0005    NonInhMol_0006
+    ...    NonInhMol_0010    NonInhMol_0012    NonInhMol_0016    NonInhMol_0017    NonInhMol_0018    NonInhMol_0019
+    ...    NonInhMol_0020    NonInhMol_0021    NonInhMol_0022    NonInhMol_0023    NonInhMol_0024
+    # has SubStructure - Ignore: \ (Hexstring)    SearchMolecule01 = IDBS hexstring format
+    ${SearchMolecule01}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule01.hex
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'${searchMolecule01}',IDBS_MOLECULE.Ignore_Stereo) = 1    NonInhMol_0016    NonInhMol_0017    NonInhMol_0018    NonInhMol_0019    NonInhMol_0020
+    # has SubStructure - Centres Exact: (Hexstring)    SearchMolecule01 = IDBS hexstring format
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'${searchMolecule01}',IDBS_MOLECULE.Centres_Stereo) = 1    NonInhMol_0016    NonInhMol_0019
+    # Is Exact - Ignore(Hexstring)    SearchMolecule02 = IDBS hexstring format
+    ${SearchMolecule02}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule02.hex
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule02}',IDBS_MOLECULE.Ignore_Stereo) = 1    NonInhMol_0016    NonInhMol_0017    NonInhMol_0018    NonInhMol_0019    NonInhMol_0020
+    # Is Exact - Centres Exact: (Hexstring)    SearchMolecule02 = IDBS hexstring format
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule02}',IDBS_MOLECULE.Centres_Stereo) = 1    NonInhMol_0016
+    # Is Exact - Centres Exact:(Molfile)    SearchMolecule3 = MOLFILE format
+    ${SearchMolecule03}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule03.mol
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule03}',IDBS_MOLECULE.Centres_Stereo) = 1    NonInhMol_0017
+    # TAUTOMERS    SearchMolecule4 = MOLFILE format
+    ${SearchMolecule04}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule04.MOL
+    # Is Exact - Ignore (to confirm tautomer is NOT being applied)
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Ignore_Stereo) = 1    NonInhMol_0021    NonInhMol_0022
+    # Is Exact (tautomers) - Ignore
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Opt_Search_Tautomer + IDBS_MOLECULE.Ignore_Stereo) = 1    NonInhMol_0021    NonInhMol_0022    NonInhMol_0023    NonInhMol_0024
+    # Is Exact (tautomers) - Centres Exact
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Opt_Search_Tautomer + IDBS_MOLECULE.Centres_Stereo) = 1    NonInhMol_0022    NonInhMol_0024
+    # SIMILARITY > 55%    using SearchMolecule01
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SIM(${structureColumn},'${SearchMolecule01}',IDBS_MOLECULE.TANIMOTO, 0) > 0.55    NonInhMol_0016    NonInhMol_0017    NonInhMol_0018    NonInhMol_0019    NonInhMol_0020
+    # SIMILARITY > 45%    using SearchMolecule01
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SIM(${structureColumn},'${SearchMolecule01}',IDBS_MOLECULE.TANIMOTO, 0) > 0.45    NonInhMol_0010    NonInhMol_0012    NonInhMol_0016    NonInhMol_0017    NonInhMol_0018
+    ...    NonInhMol_0019    NonInhMol_0020
+
+Run Chemistry Datatype Query - Inh
+    [Arguments]    ${term path}    ${stringColumn}    ${structureColumn}
+    [Documentation]    *****Querying Inherited Chemistry Property*****\n\nThis keyword will execute a number queries that have a chemistry filter condition. \\nThis is testing HUB-API-SSP-QUE-QLC. \n\n*Arguments*\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a STRING property in the term in ${term path}. In this scenario, this should be a unique identifier for the structure to be queried.\n- ${structureColumn}= The name of the CHEMISTRY property in the term in ${term path}.\n\n*Query Structures*\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\Test Data\Hubtech\Asset Hub\Query Web Service - where the query molecule files are stored.
+    # Basic Sanity Check to confirm all the query testdata is present
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path}    InhMol_0001    InhMol_0002    InhMol_0003    InhMol_0004    InhMol_0005
+    ...    InhMol_0006    InhMol_0007    InhMol_0008    InhMol_0009    InhMol_0010    InhMol_0011
+    ...    InhMol_0012    InhMol_0013    InhMol_0014    InhMol_0015    InhMol_0016    InhMol_0017
+    ...    InhMol_0018    InhMol_0019    InhMol_0020    InhMol_0021    InhMol_0022    InhMol_0023
+    ...    InhMol_0024
+    # Structure Doesn't Exists - test works    #current generic defect
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where ${structureColumn} is NULL    InhMol_0015
+    # Structure Exists - test works    #current generic defect
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where ${structureColumn} is not NULL    InhMol_0001    InhMol_0002    InhMol_0003    InhMol_0004    InhMol_0005
+    ...    InhMol_0006    InhMol_0007    InhMol_0008    InhMol_0009    InhMol_0010    InhMol_0011
+    ...    InhMol_0012    InhMol_0013    InhMol_0014    InhMol_0016    InhMol_0017    InhMol_0018
+    ...    InhMol_0019    InhMol_0020    InhMol_0021    InhMol_0022    InhMol_0023    InhMol_0024
+    # has SubStructure - Ignore: \ Basic Benzene Ring Check (SMILES code)
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1    InhMol_0001    InhMol_0003    InhMol_0004    InhMol_0005    InhMol_0006
+    ...    InhMol_0010    InhMol_0012    InhMol_0016    InhMol_0017    InhMol_0018    InhMol_0019
+    ...    InhMol_0020    InhMol_0021    InhMol_0022    InhMol_0023    InhMol_0024
+    # has SubStructure - Ignore: (Hexstring)    SearchMolecule01 = IDBS hexstring format
+    ${SearchMolecule01}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule01.hex
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'${searchMolecule01}',IDBS_MOLECULE.Ignore_Stereo) = 1    InhMol_0016    InhMol_0017    InhMol_0018    InhMol_0019    InhMol_0020
+    # has SubStructure - Centres Exact: (Hexstring)    SearchMolecule01 = IDBS hexstring format
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'${searchMolecule01}',IDBS_MOLECULE.Centres_Stereo) = 1    InhMol_0016    InhMol_0019
+    # Is Exact - Ignore(Hexstring)    SearchMolecule02 = IDBS hexstring format
+    ${SearchMolecule02}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule02.hex
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule02}',IDBS_MOLECULE.Ignore_Stereo) = 1    InhMol_0016    InhMol_0017    InhMol_0018    InhMol_0019    InhMol_0020
+    # Is Exact - Centres Exact: (Hexstring)    SearchMolecule02 = IDBS hexstring format
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule02}',IDBS_MOLECULE.Centres_Stereo) = 1    InhMol_0016
+    # Is Exact - Centres Exact:(Molefile)    SearchMolecule3 = MOLFILE format
+    ${SearchMolecule03}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule03.mol
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule03}',IDBS_MOLECULE.Centres_Stereo) = 1    InhMol_0017
+    # TAUTOMERS    SearchMolecule4 = MOLFILE format
+    ${SearchMolecule04}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule04.MOL
+    # Is Exact - Ignore (to confirm tautomer is NOT being applied)
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Ignore_Stereo) = 1    InhMol_0021    InhMol_0022
+    # Is Exact (tautomers) - Ignore
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Opt_Search_Tautomer + IDBS_MOLECULE.Ignore_Stereo) = 1    InhMol_0021    InhMol_0022    InhMol_0023    InhMol_0024
+    # Is Exact (tautomers) - Centres Exact
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Opt_Search_Tautomer + IDBS_MOLECULE.Centres_Stereo) = 1    InhMol_0022    InhMol_0024
+    # SIMILARITY > 55%    using SearchMolecule01
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SIM(${structureColumn},'${SearchMolecule01}',IDBS_MOLECULE.TANIMOTO, 0) > 0.55    InhMol_0016    InhMol_0017    InhMol_0018    InhMol_0019    InhMol_0020
+    # SIMILARITY > 45%    using SearchMolecule01
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SIM(${structureColumn},'${SearchMolecule01}',IDBS_MOLECULE.TANIMOTO, 0) > 0.45    InhMol_0010    InhMol_0012    InhMol_0016    InhMol_0017    InhMol_0018
+    ...    InhMol_0019    InhMol_0020
+
+Run Chemistry Datatype Query - Override
+    [Arguments]    ${term path}    ${stringColumn}    ${structureColumn}
+    [Documentation]    *****Querying Inherited Chemistry Property*****\n\nThis keyword will execute a number queries that have a chemistry filter condition. \\nThis is testing HUB-API-SSP-QUE-QLC. \n\n*Arguments*\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a STRING property in the term in ${term path}. In this scenario, this should be a unique identifier for the structure to be queried.\n- ${structureColumn}= The name of the CHEMISTRY property in the term in ${term path}.\n\n*Query Structures*\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\Test Data\Hubtech\Asset Hub\Query Web Service - where the query molecule files are stored.
+    # Basic Sanity Check to confirm all the query testdata is present
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path}    OverRideMol_0001    OverRideMol_0002    OverRideMol_0003    OverRideMol_0004    OverRideMol_0005
+    ...    OverRideMol_0006    OverRideMol_0007    OverRideMol_0008    OverRideMol_0009    OverRideMol_0010    OverRideMol_0011
+    ...    OverRideMol_0012    OverRideMol_0013    OverRideMol_0014    OverRideMol_0015    OverRideMol_0016    OverRideMol_0017
+    ...    OverRideMol_0018    OverRideMol_0019    OverRideMol_0020    OverRideMol_0021    OverRideMol_0022    OverRideMol_0023
+    ...    OverRideMol_0024
+    # Structure Doesn't Exists - test works    #current generic defect
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where ${structureColumn} is NULL    OverRideMol_0015
+    # Structure Exists - test works    #current generic defect
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where ${structureColumn} is not NULL    OverRideMol_0001    OverRideMol_0002    OverRideMol_0003    OverRideMol_0004    OverRideMol_0005
+    ...    OverRideMol_0006    OverRideMol_0007    OverRideMol_0008    OverRideMol_0009    OverRideMol_0010    OverRideMol_0011
+    ...    OverRideMol_0012    OverRideMol_0013    OverRideMol_0014    OverRideMol_0016    OverRideMol_0017    OverRideMol_0018
+    ...    OverRideMol_0019    OverRideMol_0020    OverRideMol_0021    OverRideMol_0022    OverRideMol_0023    OverRideMol_0024
+    # has SubStructure - Ignore: \ Basic Benzene Ring Check (SMILES code)
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'C1=CC=CC=C1',IDBS_MOLECULE.Ignore_Stereo) = 1    OverRideMol_0001    OverRideMol_0003    OverRideMol_0004    OverRideMol_0005    OverRideMol_0006
+    ...    OverRideMol_0010    OverRideMol_0012    OverRideMol_0016    OverRideMol_0017    OverRideMol_0018    OverRideMol_0019
+    ...    OverRideMol_0020    OverRideMol_0021    OverRideMol_0022    OverRideMol_0023    OverRideMol_0024
+    # has SubStructure - Ignore: (Hexstring)    SearchMolecule01 = IDBS hexstring format
+    ${SearchMolecule01}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule01.hex
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'${searchMolecule01}',IDBS_MOLECULE.Ignore_Stereo) = 1    OverRideMol_0016    OverRideMol_0017    OverRideMol_0018    OverRideMol_0019    OverRideMol_0020
+    # has SubStructure - Centres Exact: (Hexstring)    SearchMolecule01 = IDBS hexstring format
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SSS(${structureColumn},'${searchMolecule01}',IDBS_MOLECULE.Centres_Stereo) = 1    OverRideMol_0016    OverRideMol_0019
+    # Is Exact - Ignore(Hexstring)    SearchMolecule02 = IDBS hexstring format
+    ${SearchMolecule02}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule02.hex
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule02}',IDBS_MOLECULE.Ignore_Stereo) = 1    OverRideMol_0016    OverRideMol_0017    OverRideMol_0018    OverRideMol_0019    OverRideMol_0020
+    # Is Exact - Centres Exact: (Hexstring)    SearchMolecule02 = IDBS hexstring format
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule02}',IDBS_MOLECULE.Centres_Stereo) = 1    OverRideMol_0016
+    # Is Exact - Centres Exact:(Molefile)    SearchMolecule3 = MOLFILE format
+    ${SearchMolecule03}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule03.mol
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule03}',IDBS_MOLECULE.Centres_Stereo) = 1    OverRideMol_0017
+    # TAUTOMERS    SearchMolecule4 = MOLFILE format
+    ${SearchMolecule04}=    Get file    ${ROOT_DIR}/Test Data/Hubtech/Asset Hub/Query Web Service/Structure Files/SearchMolecule04.MOL
+    # Is Exact - Ignore (to confirm tautomer is NOT being applied)
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Ignore_Stereo) = 1    OverRideMol_0021    OverRideMol_0022
+    # Is Exact (tautomers) - Ignore
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Opt_Search_Tautomer + IDBS_MOLECULE.Ignore_Stereo) = 1    OverRideMol_0021    OverRideMol_0022    OverRideMol_0023    OverRideMol_0024
+    # Is Exact (tautomers) - Centres Exact
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where EXACT_MATCH(${structureColumn},'${SearchMolecule04}',IDBS_MOLECULE.Opt_Search_Tautomer + IDBS_MOLECULE.Centres_Stereo) = 1    OverRideMol_0022    OverRideMol_0024
+    # SIMILARITY > 55%    using SearchMolecule01
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SIM(${structureColumn},'${SearchMolecule01}',IDBS_MOLECULE.TANIMOTO, 0) > 0.55    OverRideMol_0016    OverRideMol_0017    OverRideMol_0018    OverRideMol_0019    OverRideMol_0020
+    # SIMILARITY > 45%    using SearchMolecule01
+    Execute Data Query and Verify Values    SELECT ${stringColumn} from ${term path} where SIM(${structureColumn},'${SearchMolecule01}',IDBS_MOLECULE.TANIMOTO, 0) > 0.45    OverRideMol_0010    OverRideMol_0012    OverRideMol_0016    OverRideMol_0017    OverRideMol_0018
+    ...    OverRideMol_0019    OverRideMol_0020

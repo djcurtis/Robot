@@ -1,0 +1,173 @@
+*** Settings ***
+Documentation     This test suite is looking at PDFing Entity links via the Webclient, in isolation to any other entity types.
+Suite Setup       Setup standard suite
+Suite Teardown
+Test Setup        Setup Entity Link Item Test Case
+Test Teardown
+Default Tags
+Resource          test utilities.txt
+Resource          ../../../../Libraries/common_resource.txt
+Resource          ../../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          add_items_to_experiments.txt
+Resource          add_image_items_to_experiments.txt
+
+*** Variables ***
+
+*** Test Cases ***
+Simple Image Entity Link
+    [Documentation]    This test sets up PDFing an experiment which has just a single entity link
+    [Tags]    EWB-WEB-PI002-W021-01
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Simple Text Entity Link
+    [Documentation]    This test sets up PDFing an experiment which has just a single entity link
+    [Tags]    EWB-WEB-PI002-W021-02
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Multi Entity Links
+    [Documentation]    This test sets up PDFing an experiment which 3 entity link
+    [Tags]    EWB-WEB-PI002-W021-03
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Basic Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Simple Image Entity Link With Preview
+    [Documentation]    This test sets up PDFing an experiment which has just a single entity link
+    [Tags]    EWB-WEB-PI002-W021-04
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Simple Text Entity Link With Preview
+    [Documentation]    This test sets up PDFing an experiment which has just a single entity link
+    [Tags]    EWB-WEB-PI002-W021-05
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Multi Entity Links With Preview
+    [Documentation]    This test sets up PDFing an experiment which 3 entity link
+    [Tags]    EWB-WEB-PI002-W021-06
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Preview Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Simple Image Entity Link With Preview And Properties
+    [Documentation]    This test sets up PDFing an experiment which has just a single entity link
+    [Tags]    EWB-WEB-PI002-W021-07
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Simple Text Entity Link With Preview And Properties
+    [Documentation]    This test sets up PDFing an experiment which has just a single entity link
+    [Tags]    EWB-WEB-PI002-W021-08
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Multi Entity Links with Preview And Properties
+    [Documentation]    This test sets up PDFing an experiment which has 2 entity links repeated 3 times
+    [Tags]    EWB-WEB-PI002-W021-09
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Dropped File Entity Link
+    [Documentation]    This test sets up PDFing an experiment which has 2 entity links
+    [Tags]    EWB-WEB-PI002-W021-09
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e3i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Web Link and Form Entity Link
+    [Documentation]    This test sets up PDFing an experiment which has 2 entity links
+    [Tags]    EWB-WEB-PI002-W021-09
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e5i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e6i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+MFS and Spreadsheet Link
+    [Documentation]    This test sets up PDFing an experiment which has 2 entity links
+    [Tags]    EWB-WEB-PI002-W021-09
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e4i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e7i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Spectra Links
+    [Documentation]    This test sets up PDFing an experiment which has 2 entity links to analytical and biological spectra. It should be noted that the 'data' colum contains invalid data but for the purposes of PDF generation that is fine. Just do not expect to see things turning up in the thick client experiment preview. The spectra (and sequence) type is an internal type which SAPI does not support for load currently.
+    [Tags]    EWB-WEB-PI002-W021-09
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e8i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e9i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+Deleted Links with Preview And Properties
+    [Documentation]    This test sets up PDFing an experiment which 3 entity link
+    [Tags]    EWB-WEB-PI002-W021-10
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e1i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Add Entity Link Item to Experiment    ${link_experiment_id}    ${e2i1_id}    ${input_folder}\\Full Entity Link Template.xml
+    Delete Entity    ${e1_id}
+    Delete Entity    ${e2_id}
+    Delete Entity    ${e3_id}
+    Delete Entity    ${e4_id}
+    Delete Entity    ${e5_id}
+    Delete Entity    ${e6_id}
+    Delete Entity    ${e7_id}
+    Assert Pdf As Expected    ${link_experiment_id}    ${expected_folder}\\${TEST NAME}.pdf    ${output_folder}\\${TEST NAME}.pdf
+
+*** Keywords ***
+Setup Entity Link Item Test Case
+    [Documentation]    This set up will setup
+    ...    - one experiment with a text item
+    ...    - one experiment with an image
+    ...    - one blank experiment for experiment links
+    ${e1_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e1
+    Set Suite Variable    ${e1_id}
+    ${e1i1_id}=    Add Text Item to Experiment    ${e1_id}    ${input_folder}\\Entity Link Text.html
+    Set Suite Variable    ${e1i1_id}
+    ${e2_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e2
+    Set Suite Variable    ${e2_id}
+    ${e2i1_id}=    Add JPEG Item To Experiment    ${e2_id}    ${input_folder}\\Entity Link Image.jpg
+    Set Suite Variable    ${e2i1_id}
+    ${link_experiment_id}=    Create Experiment    ${project_id}    ${TEST NAME}
+    Set Suite Variable    ${link_experiment_id}
+    ${e3_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e3
+    Set Test Variable    ${e3_id}
+    ${e3i1_id}=    Add DOCUMENT (and Preview) To Experiment    ${e3_id}    ${input_folder}\\droppedFile.zip    ${input_folder}\\droppedFile.zip    application/pdf    FILE
+    ...    .pdf
+    Set Suite Variable    ${e3i1_id}
+    ${e4_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e4
+    Set Test Variable    ${e4_id}
+    ${e4i1_id}=    Add MFS Item to Experiment    ${e4_id}    <?xml version="1.0" encoding="UTF-8" standalone="no"?> <mfs version="7.1.0"><mfsthumbnail thumbnaillink="${input_folder}\\mfs.jpg"/><mfsmetadata><mfsattribute cataloglink="" catalogtype="" entityattribute="" entitytype="" name="att1" readonly="false" type="TEXT" value="mfs1"/><mfsattribute cataloglink="503" catalogtype="flexible" entityattribute="" entitytype="" name="att2" readonly="false" type="STRING" value="Data Added"/> <mfsattribute cataloglink="502" catalogtype="flexible" entityattribute="title" entitytype="EXPERIMENT" name="att3" readonly="true" type="STRING" value="e1"/></mfsmetadata><mfslink filelink="A link to the actual primary managed file."/><mfstype name="mfs1"/> </mfs>
+    Set Suite Variable    ${e4i1_id}
+    ${e5_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e5
+    Set Test Variable    ${e5_id}
+    ${e5i1_id}=    Add Form Item to Experiment    ${e5_id}    ${input_folder}\\Form1.dsf
+    Set Suite Variable    ${e5i1_id}
+    ${e6_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e6
+    Set Test Variable    ${e6_id}
+    ${e6i1_id}=    Add Link    ${e6_id}    Web Link    WEB_LINK    http://www.mark.com/
+    Set Suite Variable    ${e6i1_id}
+    ${e7_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e7
+    Set Test Variable    ${e7_id}
+    ${e7i1_id}=    Add SPREADSHEET_DOCUMENT (and Preview) To Experiment    ${e7_id}    ${input_folder}\\ssdata.bss    ${input_folder}\\sspreview.zip    application/x-idbs-spreadsheet    SPREADSHEET
+    Set Suite Variable    ${e7i1_id}
+    ${e8_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e8
+    Set Test Variable    ${e8_id}
+    ${e8i1_id}=    Add DOCUMENT (and Preview) To Experiment    ${e8_id}    ${input_folder}\\analyticdata.ch    ${input_folder}\\analyticdata.pdf    application/x-idbs-ewb-analytic-data    ANALYTICDATA
+    Set Suite Variable    ${e8i1_id}
+    ${e9_id}=    Create Experiment    ${project_id}    ${TEST NAME}_e9
+    Set Test Variable    ${e9_id}
+    ${e9i1_id}=    Add DOCUMENT (and Preview) To Experiment    ${e9_id}    ${input_folder}\\biologicalsequence.gb    ${input_folder}\\biologicalsequence.pdf    application/x-idbs-ewb-sequence-data    BIOLOGICAL_SEQUENCE
+    Set Suite Variable    ${e9i1_id}
+    Set Page Config

@@ -1,0 +1,177 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/actions
+...               * endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - Get Actions for Non Existent Task
+    #Try to Get details for a dummy GUID
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    Retrieve Multiple Task Actions And Expect Error    404    ${new task id}
+
+Test 2 - Unexpected Characters In TaskID
+    #Requesting a cancel with a series of unexpected characters in the TaskID, expect a 40x not a 50x
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Uppercase
+    ${new task id}=    Set Variable    FFFF69b05bd411e2ae4e0023ae89b843
+    Retrieve Multiple Task Actions And Expect Error    404    ${new task id}
+    #non hex letters
+    ${new task id}=    Set Variable    QWER69b05bd411e2ae4e0023ae89b843
+    Retrieve Multiple Task Actions And Expect Error    404    ${new task id}
+    #Symbols
+    ${new task id}=    Set Variable    !'%^&*()d411e2ae4e0023ae89b843ee
+    Retrieve Multiple Task Actions And Expect Error    404    ${new task id}
+
+Test 3 - TaskID is too long
+    #Try to use a TaskID that is too long, expect a 404 error not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843ffffffffffff
+    Retrieve Multiple Task Actions And Expect Error    404    ${new task id}
+
+Test 4 - TaskID is blank
+    #Try to use a TaskID that is too long, expect a 404 error not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${new task id}=    Set Variable
+    Retrieve Multiple Task Actions And Expect Error    404    ${new task id}
+
+Test 5 - Get Actions For 2 Tasks Where One Task Doesnt Exist
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create 1 new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions for This Task and one that doesnt exist (both ways around)
+    ${new task id2}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    @{task ids}=    Create List    ${new task id}    ${new task id2}
+    Retrieve Multiple Task Actions And Expect Error    404    @{task ids}
+    @{task ids}=    Create List    ${new task id2}    ${new task id}
+    Retrieve Multiple Task Actions And Expect Error    404    @{task ids}
+    # Validate Task Status
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 6 - Call endpoint without valid credentials
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions For Task with invalid credentials
+    ${SERVICES USERNAME}    Set Variable    aaaaa
+    ${SERVICES PASSWORD}    Set Variable    aaaaa
+    Retrieve Multiple Task Actions And Expect Error    401    ${new task id}
+    # Validate Task Status
+    ${SERVICES USERNAME}    Set Variable    Administrator
+    ${SERVICES PASSWORD}    Set Variable    Administrator
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+
+Test 7 - Call endpoint as user with VIEW_ANY_TASKS
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions For Task as user with ViewAnyTasks
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser2
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser21
+    Retrieve Multiple Task Actions    ${new task id}
+
+Test 8 - Call endpoint as user who is Requestor
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser5
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser51
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions For Task as user Who is requestor
+    Retrieve Multiple Task Actions    ${new task id}
+
+Test 9 - Call endpoint as user who is Responsible
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser5","WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions For Task as user who is a responsible user
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser5
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser51
+    Accept Multiple Tasks    ${new task id}
+    Complete Multiple Tasks    ${new task id}
+    Retrieve Multiple Task Actions    ${new task id}
+
+Test 10 - Call endpoint as user who lacks permissions
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions For Task as user who has no permissions on the endpoint
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser3
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser31
+    Retrieve Multiple Task Actions And Expect Error    403    ${new task id}
+
+Test 11 - Call endpoint as user who is Assigned
+    # Obtain due date that is one day from now
+    ${new due date}=    Create Due Date Format    NOW + 7 day
+    ${todays date}    Create Due Date Format    NOW
+    # Create new workflow
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser5","WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    ${new due date}    false
+    ...    Normal    ${task json}
+    # Get task IDs
+    ${new task id}=    Get Task ID From Workflow ID    ${sign off workflow id}    1
+    ${workflow tasks JSON}=    Get Task From Task ID    ${new task id}
+    Validate Task    ${workflow tasks JSON}    task_status=NEW
+    # Get Actions For Task as user who is an assigned user
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser5
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser51
+    Retrieve Multiple Task Actions    ${new task id}

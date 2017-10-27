@@ -1,0 +1,179 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt
+Library           OperatingSystem
+
+*** Test Cases ***
+POST Workflow - Single Signoff 1
+    [Documentation]    Number of tasks: 1
+    ...    Task Type: Sign-off
+    ...    Assigned User/Group - Single user from user pool
+    ...    Due date: 1 day away
+    ${task json}=    Create Task JSON    NON_TEST    WF1_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Log    ${task json}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 1    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+
+POST Workflow - Single Review 1
+    [Documentation]    Number of tasks: 1
+    ...    Task Type: Review
+    ...    Assigned User/Group - Single user from user pool
+    ...    Due date: 1 day away
+    ${task json}=    Create Task JSON    NON_TEST    WF2_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Log    ${task json}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 2    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+
+POST Workflow - Single Alert 1
+    [Documentation]    Number of tasks: 1
+    ...    Task Type: Alert
+    ...    Assigned User/Group - Single user from user pool
+    ...    Due date: 1 day away
+    ${task json}=    Create Task JSON    NON_TEST    WF3_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Log    ${task json}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 3    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+
+POST Workflow - Multiple Sequential Tasks 1
+    [Documentation]    Number of tasks: 3 (Sequential)
+    ...    Task Type: Sign-off, Review, Alert
+    ...    Assigned User/Group - Single user from user pool
+    ...    Due date: 1 day away
+    ${task 1 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 2 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 3 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF4_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task setup json}=    Set Variable    {"taskSetup": [${task 1 json},${task 2 json},${task 3 json}]}
+    Log    ${task setup json}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 4    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task setup json}
+
+POST Workflow - Multiple Parallel Tasks 1
+    [Documentation]    Number of tasks: 3 (Parallel)
+    ...    Task Type: Sign-off, Review, Alert
+    ...    Assigned User/Group - Single user from user pool
+    ...    Due date: 1 day away
+    ${task 1 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF5_REVIEW1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 2 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF5_SIGN1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task 3 json}=    Create Task JSON For Multiple Task Workflow    NON_TEST    WF5_ALERT1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${task setup json}=    Set Variable    {"taskSetup": [${task 1 json},${task 2 json},${task 3 json}]}
+    Log    ${task setup json}
+    ${sign off workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_1}    WF WS Workflow 5    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task setup json}
+
+POST Workflow - Confirm Only On Most Recent PDF Created On Most Recent PDF
+    [Documentation]    Create a workflow using a configuration that has ‘Only on most recent PDF’ selected using a record type entity with several PDF’s and confirm that the workflow is created on the most recent PDF only
+    ...
+    ...    Confirm that a more recent non-published PDF has no affect on this behaviour
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_6}    WF WS Workflow - Most Recent PDF    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    ${workflow}=    Get Workflow    ${workflow id}
+    Validate Workflow    ${workflow}    entity_id=${wf_experiment_6_pdf_2}
+
+POST Workflow - Confirm Only On Most Recent PDF And Only Published Created On Most Recent PDF
+    [Documentation]    Create a workflow using a configuration that has both ‘Only on most recent PDF’ and ‘Only published record and PDF’ selected using a record type entity with several published PDF’s and confirm that the workflow is created on the most recent published PDF only
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    ${workflow id}=    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_10}    WF WS Workflow - Most Recent PDF And Published Only    2011-01-01T00:00:00.000+00:00    false
+    ...    Normal    ${task json}
+    ${workflow}=    Get Workflow    ${workflow id}
+    Validate Workflow    ${workflow}    entity_id=${wf_experiment_10_pdf_2}
+
+POST Workflow - Only Published Records And PDFs For An Unpublished Record 1
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only published records and PDFs’ selected against an unpublished record.
+    [Tags]       EWB-WEB-ICM-PI004-W003-04    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_2}    WF WS Workflow - Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF For A Non Record Non PDF Entity
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected against a non record type entity which is not a PDF.
+    [Tags]       EWB-WEB-ICM-PI004-W003-05    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_project}    WF WS Workflow - Most Recent PDF    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF For A Record With No PDF
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected & ‘Only published records and PDFs’ deselected against a record type entity which has no PDF
+    [Tags]       EWB-WEB-ICM-PI004-W003-06    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_2}    WF WS Workflow - Most Recent PDF    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF For A PDF Which Is Not The Most Recent PDF
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected & ‘Only published records and PDFs’ deselected against a PDF type entity which is not the most recent PDF
+    [Tags]       EWB-WEB-ICM-PI004-W003-07    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_6_pdf_1}    WF WS Workflow - Most Recent PDF    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF And Published For A Record With Only Unpublished PDFs
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected & ‘Only published records and PDFs’ selected against a record type entity which has only unpublished PDF’s
+    [Tags]       EWB-WEB-ICM-PI004-W003-08    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_7}    WF WS Workflow - Most Recent PDF And Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF And Published For A Non Record Non PDF Entity
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected & ‘Only published records and PDFs’ selected against a non record or PDF type entity
+    [Tags]       EWB-WEB-ICM-PI004-W003-09    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_project}    WF WS Workflow - Most Recent PDF And Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF And Published For An Unpublished PDF
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected & ‘Only published records and PDFs’ selected against a PDF type entity that is not published
+    [Tags]       EWB-WEB-ICM-PI004-W003-10    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_7_pdf}    WF WS Workflow - Most Recent PDF And Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only On Most Recent PDF And Published For Not Most Recent PDF
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only on most recent PDF’ selected & ‘Only published records and PDFs’ selected against a PDF type entity that is published but where there is a more recently published PDF at the same level of the hierarchy
+    [Tags]       EWB-WEB-ICM-PI004-W003-11    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_6_pdf_1}    WF WS Workflow - Most Recent PDF And Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only Published Records And PDFs For An Entity With No Children
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only published records and PDFs’ selected against a record type entity that has no children
+    [Tags]       EWB-WEB-ICM-PI004-W003-12    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_8}    WF WS Workflow - Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only Published Records And PDFs For An Entity With Unpublished Children
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only published records and PDFs’ selected against a record type entity that has an unpublished child entity
+    [Tags]       EWB-WEB-ICM-PI004-W003-13    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_2}    WF WS Workflow - Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Only Published Records And PDFs For An Unpublished PDF
+    [Documentation]    Create a workflow with a workflow configuration with ‘Only published records and PDFs’ selected against an unpublished PDF
+    [Tags]       EWB-WEB-ICM-PI004-W003-14    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_7_pdf}    WF WS Workflow - Published Only    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Sign Off Task For Non PDF Non Record Entity
+    [Documentation]    Create a workflow with a workflow configuration with a sign off task specified where the associated entity isn’t a PDF entity and isn’t a record type entity
+    [Tags]       EWB-WEB-ICM-PI004-W003-16    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_project}    WF WS Workflow - Sign Off Task Actioner Role    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Sign Off Task For Draft Saved Record
+    [Documentation]    Create a workflow with a workflow configuration with a sign off task specified where the associated entity is a record type entity that is draft saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-17    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_3}    WF WS Workflow - Sign Off Task Actioner Role    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}
+
+POST Workflow - Sign Off Task For Cache Saved Record
+    [Documentation]    Create a workflow with a workflow configuration with a sign off task specified where the associated entity is a record type entity that is cache saved
+    [Tags]       EWB-WEB-ICM-PI004-W003-18    
+    ${task json}=    Create Task JSON    NON_TEST    WF Task 1    "WorkflowWSUser1"    ${EMPTY}    Example Comment
+    Create Workflow Via WS    BY_ENTITY_ID    ${wf_experiment_9}    WF WS Workflow - Sign Off Task Actioner Role    2011-01-01T00:00:00.000+00:00    false    Normal
+    ...    ${task json}

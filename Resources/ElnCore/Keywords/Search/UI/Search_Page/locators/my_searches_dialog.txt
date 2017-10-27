@@ -1,0 +1,12 @@
+*** Settings ***
+Documentation     Locators for "My Searchs" dialog
+...               (OPTIONS > My Searches from Search screen)
+
+*** Variables ***
+${mySearchesDialogTitle}    xpath=//span[text()='My Searches']
+${cancelMySearchesButton}    //button[contains(text(),'Close')]
+${defaultStarItem}    //i[contains(@class,'selected')]
+${mySearchesContainer}    xpath=//div[@id="mySearchesContainer"]
+${mySearchesList}    //div[@id='mySearchesContainer']/div[@class='mySearch']
+${noSavedSearchesLabel}    //p[text()=('You have no saved searches.')]
+${totalSavedSearchesLabel}    css=.numberSavedSearches

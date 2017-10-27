@@ -1,0 +1,153 @@
+*** Settings ***
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Library           IDBSHttpLibrary
+Library           String
+
+*** Test Cases ***
+14-01 - Abstract Term Creation
+    ${properties}=    Create Properties JSON With Single Property    example    STRING    Example    false    false
+    ${abstract term id}=    Create Abstract Term    AbstractTerm1    AbstractTerm1    true    ${properties}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm1    /AbstractTerm1    true
+
+14-02 - Abstract Term Key Property
+    Create Abstract Term And Expect Error    AbstractTerm2    AbstractTerm2    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}    400
+
+14-03 - Abstract Term Display Property
+    Create Abstract Term And Expect Error    AbstractTerm3    AbstractTerm3    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}    400
+
+14-04 - Abstract Term Tuples
+    ${abstract term id}=    Create Abstract Term    AbstractTerm4    AbstractTerm4    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm4    /AbstractTerm4    true
+    Create Tuple And Expect Error    ${abstract term id}    400    example    value1    value1    true
+    ...    true
+
+14-05 - Concrete Term Inheriting From Single Abstract Term
+    ${abstract term id}=    Create Abstract Term    AbstractTerm13    AbstractTerm13    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm13    /AbstractTerm13    true
+    ${concrete term id}=    Create Concrete Term By Inheritance    ConcreteTerm1    ConcreteTerm1    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm13","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${concrete term id}    term    ${concrete term id}    ConcreteTerm1    /ConcreteTerm1    true
+    Log    ${RESPONSE BODY}
+    ${linked term name}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property
+    Should Contain    ${linked term name}    "name": "example1"
+
+14-06 - Concrete Term Inheriting From Two Abstract Terms
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14    AbstractTerm14    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14    /AbstractTerm14    true
+    ${abstract term id 2}=    Create Abstract Term    AbstractTerm15    AbstractTerm15    true    {"property":[{"name":"example2","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id 2}    ${abstract term id 2}    AbstractTerm15    /AbstractTerm15    true
+    ${concrete term id}=    Create Concrete Term By Inheritance    ConcreteTerm2    ConcreteTerm2    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14","inheritedTermId":"${abstract term id}"},{"inheritedTermPath":"/AbstractTerm15","inheritedTermId":"${abstract term id 2}"}]}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${concrete term id}    term    ${concrete term id}    ConcreteTerm2    /ConcreteTerm2    true
+    Log    ${RESPONSE BODY}
+    ${linked term name}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property
+    Should Contain    ${linked term name}    "name": "example1"
+    Should Contain    ${linked term name}    "name": "example2"
+
+14-07 - Linked Property Inheritance Overriding by Non-Linked Property
+    [Documentation]    overrides:{override:{path :"...",name:"...",id:"..."}},
+    ${new term id}=    Create Root Element    TERM    LinkedTerm14-07    LinkedTerm14-07    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-07    AbstractTerm14-07    true    {"property":[{"name":"Linked:LinkedTerm14-07","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/LinkedTerm14-07"}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-07    /AbstractTerm14-07    true
+    ${abstract property id temp}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property/0/id
+    ${abstract property id}=    Replace String    ${abstract property id temp}    "    ${EMPTY}
+    ${concrete term id}=    Create Concrete Term By Inheritance And Expect Error    ConcreteTerm14-07    ConcreteTerm14-07    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14-07","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example2","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example3","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"overrides":{"override":{"id":"${abstract property id}"}},"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ...    400
+
+14-08 - Linked Property Inheritance Overriding by Linked Property With Same Parent Term
+    ${Linked_14-08_properties}    Create Properties JSON With Single Property    example    STRING    Example    true    true
+    ${new term id}=    Create Root Element    TERM    LinkedTerm14-08    LinkedTerm14-08    true    ${Linked_14-08_properties}
+    ${Abstract_14_08_properties}=    Create Properties JSON With Single Property    Linked:LinkedTerm14-08    STRING    Example    false    false
+    ...    link_term_path=/LinkedTerm14-08
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-08    AbstractTerm14-08    true    ${Abstract_14_08_properties}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-08    /AbstractTerm14-08    true
+    ${abstract property id temp}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property/0/id
+    ${abstract property id}=    Replace String    ${abstract property id temp}    "    ${EMPTY}
+    ${Concrete_14-08_property_1}=    Create Property JSON    example2    STRING    Example    true    true
+    ${Concrete_14-08_property_2}=    Create Property JSON    example3    STRING    Example    false    false
+    ...    override_property_id=${abstract_property_id}    link_term_path=/LinkedTerm14-08
+    ${Concrete_14-08_properties}=    Create Properties JSON    ${Concrete_14-08_property_1}    ${Concrete_14-08_property_2}
+    ${concrete term id}=    Create Concrete Term By Inheritance    ConcreteTerm14-08    ConcreteTerm14-08    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14-08","inheritedTermId":"${abstract term id}"}]}    ${Concrete_14-08_properties}
+    Validate Root Element    ${concrete term id}    term    ${concrete term id}    ConcreteTerm14-08    /ConcreteTerm14-08    true
+    Log    ${RESPONSE BODY}
+    ${linked term name}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property
+    Should Contain    ${linked term name}    "id": "${abstract property id}"
+
+14-09 - Linked Property Inheritance Overriding by Linked Property With Different Parent Term
+    ${new term id}=    Create Root Element    TERM    LinkedTerm14-09a    LinkedTerm14-09a    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${new term id}=    Create Root Element    TERM    LinkedTerm14-09b    LinkedTerm14-09b    true    {"property":[{"name":"exampleb","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-09    AbstractTerm14-09    true    {"property":[{"name":"Linked:LinkedTerm14-09a","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/LinkedTerm14-09a"}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-09    /AbstractTerm14-09    true
+    ${abstract property id temp}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property/0/id
+    ${abstract property id}=    Replace String    ${abstract property id temp}    "    ${EMPTY}
+    ${concrete term id}=    Create Concrete Term By Inheritance And Expect Error    ConcreteTerm14-09    ConcreteTerm14-09    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14-09","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example2","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example3","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"overrides":{"override":{"id":"${abstract property id}"}},"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/LinkedTerm14-09b"}]}
+    ...    400
+
+14-10 - Non-Linked Property Inheritance Overriding by Linked Property
+    ${new term id}=    Create Root Element    TERM    LinkedTerm14-10    LinkedTerm14-10    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-10    AbstractTerm14-10    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-10    /AbstractTerm14-10    true
+    ${abstract property id temp}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property/0/id
+    ${abstract property id}=    Replace String    ${abstract property id temp}    "    ${EMPTY}
+    ${concrete term id}=    Create Concrete Term By Inheritance    ConcreteTerm14-10    ConcreteTerm14-10    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14-10","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"Linked:LinkedTerm14-10","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"overrides":{"override":{"id":"${abstract property id}"}},"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":"/LinkedTerm14-10"}]}
+    Validate Root Element    ${concrete term id}    term    ${concrete term id}    ConcreteTerm14-10    /ConcreteTerm14-10    true
+    Log    ${RESPONSE BODY}
+    ${linked term name}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property
+    Should Contain    ${linked term name}    "id": "${abstract property id}"
+
+14-11 - Non-Linked Property Inheritance Overriding by Non-Linked Property of same type
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-11    AbstractTerm14-11    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-11    /AbstractTerm14-11    true
+    ${abstract property id temp}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property/0/id
+    ${abstract property id}=    Replace String    ${abstract property id temp}    "    ${EMPTY}
+    ${concrete term id}=    Create Concrete Term By Inheritance    ConcreteTerm14-11    ConcreteTerm14-11    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14-11","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"exampleOverride","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null},{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"overrides":{"override":{"id":"${abstract property id}"}},"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${concrete term id}    term    ${concrete term id}    ConcreteTerm14-11    /ConcreteTerm14-11    true
+    Log    ${RESPONSE BODY}
+    ${linked term name}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property
+    Should Contain    ${linked term name}    "id": "${abstract property id}"
+
+14-12 - Non-Linked Property Inheritance Overriding by Non-Linked Property of different type
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-12    AbstractTerm14-12    true    {"property":[{"name":"example1","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-12    /AbstractTerm14-12    true
+    ${abstract property id temp}=    Get Json Value    ${RESPONSE BODY}    /term/properties/property/0/id
+    ${abstract property id}=    Replace String    ${abstract property id temp}    "    ${EMPTY}
+    ${concrete term id}=    Create Concrete Term By Inheritance And Expect Error    ConcreteTerm14-12    ConcreteTerm14-12    true    {"inheritedTerm":[{"inheritedTermPath":"/AbstractTerm14-12","inheritedTermId":"${abstract term id}"}]}    {"property":[{"name":"example","type":"NUMBER","format":null,"description":"Example","constraint":null,"unit":null,"overrides":{"override":{"id":"${abstract property id}"}},"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    ...    400
+
+14-13 - Abstract Term No Properties
+    ${abstract term id}=    Create Abstract Term    AbstractTerm5    AbstractTerm5    true    {}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm5    /AbstractTerm5    true
+
+14-14 - Abstract to Concrete Term Conversion
+    [Tags]    ignore
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-14    AbstractTerm14-14    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-14    /AbstractTerm14-14    true
+    Update Abstract Term    ${abstract term id}    false    AbstractTerm14-14    AbstractTerm14-14    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${abstract term id}    term    ${abstract term id}    AbstractTerm14-14    /AbstractTerm14-14    true
+    ${is abstract}=    Get Json Value    ${RESPONSE BODY}    /term/abstractTerm
+    Should Be Equal    ${is abstract}    false
+
+14-15 - Concrete to Abstract Term Conversion - No Values
+    [Tags]    ignore
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-15    AbstractTerm14-15    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-15    /AbstractTerm14-15    true
+    Update Abstract Term    ${abstract term id}    false    AbstractTerm14-15    AbstractTerm14-15    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${abstract term id}    term    ${abstract term id}    AbstractTerm14-15    /AbstractTerm14-15    true
+    ${is abstract}=    Get Json Value    ${RESPONSE BODY}    /term/abstractTerm
+    Should Be Equal    ${is abstract}    false
+    Update Abstract Term    ${abstract term id}    true    AbstractTerm14-15    AbstractTerm14-15    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-15    /AbstractTerm14-15    true
+
+14-16 - Concrete to Abstract Term Conversion - With Values
+    [Tags]    ignore
+    ${abstract term id}=    Create Abstract Term    AbstractTerm14-16    AbstractTerm14-16    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Abstract Term    ${abstract term id}    ${abstract term id}    AbstractTerm14-16    /AbstractTerm14-16    true
+    Update Abstract Term    ${abstract term id}    false    AbstractTerm14-16    AbstractTerm14-16    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":true,"displayed":true,"unitTermPath":null,"linkTermPath":null}]}
+    Validate Root Element    ${abstract term id}    term    ${abstract term id}    AbstractTerm14-16    /AbstractTerm14-16    true
+    ${is abstract}=    Get Json Value    ${RESPONSE BODY}    /term/abstractTerm
+    Should Be Equal    ${is abstract}    false
+    Create Tuple    ${abstract term id}    example    value1    value1    true    true
+    Update Abstract Term And Expect Error    ${abstract term id}    true    AbstractTerm14-16    AbstractTerm14-16    true    {"property":[{"name":"example","type":"STRING","format":null,"description":"Example","constraint":null,"unit":null,"key":false,"displayed":false,"unitTermPath":null,"linkTermPath":null}]}
+    ...    400
+    Validate Root Element    ${abstract term id}    term    ${abstract term id}    AbstractTerm14-16    /AbstractTerm14-16    true
+    ${is abstract}=    Get Json Value    ${RESPONSE BODY}    /term/abstractTerm
+    Should Be Equal    ${is abstract}    false

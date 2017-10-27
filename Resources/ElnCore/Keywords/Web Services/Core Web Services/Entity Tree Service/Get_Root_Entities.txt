@@ -1,0 +1,18 @@
+*** Settings ***
+Documentation     The following tests are for the endpoint:
+...
+...               GET	/services/1.0/entitytree
+Force Tags        Entity Tree Service
+Library           Collections
+Library           XMLLibrary
+Resource          ../../../Libraries/Core Web Services/Entity Tree Service/rest_entity_tree_service_resource.txt
+
+*** Test Cases ***
+Can get a list of root entities
+    [Documentation]    A successful call returns the HTTP status 200 and an instance of SAPIEntityCoreSequence
+    ${response}=    rest_entity_tree_service_resource.Get Root Entities
+    Check Xml Contains Element    Check that there are entity elements returned    ${response}    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    Check Xml Element Count    Check that there are 2 entity elements returned    ${response}    2    entity    elementNamespace=http://entity.services.ewb.idbs.com
+    ${list}=    Get Element Value From Xpath    ${response}    {http://entity.services.ewb.idbs.com}entity/{http://entity.services.ewb.idbs.com}entityTypeName
+    List Should Contain Value    ${list}    ROOT
+    List Should Contain Value    ${list}    USER_AREA

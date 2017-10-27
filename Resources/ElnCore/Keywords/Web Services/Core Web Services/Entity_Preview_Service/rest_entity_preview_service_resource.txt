@@ -1,0 +1,69 @@
+*** Settings ***
+Library           String
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+Library           TestDataGenerationLibrary
+Library           OperatingSystem
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+# Library           OracleLibrary
+
+*** Variables ***
+${ENTITY SERVICE ENDPOINT}    /ewb/services/1.0/entities
+
+*** Keywords ***
+Get Entity Preview Section
+    [Arguments]    ${entity_id}    ${entity_version_id}    ${preview_section}
+    [Documentation]    Gets an entity preview section
+    ...
+    ...    *Arguments*
+    ...
+    ...    $(entityId) The entity id
+    ...
+    ...    $(entityVersionId) The entity version
+    ...
+    ...    ${preview_section} The preview section, it myst be an integer >= 1
+    ...
+    ...    *Return value*
+    ...
+    ...    A stream of the preview section
+    ...
+    ...    *Precondition*
+    ...
+    ...    The entity must exist.
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    GET    ${ENTITY SERVICE ENDPOINT}/${entity_id}/preview/${preview_section}?entityVersionId=${entity_version_id}
+    Response Status Code Should Equal    200
+    ${Response Body}=    Get Response Body
+    [Return]    ${Response Body}    # The preview section bytes
+
+Get Entity Preview
+    [Arguments]    ${entity_id}    ${entity_version_id}    ${expected_http_status}=200
+    [Documentation]    Gets an entity preview
+    ...
+    ...    *Arguments*
+    ...
+    ...    _entity_Id_ - \ The entity id
+    ...
+    ...    _entity_VersionId_ - \ The entity version
+    ...
+    ...    _expected_http_status_ - the expected http response (default is 200)
+    ...
+    ...    *Return value*
+    ...
+    ...    The preview
+    ...
+    ...    *Precondition*
+    ...
+    ...    The entity must exist.
+    ...
+    ...    *Example*
+    ...
+    ...    | ${preview}= | Get Entity Preview | ${entity_id} | ${entity_version}
+    HTTP Header Setup
+    Next Request May Not Succeed
+    GET    ${ENTITY SERVICE ENDPOINT}/${entity_id}/preview/?entityVersionId=${entity_version_id}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${Response_Body}=    Get Response Body
+    [Return]    ${Response_Body}    # The preview section bytes

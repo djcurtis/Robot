@@ -1,0 +1,14 @@
+*** Settings ***
+Documentation     the following tests are for the endpoint:
+...
+...               GET /services/1.0/entityconfig/icons/{entityTypeName}/{documentTypeName}
+Suite Setup
+Force Tags        Entity Config Service
+Resource          ../../../Libraries/Core Web Services/Entity Config Service/rest_entity_config_service_resource.txt
+Library           IDBSHttpLibrary
+
+*** Test Cases ***
+Can Document Type Header Icon
+    [Documentation]    A successful call returns the HTTP status 200 and the document type icon
+    ${header_icon}=    Get Document Type Icon    MS_WORD_TEMPLATE    wordDocumentType
+    Response Body Should Contain    svg id="Word_Template

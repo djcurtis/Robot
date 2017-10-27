@@ -1,0 +1,41 @@
+*** Settings ***
+Documentation     Created for story SH-1296
+Test Setup        setup test
+Library           ../../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../../Libraries/common_resource.txt
+Resource          ../../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Document - Version - Delete Group
+    [Documentation]    Record - Add Document - Version - Delete Group
+    ...    - verifiy record is not searcble by document text after deleting its group
+    Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Delete Entity    ${groupId}    As Intended    As Intended
+    Sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+
+Record - Add Document - Draft - Delete Group
+    [Documentation]    Record - Add Document - Draft - Delete Group
+    ...    - verify record is not searchable by document text after deleting its group
+    Draft Save    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As Intended    As Intended
+    Sleep    ${wait}
+    Execute Free Text Search And Verify No Result    ${uniqueSearchText}
+
+*** Keywords ***
+setup test
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    Experiment    Started
+    Set Suite Variable    ${experimentId}
+    ${uniqueSearchText}=    Replace String    Text${currentDate}    ${SPACE}    ${EMPTY}
+    Set Suite Variable    ${uniqueSearchText}

@@ -1,0 +1,52 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/{entityId}/ancestry
+...
+...               It gets the ids of the ancestors of the given entity. The order of the ids returned will be such that the first element of the array is the most distant ancestor, and subsequently in order of ancestry up to the last element, which will be id of the given entity. As there can be more than one root element defined in the hierarchy (Root, My Work), the first element of the array is determined by the tree brunch the queried entity belongs to.
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-GAN    Get Ancestry
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Get ancestry
+    [Documentation]    EWB-SAPI-SSP-ENT-GAN-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and an instance of SAPIIdSequence
+    [Tags]    EWB-SAPI-SSP-ENT-GAN-S001
+    ${experiment_name}=    Set Variable    GAN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${sapi_id_sequence}=    Get Ancestry    ${experiment_id}
+    # Checking expectations
+    XMLLibrary.Check Xml Element Count    Count elements 'id'    ${sapi_id_sequence}    4    id    elementNamespace=http://common.services.ewb.idbs.com
+    @{ids}=    Create List    1    ${group_id}    ${project_id}    ${experiment_id}
+    XMLLibrary.Check Xml Element Values Equal List    check experiment id value    ${sapi_id_sequence}    ${ids}    id    elementNamespace=http://common.services.ewb.idbs.com
+
+Get ancestry with wrong entity id
+    [Documentation]    EWB-SAPI-SSP-ENT-GAN-S002
+    ...
+    ...    If call parameter ‘entityId’ is missing, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GAN-S002
+    ${experiment_name}=    Set Variable    GAN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    # wrong invalid id
+    ${sapi_id_sequence}=    Get Ancestry    ${EMPTY}    404
+
+Get ancestry with not existing entity
+    [Documentation]    EWB-SAPI-SSP-RES-GAN-S003
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-GAN-S003
+    ${experiment_name}=    Set Variable    GAN-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    # wrong entity id
+    ${sapi_id_sequence}=    Get Ancestry    WrongEnityId    404
+
+*** Keywords ***

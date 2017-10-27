@@ -1,0 +1,158 @@
+*** Settings ***
+Documentation     This test suite directly verifies the correct chemistry entity data is in the database in the correct tables, after API calls have been used to save/edit molecule/reaction items in experiments.
+Suite Setup       setup
+Suite Teardown    teardown
+Default Tags
+Library           IDBSHttpLibrary
+Library           OracleLibrary
+Resource          ../../../../Libraries/common_resource.txt
+Library           OperatingSystem
+Library           EntityAPILibrary
+
+*** Test Cases ***
+Check Tables Exist
+    [Documentation]    This test checks the 6 tables (4 in IDBS_EWB_CORE, 2 in IDBS_EWB_CHEM - see script for detail) needed for saving molecules and reactions exist in the database. The tables in the IDBS_EWB_CHEM schema only get created after the first molecule/reaction has been created and saved.
+    ...
+    ...    SH-439
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Connect to DB using user/pass to view EWB tables
+    Comment    Connect To Database    sys    system01    ${DB_SERVER}    ${ORACLE_SID}
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    # Check the chemistry tables are present
+    ${queryResults1}    Query    select count(*) from all_objects where object_type in ('TABLE') and object_name = 'ENTITY_VERSION_MOLECULE'    # Checks whether the tables exist: Yes(1) or No(0)
+    Should Be Equal    ${1}    ${queryResults1[0][0]}
+    ${queryResults2}    Query    select count(*) from all_objects where object_type in ('TABLE') and object_name = 'ENTITY_VERSION_REACTION'
+    Should Be Equal    ${1}    ${queryResults2[0][0]}
+    ${queryResults3}    Query    select count(*) from all_objects where object_type in ('TABLE') and object_name = 'LATEST_ENTITY_VERSION_MOLECULE'
+    Should Be Equal    ${1}    ${queryResults3[0][0]}
+    ${queryResults4}    Query    select count(*) from all_objects where object_type in ('TABLE') and object_name = 'LATEST_ENTITY_VERSION_REACTION'
+    Should Be Equal    ${1}    ${queryResults4[0][0]}
+    Disconnect From Database
+    # Connect to DB using user/pass to view ChemAxon tables
+    Connect To Database    IDBS_EWB_CHEM    IDBS_EWB_CHEM    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults5}    Query    select count(*) from all_objects where object_type in ('TABLE') and object_name = 'C_JCHEM_MOLECULE'
+    Should Be Equal    ${1}    ${queryResults5[0][0]}
+    ${queryResults6}    Query    select count(*) from all_objects where object_type in ('TABLE') and object_name = 'C_JCHEM_REACTION'
+    Should Be Equal    ${1}    ${queryResults6[0][0]}
+    Disconnect From Database
+
+Check Molecule Saved
+    [Documentation]    This test verifies that a ChemAxon entity (molecule) is indexed in the correct tables in the database when an Experiment is Saved. The exact mechanism of indexing is detailed in Confluence:
+    ...
+    ...    http://20jira1.idbs.co.uk:8090/pages/viewpage.action?pageId=19246001
+    ...
+    ...    SH-345
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults1}    Query    select el.parent_entity_id from LATEST_ENTITY_VERSION_MOLECULE t join entity_links el on el.entity_id = t.entity_id where t.entity_id = '${ChemMol_01_ID}'    # Get the entity ID of the experiment contaning the molecule item
+    Should be Equal    ${queryResults1[0][0]}    ${ExperimentID_01}    # Check it is as expected
+    ${queryResults2}    Query    select t.Chemaxon_Molecule_Id from LATEST_ENTITY_VERSION_MOLECULE t where t.entity_id = '${ChemMol_01_ID}'    # Get the molecule ID of molecule item
+    Disconnect from Database
+    Connect To Database    IDBS_EWB_CHEM    IDBS_EWB_CHEM    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults3}    Query    select count(*) from C_JCHEM_MOLECULE t where t.CD_ID = '${queryResults2[0][0]}'    # Check molecule ID of the molecule item exists also in JCHEM_MOLECULE table
+    Disconnect from Database
+    Should Be Equal    ${1}    ${queryResults3[0][0]}
+
+Check Reaction Saved
+    [Documentation]    This test verifies that a ChemAxon entity (reaction) is indexed in the correct tables in the database when an Experiment is Saved. The exact mechanism of indexing is detailed in Confluence:
+    ...
+    ...    http://20jira1.idbs.co.uk:8090/pages/viewpage.action?pageId=19246001
+    ...
+    ...    SH-449
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults1}    Query    select el.parent_entity_id from LATEST_ENTITY_VERSION_REACTION t join entity_links el on el.entity_id = t.entity_id where t.entity_id = '${ChemRxn_01_ID}'    # Get the entity ID of the experiment contaning the reaction item
+    Should be Equal    ${queryResults1[0][0]}    ${ExperimentID_02}    # Check it is as expected
+    ${queryResults2}    Query    select t.Chemaxon_Reaction_Id from LATEST_ENTITY_VERSION_REACTION t where t.entity_id = '${ChemRxn_01_ID}'    # Get the reaction ID of reaction item
+    Disconnect from Database
+    Connect To Database    IDBS_EWB_CHEM    IDBS_EWB_CHEM    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults3}    Query    select count(*) from C_JCHEM_REACTION t where t.CD_ID = '${queryResults2[0][0]}'    # Check reaction ID of the reaction item exists also in JCHEM_REACTION table
+    Disconnect from Database
+    Should Be Equal    ${1}    ${queryResults3[0][0]}
+
+Check Molecule Edited
+    [Documentation]    This test verifies that a ChemAxon entity (molecule) is indexed in the correct tables in the database when the Chemistry Entity in the Experiment is Edited. The exact mechanism of indexing is detailed in Confluence:
+    ...
+    ...    http://20jira1.idbs.co.uk:8090/pages/viewpage.action?pageId=19246001
+    ...
+    ...    SH-380
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Obtain molecule item ID
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults1}    Query    select t.ENTITY_VERSION_MOLECULE_ID, t.ENTITY_VERSION_ID, t.ENTITY_ID from LATEST_ENTITY_VERSION_MOLECULE t where t.ENTITY_ID = '${ChemMol_01_ID}'
+    Disconnect from Database
+    # Modify molecule item
+    ${ChemMol_02_Data}    Get File    ${CURDIR}/Test_Data/2-Methylselenophene.xml
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_01_ID}    ${ExperimentID_01}    ${ChemMol_02_Data}
+    EntityAPILibrary.Version Save    ${ExperimentID_01}    Data Changed
+    # Check DB for modifications
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults2}    Query    select t.ENTITY_VERSION_MOLECULE_ID, t.ENTITY_VERSION_ID, t.ENTITY_ID from ENTITY_VERSION_MOLECULE t where t.ENTITY_ID = '${ChemMol_01_ID}'
+    ${queryResults3}    Query    select t.ENTITY_VERSION_MOLECULE_ID, t.ENTITY_VERSION_ID, t.ENTITY_ID from LATEST_ENTITY_VERSION_MOLECULE t where t.ENTITY_ID = '${ChemMol_01_ID}'
+    ${newchemMolID}    Query    select t.CHEMAXON_MOLECULE_ID from LATEST_ENTITY_VERSION_MOLECULE t where t.ENTITY_ID = '${ChemMol_01_ID}'
+    Disconnect from Database
+    Connect To Database    IDBS_EWB_CHEM    IDBS_EWB_CHEM    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults4}    Query    select count(*) from C_JCHEM_MOLECULE t where t.CD_ID = '${newchemMolID[0][0]}'    # Get molecule ID of the molecule item exists in JCHEM_MOLECULE table
+    Disconnect from Database
+    # Compare values
+    Should be Equal    ${queryResults2}    ${queryResults1}    # Compare version IDs that should have been correctly copied from LATEST_VERSION... to ENTITY_VERSION
+    Should Not be Equal    ${queryResults3}    ${queryResults1}    # Compare LATEST IDs with previous version of IDs, should not be equal
+    Should Be Equal    ${1}    ${queryResults4[0][0]}    # Check edited new molecule has new ID in the CHEM schema table
+
+Check Reaction Edited
+    [Documentation]    This test verifies that a ChemAxon entity (reaction) is indexed in the correct tables in the database when the Chemistry Entity in the Experiment is Edited. The exact mechanism of indexing is detailed in Confluence:
+    ...
+    ...    http://20jira1.idbs.co.uk:8090/pages/viewpage.action?pageId=19246001
+    ...
+    ...    SH-450
+    [Tags]    SRCH-CHEM    BUILD_ACCEPTANCE
+    # Obtain reaction item IDs
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults1}    Query    select t.ENTITY_VERSION_REACTION_ID, t.ENTITY_VERSION_ID, t.ENTITY_ID from LATEST_ENTITY_VERSION_REACTION t where t.ENTITY_ID = '${ChemRxn_01_ID}'
+    Disconnect from Database
+    # Modify reaction item
+    ${ChemRxn_02_Data}    Get File    ${CURDIR}/Test_Data/RxnSelenopheneIn.xml
+    EntityAPILibrary.Edit Chemistry Item    ${ChemRxn_01_ID}    ${ExperimentID_02}    ${ChemRxn_02_Data}
+    EntityAPILibrary.Version Save    ${ExperimentID_02}    Data Changed
+    # Check DB for modifications
+    Connect To Database    IDBS_EWB_CORE    IDBS_EWB_CORE    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults2}    Query    select t.ENTITY_VERSION_REACTION_ID, t.ENTITY_VERSION_ID, t.ENTITY_ID from ENTITY_VERSION_REACTION t where t.ENTITY_ID = '${ChemRxn_01_ID}'
+    ${queryResults3}    Query    select t.ENTITY_VERSION_REACTION_ID, t.ENTITY_VERSION_ID, t.ENTITY_ID from LATEST_ENTITY_VERSION_REACTION t where t.ENTITY_ID = '${ChemRxn_01_ID}'
+    ${newchemRxnID}    Query    select t.CHEMAXON_REACTION_ID from LATEST_ENTITY_VERSION_REACTION t where t.ENTITY_ID = '${ChemRxn_01_ID}'
+    Disconnect from Database
+    Connect To Database    IDBS_EWB_CHEM    IDBS_EWB_CHEM    ${DB_SERVER}    ${ORACLE_SID}
+    ${queryResults4}    Query    select count(*) from C_JCHEM_REACTION t where t.CD_ID = '${newchemRxnID[0][0]}'    # Get reaction ID of the reaction item exists in JCHEM_REACTION table
+    Disconnect from Database
+    # Compare values
+    Should be Equal    ${queryResults2}    ${queryResults1}    # Compare version IDs that should have been correctly copied from LATEST_VERSION... to ENTITY_VERSION
+    Should Not be Equal    ${queryResults3}    ${queryResults1}    # Compare LATEST IDs with previous version of IDs, should not be equal
+    Should Be Equal    ${1}    ${queryResults4[0][0]}    # Check edited new reaction has new ID in the CHEM schema table
+
+*** Keywords ***
+setup
+    # Creating Group + Project
+    ${GroupID}    EntityAPILibrary.Ensure Group Is Present    1    Mr. Roboto
+    Set Suite Variable    ${GroupID}
+    ${ProjectID}    EntityAPILibrary.Create Project    ${GroupID}    Chem DB Index Tests
+    Set Suite Variable    ${ProjectID}
+    # Creating Experiment 1 with molecule item
+    ${ExperimentID_01}    EntityAPILibrary.Create Experiment    ${ProjectID}    Selenophenes
+    Set Suite Variable    ${ExperimentID_01}
+    ${ChemMol_01_ID}    EntityAPILibrary.Create Chemistry item    ${ExperimentID_01}
+    Set Suite Variable    ${ChemMol_01_ID}
+    ${ChemMol_01_Data}    Get File    ${CURDIR}/Test_Data/Selenophene.xml
+    EntityAPILibrary.Edit Chemistry Item    ${ChemMol_01_ID}    ${ExperimentID_01}    ${ChemMol_01_Data}
+    EntityAPILibrary.Version Save    ${ExperimentID_01}    Data Added
+    # Creating Experiment 2 with reaction item
+    ${ExperimentID_02}    EntityAPILibrary.Create Experiment    ${ProjectID}    Selenophenes Reactions
+    Set Suite Variable    ${ExperimentID_02}
+    ${ChemRxn_01_ID}    EntityAPILibrary.Create Chemistry item    ${ExperimentID_02}
+    Set Suite Variable    ${ChemRxn_01_ID}
+    ${ChemRxn_01_Data}    Get File    ${CURDIR}/Test_Data/RxnSelenopheneBrn.xml
+    EntityAPILibrary.Edit Chemistry Item    ${ChemRxn_01_ID}    ${ExperimentID_02}    ${ChemRxn_01_Data}
+    EntityAPILibrary.Version Save    ${ExperimentID_02}    Data Added
+
+teardown
+    [Documentation]    Teardown for whole Suite.
+    EntityAPILibrary.Unlock Entity And Children    ${GroupID}
+    EntityAPILibrary.Delete Entity    ${GroupID}    As intended    As intended

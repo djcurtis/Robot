@@ -1,0 +1,76 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: GET /services/1.0/entities/{entityId}/comments
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags           Add Tag
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Add tag
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 200, a SAPIEntityTag instance, and the tag is added
+    ${experiment_name}=    Set Variable    ATA-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag
+    ${sapi_entity_tag_sequence}=    Get Tags    ${experiment_id}    ${entity_version_id}
+    # Checking expectations
+    XMLLibrary.Check Xml Element Count    Count element 'tagId'    ${sapi_entity_tag_sequence}    1    tagId    elementNamespace=http://entity.services.ewb.idbs.com
+    XMLLibrary.Check Xml Element Value Equals    TagId element equals ${tag_id}    ${sapi_entity_tag_sequence}    ${tag_id}    tagId    elementNamespace=http://entity.services.ewb.idbs.com
+
+Add tag with missing version id
+    [Documentation]    
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    ATA-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Missing version id
+    ${tag_id}=    Add Tag    ${experiment_id}    ${EMPTY}    TestTag    400
+    # Wrong version id
+    ${tag_id}=    Add Tag    ${experiment_id}    WrongEntityVersionId    TestTag    404
+
+Add tag with missing tag
+    [Documentation]    
+    ...
+    ...    If the call parameter ‘entityTag’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    ${experiment_name}=    Set Variable    ATA-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Missing tag
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    ${EMPTY}    400
+
+Add tag with wrong entity id
+    [Documentation]    
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${experiment_name}=    Set Variable    ATA-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # Missing entity id
+    ${tag_id}=    Add Tag    ${EMPTY}    ${entity_version_id}    TestTag    404
+    # Wrong entity id
+    ${tag_id}=    Add Tag    WrongEntityId    ${entity_version_id}    TestTag    404
+
+Add tag with no permissions
+    [Documentation]    
+    ...
+    ...    A client requires the EDIT_ANY_TAG or EDIT_TAGS permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${experiment_name}=    Set Variable    ATA-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # No EDIT_ANY_TAG and EDIT_TAGS permissions
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    # No permissions
+    ${tag_id}=    Add Tag    ${experiment_id}    ${entity_version_id}    TestTag    403
+
+*** Keywords ***

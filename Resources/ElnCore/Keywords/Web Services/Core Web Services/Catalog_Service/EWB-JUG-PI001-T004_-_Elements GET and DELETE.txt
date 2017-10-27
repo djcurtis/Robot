@@ -1,0 +1,33 @@
+*** Settings ***
+Documentation     This test covers the following SSP items:
+Test Setup        Catalog Service Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_CatalogService/rest_catalog_service_resource.txt    # Catalog Service Resource
+
+*** Test Cases ***
+04-02 - GET specific element by ID
+    [Documentation]    This looks for /Experiment Dictionaries in the catalogue by it's ID
+    Get Root Element    500
+
+04-04 - GET invalid element by ID
+    Get Root Element And Expect Error    1234567890    404
+
+04-06 - Validate dictionary by ID
+    [Documentation]    This looks for /Experiment Dictionaries in the catalogue by it's ID, and then validates the information returned is correct
+    Validate Root Element    500    dictionary    500    Experiment Dictionaries    /Experiment Dictionaries    true
+
+04-08 - Validate term by ID
+    [Documentation]    This looks for /Experiment Dictionaries/Experiment Statuses in the catalogue by it's ID, and then validates the information returned is correct
+    Validate Root Element    501    term    501    Experiment Statuses    /Experiment Dictionaries/Experiment Statuses    true
+
+04-17 - DELETE invalid dictionary by ID
+    Delete Element And Expect Error    9999999999999999    404
+
+04-19 - DELETE root dictionary by ID
+    ${created id}=    Create Root Element    DICTIONARY    DeleteRootDictionary1    DeleteRootDictionary1    true
+    Delete Element    ${created id}
+
+04-24 - DELETE non-root dictionary by ID
+    ${created id 1}=    Create Root Element    DICTIONARY    DeleteRootDictionary3    DeleteRootDictionary3    true
+    ${created id 2}=    Create Non-Root Element    ${created id 1}    DICTIONARY    DeleteNonRootDictionary3    DeleteNonRootDictionary3    true
+    Delete Element    ${created id 2}

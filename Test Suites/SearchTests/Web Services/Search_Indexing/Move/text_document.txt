@@ -1,0 +1,42 @@
+*** Settings ***
+Documentation     Created for story SH-1296
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Move Record
+    [Documentation]    Record - Move Record
+    ...    - verify moved document is still searchble by document text
+    ${experimentId}=    rest_entity_service_resource.Move Entity    ${experimentMoveId}    ${projectId}    As Intended    As Intended
+    sleep    ${wait}
+    Execute Free Text Search And Verify Data By Name And Count    ${uniqueSearchText}    1    ${experimentName}
+
+*** Keywords ***
+setup test
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectMoveFromId}=    EntityAPILibrary.Create Project    ${groupId}    project clone from
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project clone to
+    Set Suite Variable    ${projectId}
+    ${uniqueSearchText}=    Replace String    Text${currentDate}    ${SPACE}    ${EMPTY}
+    Set Suite Variable    ${uniqueSearchText}
+    ${experimentName}=    Set Variable    Experiment${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentMoveId}=    EntityAPILibrary.Create Experiment    ${projectMoveFromId}    ${experimentName}    Started
+    ${documentId}=    EntityAPILibrary.Create Text Document    ${experimentMoveId}    Document Name
+    Edit Text Document And Version Save    ${experimentMoveId}    ${documentId}    ${uniqueSearchText}
+    Set Suite Variable    ${experimentMoveId}
+
+teardown test
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended

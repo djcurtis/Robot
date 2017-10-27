@@ -1,0 +1,89 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/workflows/{workflowid}* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+Library           XMLLibrary
+Library           OperatingSystem
+
+*** Test Cases ***
+Actioning Experiment
+    Validate Property Filter    Actioning experiment    0    0    0    0    0
+    ...    0    1
+
+Actioning User
+    Validate Property Filter    Actioning user    0    0    0    0    0
+    ...    1    0
+
+Assigned User
+    Validate Property Filter    Assigned user    0    0    0    0    0
+    ...    1    0
+
+Assigned User Count
+    Validate Property Filter    Assigned user cnt    0    1    0    0    0
+    ...    0    0
+
+Due Date
+    Validate Property Filter    Due date    0    0    1    1    1
+    ...    0    0
+
+Entity Id
+    Validate Property Filter    Entity id    0    0    0    0    0
+    ...    0    1
+
+Entity Path
+    Validate Property Filter    Entity path    0    0    0    0    0
+    ...    0    1
+
+Entity Type
+    Validate Property Filter    Entity type    0    0    0    0    0
+    ...    0    1
+
+Object
+    Validate Property Filter    Object    0    0    0    0    0
+    ...    0    1
+
+Sent Date
+    Validate Property Filter    Sent date    0    0    1    1    1
+    ...    0    0
+
+Task Id
+    Validate Property Filter    Task id    0    0    0    0    0
+    ...    0    1
+
+Task Name
+    Validate Property Filter    Task name    0    0    0    0    0
+    ...    0    1
+
+Task Status
+    Validate Property Filter    Task status    0    0    0    0    0
+    ...    0    1
+
+Task Type
+    Validate Property Filter    Task type    0    0    0    0    0
+    ...    0    1
+
+Test
+    Validate Property Filter    Test    0    0    0    0    0
+    ...    0    1
+
+User Pool
+    Validate Property Filter    User pool    0    0    0    0    0
+    ...    1    0
+
+Workflow Id
+    Validate Property Filter    Workflow id    0    0    0    0    0
+    ...    0    1
+
+Workflow Priority
+    Validate Property Filter    Workflow priority    0    0    0    0    0
+    ...    0    1
+
+Workflow Requester
+    Validate Property Filter    Workflow requester    0    0    0    0    0
+    ...    1    0
+
+Workflow Status
+    Validate Property Filter    Workflow status    0    0    0    0    0
+    ...    0    1

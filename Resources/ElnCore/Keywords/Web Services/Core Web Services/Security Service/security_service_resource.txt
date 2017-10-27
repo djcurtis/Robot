@@ -1,0 +1,34 @@
+*** Settings ***
+# Library           SecurityAPILibrary
+
+*** Variables ***
+${security_service_user1}    auto-secservice-user1
+${security_service_user1_password}    auto-sec-user11
+${security_service_user2}    auto-secservice-user2
+${security_service_user2_password}    auto-sec-user21
+
+*** Keywords ***
+Services Setup
+    Run Keyword And Ignore Error    Create User    ${security_service_user1}    ${security_service_user1_password}    Auto Security Service User 1a    secservice1@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${security_service_user1}    All Entity Permissions    1
+    Run Keyword And Ignore Error    Create User    ${security_service_user2}    ${security_service_user2_password}    Auto Security Service User 2    secservice2@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${security_service_user2}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${security_service_user2}    All Entity Permissions    1
+
+Ensure Role does not exist
+    [Arguments]    ${role}
+    Run Keyword And Ignore Error    SecurityAPILibrary.Delete Role    ${role}
+
+Services teardown
+    Run Keyword And Ignore Error    Create User    ${security_service_user1}    ${security_service_user1_password}    Auto Security Service User 1    secservice1@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${security_service_user1}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${security_service_user1}    All Entity Permissions    1
+    Run Keyword And Ignore Error    Create User    ${security_service_user2}    ${security_service_user2_password}    Auto Security Service User 2    secservice2@idbs.com    Testing
+    ...    ANY_ROLES
+    Assign System Role To User    ${security_service_user2}    ALL_SYSTEM_PERMISSIONS
+    Assign Entity Role To User    ${security_service_user2}    All Entity Permissions    1
+    Comment    Run Keyword And Ignore Error    Delete User    ${security_service_user1}

@@ -1,0 +1,92 @@
+*** Settings ***
+Documentation     SH-747 jira story
+Suite Setup       setup
+Suite Teardown    Close Browser
+Test Setup        Delete All Searches Via API
+Test Teardown     reload page
+Library           IDBSSelenium2Library
+Resource          ../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Resource          ../../../../Resources/UI/navigator.txt
+Resource          ../../../../Resources/API/Search/search_api.txt
+Library           DateTime
+
+*** Test Cases ***
+Verify One Item Deleted Correctly
+    [Documentation]    Verify One Item deleted correctly
+    ...    - \ Add one Search item via API
+    ...    - \ Delete the item via UI
+    ...    - \ Reopen My Searches dialog
+    ...    - \ Verify the item is absent
+    ...    - \ Relogin to the EWB
+    ...    - Verify the item is absent
+    [Tags]    SRCH-SAV-MY
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    Open My Searches Dialog
+    Delete Search Item By Name    ${search1}
+    Verify Blank Saved Search Result
+    Verify No Search Label On My Searches Dialog
+    Close My Searches Dialog
+    Reload Page
+    Open My Searches Dialog
+    Verify Blank Saved Search Result
+    Close My Searches Dialog
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Open My Searches Dialog
+    Verify Blank Saved Search Result
+
+Verify More Then One Item Could Be Deleted
+    [Documentation]    Verify More Then One Item Could be Deleted
+    ...    - \ Add 3 different Search items via API
+    ...    - \ Delete 2 items via UI
+    ...    - \ Reopen My Searches dialog
+    ...    - \ Verify only deleted items are absent
+    [Tags]    SRCH-SAV-MY
+    #Delete 2 Searches of 3
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    Create Search Via API By Name    ${search2}
+    Create Search Via API By Name    ${search3}
+    Open My Searches Dialog
+    Delete Search Item By Name    ${search1}
+    Delete Search Item By Name    ${search2}
+    Verify Search Item In The List    ${search3}
+    Verify Number Of Searches In The List    1
+    Close My Searches Dialog
+    #Verify Only One Item Presents After reload
+    Reload Page
+    Open My Searches Dialog
+    Verify Search Item In The List    ${search3}
+    Verify Number Of Searches In The List    1
+
+Verify Search Not Deleted
+    [Documentation]    Verify Search Is Not Deleted After Clicking On Trashcan Button Only
+    ...    - Add dummy search
+    ...    - Click can button only
+    ...    - Reload page
+    ...    - Open 'My Search' dialog and verify search was not deleted
+    [Tags]    SRCH-SAV-MY
+    #Delete 2 Searches of 3
+    Navigate Search Screen
+    Create Search Via API By Name    ${search1}
+    Open My Searches Dialog
+    Click Delete Search Trashcan Button    ${search1}
+    Close My Searches Dialog
+    #Verify Search Was Not Deleted
+    Reload Page
+    Open My Searches Dialog
+    Verify Search Item In The List    ${search1}
+    Verify Number Of Searches In The List    1
+
+*** Keywords ***
+setup
+    ${currentDate}=    Get Current Date
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    ${search2}=    Set Variable    Search 2 ${currentDate}
+    ${search3}=    Set Variable    Search 3 ${currentDate}
+    Set Suite Variable    ${search1}
+    Set Suite Variable    ${search2}
+    Set Suite Variable    ${search3}
+    Login To EWB

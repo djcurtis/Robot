@@ -1,0 +1,107 @@
+*** Settings ***
+Documentation     The following test cases are all for the endpoint: POST /services/1.0/entities/{entityId}/comments/{commentId}
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        EWB-SAPI-SSP-ENT-UCO    Update Comment
+# Library           EntityAPILibrary
+# Library           SecurityAPILibrary
+Library           XMLLibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          record_service_resources.txt    # suite setup and teardown
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt    # REST Record Service
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt    # REST Entity Service
+
+*** Test Cases ***
+Update comment
+    [Documentation]    EWB-SAPI-SSP-ENT-UCO-S001
+    ...
+    ...    A successful call returns the HTTP status 200 and the item entity publishing state is set
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S001
+    ${experiment_name}=    Set Variable    UCO-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    Rest_Entity_Service_Resource.Update Comment    ${experiment_id}    ${entity_version_id}    ${comment_id}    Test comment updated
+    # Checking expectations
+    ${sapi_entity_comment_sequence}=    Rest_Entity_Service_Resource.Get Comments    ${experiment_id}    ${entity_version_id}
+    Should Contain    ${sapi_entity_comment_sequence}=    Test comment updated
+    Should Contain    ${sapi_entity_comment_sequence}=    ${comment_id}
+
+Update comment with missing version id
+    [Documentation]    EWB-SAPI-SSP-ENT-UCO-S002
+    ...
+    ...    If the call parameter ‘entityVersionId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S002
+    ${experiment_name}=    Set Variable    UCO-S002
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    # missing entity version id
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${EMPTY}    Test comment    400
+    # wrong entity version id
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    WrongEntityVersionId    Test comment    404
+
+Update comment with missing comment id
+    [Documentation]    EWB-SAPI-SSP-RES-UCO-S003
+    ...
+    ...    If the call parameter ‘entityCommentId’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S003
+    ${experiment_name}=    Set Variable    UCO-S003
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    # missing comment id
+    Rest_Entity_Service_Resource.Update Comment    ${experiment_id}    ${entity_version_id}    ${EMPTY}    Test comment updated    405
+    # wrong comment
+    Rest_Entity_Service_Resource.Update Comment    ${experiment_id}    ${entity_version_id}    WrongCommentId    Test comment updated    404
+
+Update comment with missing comment
+    [Documentation]    EWB-SAPI-SSP-RES-UCO-S004
+    ...
+    ...    If the call parameter ‘entityComment’ is missing or invalid, then the HTTP status code 400 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S004
+    ${experiment_name}=    Set Variable    UCO-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    # missing comment id
+    Rest_Entity_Service_Resource.Update Comment    ${experiment_id}    ${entity_version_id}    ${comment_id}    ${EMPTY}    400
+
+Update comment to not existing entity
+    [Documentation]    EWB-SAPI-SSP-ENT-UCO-S005
+    ...
+    ...    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S005
+    ${experiment_name}=    Set Variable    UCO-S005
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    # missing comment id
+    Rest_Entity_Service_Resource.Update Comment    WrongEntityId    WrongVersionId    ${comment_id}    Test comment updated    404
+
+Update comment without permissions
+    [Documentation]    EWB-SAPI-SSP-ENT-UCO-S006
+    ...
+    ...    If the client does not have EDIT_COMMENTS permission, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S006
+    ${experiment_name}=    Set Variable    UCO-S006
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}
+    Rest_Entity_Service_Resource.Update Comment    ${experiment_id}    ${entity_version_id}    ${comment_id}    Test comment updated    403
+
+Update comment created by others
+    [Documentation]    EWB-SAPI-SSP-ENT-UCO-S007
+    ...
+    ...    If the client try to update someone’s else comment, then the HTTP status code 403 is returned to the client
+    [Tags]    EWB-SAPI-SSP-ENT-UCO-S007
+    ${experiment_name}=    Set Variable    UCO-S007
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment_id}=    Rest_Entity_Service_Resource.Add Comment    ${experiment_id}    ${entity_version_id}    Test comment
+    Use User With Permissions    ${username}    ${password}    ${experiment_id}    EDIT_COMMENTS
+    Rest_Entity_Service_Resource.Update Comment    ${experiment_id}    ${entity_version_id}    ${comment_id}    Test comment updated    403
+
+*** Keywords ***

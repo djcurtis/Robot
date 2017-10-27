@@ -1,0 +1,67 @@
+*** Settings ***
+Documentation     Test case names have the format:
+...
+...               Test case name | [RecordSaveState(attr)] - Subsequent Actions
+...               - attr = the attributes (a, b) of the record, which can be in version 0, 1, 2, d (draft), c (cache)
+...
+...               Script for SH-1351 - data creation script to be run:
+...               - on a pre-EWB 10.2.1 system
+...
+...               (this script is written to work with the corresponding data verification scripts)
+Suite Setup       setup suite
+Library           Collections
+Library           DateTime
+Library           EntityAPILibrary
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../migration_tool_variables.txt
+
+*** Test Cases ***
+Del1 | Va1b1 - Delete record
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrRecordDel1    Started
+    Edit Entity KeyWord    ${experimentId}    recordAttributeDel1a1    MigrationToolAttrRecordDel1a    Completed
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended
+
+Del2 | Dadbd - Delete record
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrRecordDel2    Started
+    Edit Entity KeyWord    ${experimentId}    recordAttributeDel2ad    MigrationToolAttrRecordDel2a    Planned
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended
+
+Del3 | Va1b1 - Delete project
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${projectId2}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Attribute_Record_Del2
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId2}    MigrationToolAttrRecordDel3    Started
+    Edit Entity KeyWord    ${experimentId}    recordAttributeDel3a1    MigrationToolAttrRecordDel3a    Completed
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${projectId2}    As Intended    As Intended
+
+Del4 | Dadbd - Delete project
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${projectId3}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Attribute_Record_Del2
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId3}    MigrationToolAttrRecordDel4    Started
+    Edit Entity KeyWord    ${experimentId}    recordAttributeDel4ad    MigrationToolAttrRecordDel4a    Planned
+    EntityAPILibrary.Draft Save    ${experimentId}
+    EntityAPILibrary.Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${projectId3}    As Intended    As Intended
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${GROUP_NAME}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Attribute_Record_Del
+    Set Suite Variable    ${projectId}

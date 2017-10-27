@@ -1,0 +1,42 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains a number queries that have a number of different datatypes in the filter condition. \ \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+
+*** Keywords ***
+Run Mixed Datatype Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have a number of different datatypes in the filter condition. \ \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.\n
+    # string and boolean property filters. 'LIKE' and '=' operators.
+    Execute Data Query and Verify Values    SELECT ${stringColumn}, ${booleanColumn} FROM ${term path} AS t WHERE t.${stringColumn} LIKE 'Mixed%' AND t.${booleanColumn} = 'T'    Mixed Case String,T
+    # boolean and number property filters. '!=' and '<' operators.
+    Execute Data Query and Verify Values    SELECT ${booleanColumn}, ${floatColumn} FROM ${term path} AS t WHERE t.${booleanColumn} != 'T' OR t.${floatColumn} < 0.1    F,-219.2    F,-0.001    F,0
+    # boolean and timestamp property filters. '=' and '!=' operators.
+    Execute Data Query and Verify Values    SELECT ${booleanColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = 'F' OR t.${timestampColumn} != TO_TIMESTAMP('09-05-2012 23:00:00', 'DD-MM-YYYY HH24:MI:SS')    T,1340357649000    F,949363200000    F,1340392376000    F,1336604400000
+    # string and number property filters. '!=' operator.
+    Execute Data Query and Verify Values    SELECT ${stringColumn}, ${integerColumn} FROM ${term path} AS t WHERE t.${stringColumn} != 'Mixed Case String' AND t.${integerColumn} !=0    string with 'quotes',-1    string with %,-840
+    # string and timestamp property filters. '=' and '>' operators.
+    Execute Data Query and Verify Values    SELECT ${stringColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${stringColumn} = 'string with %' OR t.${timestampColumn} > TO_TIMESTAMP('02-01-2000','MM-DD-YYYY')    Mixed Case String,1340357649000    ${null value},1340392376000    string with %,1336604400000    ${null value},1336604400000
+    # number and timestamp property filters. '<=' and '<' operators.
+    Execute Data Query and Verify Values    SELECT ${floatColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${floatColumn} <= 3.001 AND t.${timestampColumn} < TO_TIMESTAMP('22-06-2012 14:00:04','DD-MM-YYYY HH24:MI:SS')    -219.2,949363200000    3.001,1336604400000    0,1336604400000
+
+Run Mixed Datatype Parameterised Query
+    [Arguments]    ${term path}    ${stringColumn}    ${timestampColumn}    ${integerColumn}    ${floatColumn}    ${booleanColumn}
+    [Documentation]    This keyword will execute a number queries that have a number of different datatypes in the filter condition. \ \n\nAll queries will be executed in parameterised form. \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${stringColumn} = The name of a string property in the term in ${term path}.\n- ${timestampColumn} = The name of a timestamp property in the term in ${term path}.\n- ${integerColumn} = \ The name of an number (integer) property in the term in ${term path}.\n- ${floatColumn} = The name of an number (float) property in the term in ${term path}.\n- ${booleanColumn} = The name of a boolean property in the term in ${term path}.\n
+    # string and boolean property filters. 'LIKE' and '=' operators.
+    @{parameterised query 1}=    Create List    SELECT ${stringColumn}, ${booleanColumn} FROM ${term path} AS t WHERE t.${stringColumn} LIKE :p AND t.${booleanColumn} = :q    java.lang.String,p,Mixed%    java.lang.String,q,T
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 1}    Mixed Case String,T
+    # boolean and number property filters. '!=' and '<' operators.
+    @{parameterised query 2}=    Create List    SELECT ${booleanColumn}, ${floatColumn} FROM ${term path} AS t WHERE t.${booleanColumn} != :p OR t.${floatColumn} < :q    java.lang.String,p,T    java.lang.Float,q,0.1
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 2}    F,-219.2    F,-0.001    F,0
+    # boolean and timestamp property filters. '=' and '!=' operators.
+    @{parameterised query 3}=    Create List    SELECT ${booleanColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${booleanColumn} = :p OR t.${timestampColumn} != TO_TIMESTAMP(:q,'DD-MM-YYYY HH24:MI:SS')    java.lang.String,p,F    java.lang.String,q,09-05-2012 23:00:00
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 3}    T,1340357649000    F,949363200000    F,1340392376000    F,1336604400000
+    # string and number property filters. '!=' operator.
+    @{parameterised query 4}=    Create List    SELECT ${stringColumn}, ${integerColumn} FROM ${term path} AS t WHERE t.${stringColumn} != :p AND t.${integerColumn} !=:q    java.lang.String,p,Mixed Case String    java.lang.Integer,q,0
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 4}    string with 'quotes',-1    string with %,-840
+    # string and timestamp property filters. '=' and '>' operators.
+    @{parameterised query 5}=    Create List    SELECT ${stringColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${stringColumn} = :p OR t.${timestampColumn} > TO_TIMESTAMP(:q,'MM-DD-YYYY')    java.lang.String,p,string with %    java.lang.String,q,02-01-2000
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 5}    Mixed Case String,1340357649000    ${null value},1340392376000    string with %,1336604400000    ${null value},1336604400000
+    # number and timestamp property filters. '<=' and '<' operators.
+    @{parameterised query 6}=    Create List    SELECT ${floatColumn}, ${timestampColumn} FROM ${term path} AS t WHERE t.${floatColumn} <= :p AND t.${timestampColumn} < TO_TIMESTAMP(:q,'DD-MM-YYYY HH24:MI:SS')    java.lang.Float,p,3.001    java.lang.String,q,22-06-2012 14:00:04
+    Execute Parameterised Data Query And Verify Values    ${parameterised query 6}    -219.2,949363200000    3.001,1336604400000    0,1336604400000

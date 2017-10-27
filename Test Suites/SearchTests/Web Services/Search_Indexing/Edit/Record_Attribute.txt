@@ -1,0 +1,91 @@
+*** Settings ***
+Documentation     Created for story SH-1302
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record - Add Keyword - Version
+    [Documentation]    Record - Add Keyword - Version
+    ...    - verify that record is searchable by edited keyword after version saving
+    Edit Entity KeyWord    ${experimentId}    qwerty    ${experimentName}    Started
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Keyword - Draft
+    [Documentation]    Record - Add Keyword - Draft
+    ...
+    ...    - verify that record is searchable by edited keyword after darft saving
+    Edit Entity KeyWord    ${experimentId}    qwerty    ${experimentName}    Started
+    Draft Save    ${experimentId}
+    sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Add Keyword - Not Save
+    [Documentation]    Record - Add Keyword - Not Save
+    ...
+    ...    - verify that record is not searchable by edited keyword without saving
+    Edit Entity KeyWord    ${experimentId}    qwerty    ${experimentName}    Started
+    sleep    ${wait}
+    Execute Search And Verify No Result    qwerty    all    Experiment|title|is|"${experimentName}"
+
+Record - Edit Title - Version
+    [Documentation]    Record - Edit Title - Version
+    ...    - verify that record is searchable by edited title after version saving
+    Edit Entity KeyWord    ${experimentId}    ${EMPTY}    qwerty    Started
+    Version Save    ${experimentId}    Data Added
+    sleep    ${wait}
+    Execute Search And Verify Data Name    qwerty    qwerty    all    Experiment|title|is|"qwerty"
+
+Record - Edit Title - Draft
+    [Documentation]    Record - Edit Title - Draft
+    ...
+    ...    - verify that record is searchable by edited title after darft saving
+    Edit Entity KeyWord    ${experimentId}    ${EMPTY}    qwerty    Started
+    Draft Save    ${experimentId}
+    sleep    ${wait}
+    Execute Search And Verify Data Name    qwerty    qwerty    all    Experiment|title|is|"qwerty"
+
+Record - Edit Title - Not Save
+    [Documentation]    Record - Edit Title - Not Save
+    ...
+    ...    - verify that record is not searchable by edited title without saving
+    Edit Entity KeyWord    ${experimentId}    ${EMPTY}    qwerty    Started
+    sleep    ${wait}
+    Execute Search And Verify No Result    qwerty    all    Experiment|title|is|"${experimentName}"
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    10s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupName}=    Set Variable    Group ${currentDate}
+    Set Suite Variable    ${groupName}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${groupName}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    project
+    Set Suite Variable    ${projectId}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+setup test
+    ${currentDate}=    Get Current Date
+    ${experimentName}=    Set Variable    Experiment_${currentDate}
+    Set Suite Variable    ${experimentName}
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started
+    Set Suite Variable    ${experimentId}
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

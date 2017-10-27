@@ -1,0 +1,52 @@
+*** Settings ***
+Documentation     Script for SH-1352 - data verification to be run after:
+...               - the data creation scripts have been run on a pre-EWB 10.2.1 system
+...               - the EWB system has been upgraded to 10.2.1
+...               - the migration tool has been run to index all data created in the new index
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+
+*** Test Cases ***
+D1 | [AD_adbd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeD1Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeD1Ab0
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD1Aad    1    MigrationToolAttrItemExpD1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD1Abd    1    MigrationToolAttrItemExpD1
+
+D2 | [AV_a1b1]->[AD_adbd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeD2Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeD2Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeD2Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeD2Ab1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD2Aad    1    MigrationToolAttrItemExpD2
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD2Abd    1    MigrationToolAttrItemExpD2
+
+D3 | [AV_a1b1]->[AD_adbd BD_idjd]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeD3Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeD3Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeD3Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeD3Ab1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD3Bid    1    MigrationToolAttrItemExpD3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD3Bjd    1    MigrationToolAttrItemExpD3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD3Aad    1    MigrationToolAttrItemExpD3
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD3Abd    1    MigrationToolAttrItemExpD3
+
+D4 | [AV_a1b1 BV_i1j1]->[AD_adbd BV_i1j1]
+    [Documentation]    Script to:
+    ...    - verify the correct result should be searchable
+    Execute Free Text Search And Verify No Result    itemAttributeD4Aa0
+    Execute Free Text Search And Verify No Result    itemAttributeD4Ab0
+    Execute Free Text Search And Verify No Result    itemAttributeD4Bi0
+    Execute Free Text Search And Verify No Result    itemAttributeD4Bj0
+    Execute Free Text Search And Verify No Result    itemAttributeD4Aa1
+    Execute Free Text Search And Verify No Result    itemAttributeD4Ab1
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD4Bi1    1    MigrationToolAttrItemExpD4
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD4Bj1    1    MigrationToolAttrItemExpD4
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD4Aad    1    MigrationToolAttrItemExpD4
+    Execute Free Text Search And Verify Data By Name And Count    itemAttributeD4Abd    1    MigrationToolAttrItemExpD4

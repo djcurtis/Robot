@@ -1,0 +1,392 @@
+*** Settings ***
+Library           IDBSSelenium2Library
+Library           ImageLibrary
+Resource          general_resource.txt
+Resource          ../../Web Services/REST_SecurityService/rest_security_service_resource.txt
+
+*** Variables ***
+${account-menu-id}    app-header-link-account    # The id of the account menu
+${account-settings-id}    app-header-link-account-settings    # The id of the account settings menu entry
+${change-password-tab-id}    account-settings-tab-ChangePassword    # The id of the change password tab
+${following-users-tab-id}    account-settings-tab-FollowUsers    # The id of the following users tab
+${following-entities-tab-id}    account-settings-tab-FollowEntities    # The id of the following entities tab
+${following-tags-tab-id}    account-settings-tab-FollowTags    # The id of the following tags tab
+${activity-types-tab-id}    account-settings-tab-ActivityTypes    # The id of the activity types tab
+${user-image-id}    user-image    # The id of the user image
+${user-full-name-id}    user-full-name    # The id of the users full name
+${user-department-id}    user-department    # The id of the users department
+${user-email-addresses-id}    user-email-addresses    # The id of the users email addresses
+${old-password-id}    oldPasswordTextBox    # The id of the old password text box
+${new-password-id}    newPasswordTextBox    # The id of the new password text box
+${confirm-password-id}    confirmPasswordTextBox    # The id of the confirm password text box
+${change-password-id}    changePasswordButton    # The id of the change passsword button
+${follow-user-suggestion-box-id}    follow-user-suggestion-box    # The id of the follow user suggestion box
+${follow-tag-suggestion-box-id}    follow-tag-suggestion-box    # The id of the follow tag suggestion box
+${ok-button-id}    okButton    # The id of the ok button
+${cancel-button-id}    cancelButton    # The id of the cancel button
+${home-page-link-id}    ewb-header-link-home    # The id of the home page link button
+${tasks-page-link-id}    app-header-link-tasks    # The id of the tasks page link button
+${workflows-page-link-id}    app-header-link-workflows    # The id of the workflows page link button
+${follow-entity-button-id}    follow-entity-button    # The id of the follow entity button
+${draft-saved-activity-id}    ENTITY_DRAFT_SAVED    # Draft saved activity id
+${version-saved-activity-id}    ENTITY_VERSION_SAVED    # Version saved activity id
+${status-changed-activity-id}    STATUS_PROPERTY_CHANGED    # Status property changed activity id
+${published-activity-id}    DOCUMENT_PUBLISHED    # Document published activity id
+${signed-activity-id}    DOCUMENT_SIGNED    # Document signed activity id
+${item-deleted-activity-id}    ENTITY_DELETED    # Entity deleted activity id
+${comment-added-activity-id}    COMMENT_ADDED    # Comment added activity id
+${comment-updated-activity-id}    COMMENT_UPDATED    # Comment updated activity id
+${comment-deleted-activity-id}    COMMENT_DELETED    # Comment deleted activity id
+${tag-added-activity-id}    TAG_ADDED    # Tag added activity id
+${tag-deleted-activity-id}    TAG_DELETED    # Tag deleted activity id
+${file-input}     ewb-web-file-input    # The id of the file input field
+${ewb-account-settings-followed-user-panel}    ewb-account-settings-followed-user-panel    # The class of a followed user panel
+${ewb-account-settings-followed-entity-panel}    ewb-account-settings-followed-panel    # The class of a followed entity panel
+${ewb-account-settings-followed-tag-panel}    ewb-account-settings-followed-panel    # The class of a followed tag panel
+${initial-avatar-path}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Web Client${/}Account Settings${/}initial-avatar.png    # The initial user avatar
+${new-avatar-path}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Web Client${/}Account Settings${/}avatar.png    # An avatar to upload
+${invalid-avatar-path}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Web Client${/}Account Settings${/}invalid-avatar.txt    # An invalid avatar to upload
+${expected-avatar-path}    ${CURDIR}${/}..${/}..${/}..${/}Test Data${/}Web Client${/}Account Settings${/}avatar-expected.png    # The converted avatar after successful upload
+${avatar-diff-path}    ${OUTPUT_DIR}${/}avatar-diff-test-output.png    # An output file highlighting any differences
+${database-avatar-path}    ${OUTPUT_DIR}${/}avatar-database-test-output.png    # The converted avatar after successful upload
+${user-full-name}    Administrator User
+${user-department}    admin-department
+${user-email-addresses}    admin@email.addr
+${change-password-user-name}    changepassword
+${change-password-user-password}    password
+${change-password-user-new-password}    password2
+${change-password-user-full-name}    change password user
+${change-password-user-email-addresses}    change@password.user
+${change-password-user-department}    change password department
+${change-password-user-valid-md5-password}    X03MO1qnZdYdgyfeuILPmQ==
+
+*** Keywords ***
+Open Account Settings
+    [Documentation]    Opens the account settings page
+    RobustClick    ${account-menu-id}
+    RobustClick    ${account-settings-id}
+    Check Account Settings Shown
+    Check Following Users Tab Shown    # This tab should be shown by default
+
+Select Change Password Tab
+    [Documentation]    Selects the change password tab in the account settings page
+    RobustClick    ${change-password-tab-id}
+    Check Change Password Tab Shown
+
+Select Following Users Tab
+    [Documentation]    Selects the following users tab in the account settings page
+    RobustClick    ${following-users-tab-id}
+    Check Following Users Tab Shown
+
+Select Following Entities Tab
+    [Documentation]    Selects the following entities tab in the account settings page
+    RobustClick    ${following-entities-tab-id}
+    Check Following Entities Tab Shown
+
+Select Following Tags Tab
+    [Documentation]    Selects the following tags tab in the account settings page
+    RobustClick    ${following-tags-tab-id}
+    Check Following Tags Tab Shown
+
+Select Activity Types Tab
+    [Documentation]    Selects the following tags tab in the account settings page
+    RobustClick    ${activity-types-tab-id}
+    Check Activity Types Tab Shown
+
+Initialise User Details
+    [Documentation]    Initialises the users department and email address
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    update USERS set DEPARTMENT='${user-department}',E_MAIL='${user-email-addresses}' where USER_ID='1'
+    Disconnect From Database
+
+Initialise User Avatar
+    [Documentation]    Initialises the users avatar to a known value
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Update Blob Column    USERS    AVATAR    USER_ID='1'    ${initial-avatar-path}
+    Execute    update USERS set AVATAR_MIME_TYPE='image/png' where USER_ID='1'
+    Disconnect From Database
+
+User Full Name Is
+    [Arguments]    ${expected full name}
+    [Documentation]    Checks the users full name
+    Element Should Contain    ${user-full-name-id}    ${expected full name}
+
+User Department Is
+    [Arguments]    ${expected department}
+    [Documentation]    Checks the users department
+    Element Should Contain    ${user-department-id}    ${expected department}
+
+User Email Address Is
+    [Arguments]    ${expected email address}
+    [Documentation]    Checks the users email address
+    Element Should Contain    ${user-email-addresses-id}    ${expected email address}
+
+Change User Image
+    [Arguments]    ${new avatar path}    ${expected avatar path}
+    [Documentation]    Changes the users avatar
+    Execute Javascript    window.document.getElementById('ewb-web-file-input').removeAttribute('class');
+    Choose File    ewb-web-file-input    ${new avatar path}
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    ${queryResults}    Query    select AVATAR from USERS where NAME='${VALID USER}'
+    ${database image}    Set Variable    ${queryResults[0][0]}
+    Lob To File    ${database image}    ${database-avatar-path}
+    Disconnect From Database
+    Compare Images    ${database-avatar-path}    ${expected avatar path}    ${avatar-diff-path}
+
+Create Change Password User
+    [Documentation]    Creates a user to be used when testing change password functionality
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    ${existingUser}    Query    select NAME from USERS where NAME='${change-password-user-name}'
+    Run Keyword If    len(${existingUser}) == 0    Create User    ${change-password-user-name}    ${change-password-user-password}    ${change-password-user-full-name}    ${change-password-user-email-addresses}
+    ...    ${change-password-user-department}
+    Disconnect From Database
+    Reset Change Password User To Valid
+
+Reset Change Password User To Valid
+    [Documentation]    Resets the change password user so that they can login
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    update USERS set MD5_PASSWORD='${change-password-user-valid-md5-password}',DISABLED='F',FAILED_AUTH_COUNT='0',LAST_PASSWORD_UPDATE=CURRENT_TIMESTAMP(3) where NAME='${change-password-user-name}'
+    Disconnect From Database
+
+Change Password
+    [Arguments]    ${new password}    ${confirm password}
+    [Documentation]    Changes the users password
+    Input Text    ${old-password-id}    ${change-password-user-password}
+    Input Text    ${new-password-id}    ${new password}
+    Input Text    ${confirm-password-id}    ${confirm password}
+    Robust Click    ${change-password-id}
+
+Check Password Changed
+    [Documentation]    Confirms that the password changed message is shown and dismisses the messagebox
+    Wait Until Page Contains    Your password has been successfully changed
+    Robust Click    ${ok-button-id}
+
+Check Password Not Changed
+    [Documentation]    Confirms that the invalid password message is shown and dismisses the messagebox
+    Wait Until Page Contains    Invalid password - the password must adhere to the specifed rules.
+    Robust Click    ${ok-button-id}
+
+Check Password Not Changed When Confirm Password Is Wrong
+    [Documentation]    Confirms that the confirm password is wrong message is shown and dismisses the messagebox
+    Wait Until Page Contains    The confirmation password is not the same as the new password, please try again
+    Robust Click    ${ok-button-id}
+    Page Should Contain Element    ${old-password-id}
+    Page Should Contain Element    ${new-password-id}
+    Page Should Contain Element    ${confirm-password-id}
+
+Expire Change Password User
+    [Documentation]    Expires the change password users password, forcing them to change the password at login
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    update USERS set LAST_PASSWORD_UPDATE=CURRENT_TIMESTAMP(3)-90 where NAME='${change-password-user-name}'
+    Disconnect From Database
+
+Almost Expire Change Password User
+    [Documentation]    Sets the change password users password to almost expired
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    update USERS set LAST_PASSWORD_UPDATE=CURRENT_TIMESTAMP(3)-27 where NAME='${change-password-user-name}'
+    Disconnect From Database
+
+Check Password Expired Message Shown
+    [Documentation]    Confirms that the password expired message is shown and dismisses the messagebox
+    Wait Until Page Contains    Your password has expired, you will need to enter a new password in order to log in
+    Robust Click    ${ok-button-id}
+
+Check Account Settings Shown
+    [Documentation]    Confirms that account settings page is shown
+    Wait Until Page Contains Element    ${user-image-id}
+
+Check Change Password Tab Shown
+    [Documentation]    Confirms that the change password tab is displayed
+    Wait Until Page Contains Element    ${change-password-id}
+
+Check Following Users Tab Shown
+    [Documentation]    Confirms that the following users tab is displayed
+    Wait Until Page Contains Element    ${follow-user-suggestion-box-id}
+
+Check Following Entities Tab Shown
+    [Documentation]    Confirms that the following entities tab is displayed
+    Wait Until Page Contains Element    ${follow-entity-button-id}
+
+Check Following Tags Tab Shown
+    [Documentation]    Confirms that the following tags tab is displayed
+    Wait Until Page Contains Element    ${follow-tag-suggestion-box-id}
+
+Check Activity Types Tab Shown
+    [Documentation]    Confirms that the activity types tab is displayed
+    Wait Until Page Contains Element    ${draft-saved-activity-id}
+
+Check No Navigation Allowed Message Shown
+    [Documentation]    Confirms that the password expired message is shown and dismisses the messagebox
+    Robust Click    ${ok-button-id}
+
+Check Password Due To Expire Message Shown
+    [Arguments]    ${choice button id}
+    [Documentation]    Confirms that the password due to expire message is shown and dismisses the messagebox
+    Wait Until Page Contains    Your password is about to expire, would you like to change it ?
+    Robust Click    ${choice button id}
+
+Click Following User Button
+    [Arguments]    ${followedUserName}
+    [Documentation]    Clicks the 'Following' button for the named user
+    Robust Click    //*[contains(@class,'${ewb-account-settings-followed-user-panel}') and descendant::div[contains(text(),'${followedUserName}')]]//div[contains(@id, 'following-user-button')]
+
+Follow User Using Suggestion Box
+    [Arguments]    ${followedUserName}
+    [Documentation]    Enters the given user name in the follow user suggestion box and hits return
+    Input Text And Press Enter    //*[@id='${follow-user-suggestion-box-id}']    ${followedUserName}
+
+Confirm User Followed
+    [Arguments]    ${followedUserName}
+    [Documentation]    Confirms that the named user is followed
+    Wait Until Page Contains Element    //*[contains(@class,'ewb-account-settings-followed-user-panel')]//div[text()='${followedUserName}']
+    Wait Until Page Contains Element    //*[contains(@class,'ewb-account-settings-followed-user-panel')]//div[text()='following...']
+
+Confirm User Was Followed
+    [Arguments]    ${followedUserName}
+    [Documentation]    Confirms that the named user was followed (the user has unfollowed the user but hasn't yet navigated away from the following users page)
+    Wait Until Page Contains Element    //*[contains(@class,'ewb-account-settings-followed-user-panel')]//div[text()='${followedUserName}']
+    Wait Until Page Contains Element    //*[contains(@class,'ewb-account-settings-followed-user-panel')]//div[text()='no longer following...']
+
+Confirm User Not Followed
+    [Arguments]    ${followedUserName}
+    [Documentation]    Confirms that the named user is not being followed
+    Element Should Not Be Visible    //*[contains(@class,'ewb-account-settings-followed-user-panel')]//*/a[text()='${followedUserName}']    10s
+
+Click Followed User
+    [Arguments]    ${followedUserName}
+    [Documentation]    Clicks the followed user name
+    Robust Click    //*[contains(@class,'ewb-account-settings-followed-user-panel')]//*/a[text()='${followedUserName}']
+
+Enter User Name In Suggestion Box
+    [Arguments]    ${followedUserName}
+    [Documentation]    Enters the given user name in the follow user suggestion box
+    Input Text    //*[@id='${follow-user-suggestion-box-id}']    ${followedUserName}
+
+Confirm No User Suggestion
+    [Arguments]    ${userName}
+    [Documentation]    Confirms that the suggestion box doesn't contain the given name
+    Wait Until Page Does Not Contain Element    xpath=//*[@class='gwt-SuggestBoxPopup']//td[@class='item' and contains(text(),'${userName}')]    10s
+
+Confirm Entity Followed
+    [Arguments]    ${followedEntityName}
+    [Documentation]    Confirms that the named entity is followed
+    Wait Until Page Contains Element    //*[contains(@class,'ewb-account-settings-followed-entity-container')]//div[text()='${followedEntityName}']
+    Wait Until Page Contains Element    //*[contains(@class,'ewb-account-settings-followed-panel')]//div[contains(text(),'following')]
+
+Confirm Entity Not Followed
+    [Arguments]    ${followedEntityName}
+    [Documentation]    Confirms that the named entity is followed
+    Element Should Not Be Visible    //*[contains(@class,'ewb-account-settings-followed-entity-panel')]//*/a[text()='${followedEntityName}']
+
+Click Following Entity Button
+    [Arguments]    ${followedEntityName}
+    [Documentation]    Clicks the 'Following' button for the named entity
+    ${status}    ${value}=    Run Keyword And Ignore Error    Page Should Contain Element    //*[contains(@class,'${ewb-account-settings-followed-entity-panel}') and descendant::div[contains(text(),'${followedEntityName}')]]//div[contains(@id, 'following-entity-button') and contains(@class, 'on')]
+    Robust Click    //*[contains(@class,'${ewb-account-settings-followed-entity-panel}') and descendant::div[contains(text(),'${followedEntityName}')]]//div[contains(@id, 'following-entity-button')]
+    Run Keyword Unless    '${status}'=='PASS'    Confirm Entity Followed    ${followedEntityName}
+    Run Keyword If    '${status}'=='PASS'    Confirm Entity Not Followed    ${followedEntityName}
+
+Click Follow An Entity Button
+    [Documentation]    Clicks the 'Follow an entity' button
+    Robust Click    ${follow-entity-button-id}
+
+Click Following Tag Button
+    [Arguments]    ${followedTagName}
+    [Documentation]    Clicks the 'Following' button for the named tag
+    Robust Click    //*[contains(@class,'${ewb-account-settings-followed-tag-panel}') and descendant::div[contains(text(),'${followedTagName}')]]//div[contains(@id, 'following-tag-button')]
+
+Follow Tag Using Suggestion Box
+    [Arguments]    ${followedTagName}
+    [Documentation]    Enters the given tag name in the follow tag suggestion box and hits return
+    Input Text And Press Enter    //*[@id='${follow-tag-suggestion-box-id}']    ${followedTagName}
+    Run Keyword and Ignore Error    Robust Click    xpath=//div[@class='suggestPopupMiddleCenterInner suggestPopupContent']//td[text()="${followedTagName}"]
+
+Confirm Tag Followed
+    [Arguments]    ${followedTagName}
+    [Documentation]    Confirms that the named tag is followed
+    Wait Until Page Contains Element    xpath=//*[contains(@id,'following-tag-name-') and text()="${followedTagName}"]
+
+Confirm Tag Not Followed
+    [Arguments]    ${followedTagName}
+    [Documentation]    Confirms that the named tag is followed
+    Element Should Not Be Visible    //*[contains(@class,'${ewb-account-settings-followed-tag-panel}') and descendant::a[contains(text(),'${followedTagName}')]]
+
+Get First Followed Tag Name
+    [Documentation]    Returns the name of the first followed tag
+    ${firstFollowedTagName}    Get Text    //*[@id='following-tag-name-0']/a
+    [Return]    ${firstFollowedTagName}    # Returns the name of the first followed tag
+
+Enter Tag Name In Suggestion Box
+    [Arguments]    ${followedTagName}
+    [Documentation]    Enters the given tag name in the follow tag suggestion box
+    Input Text    //*[@id='${follow-tag-suggestion-box-id}']    ${followedTagName}
+
+Confirm No Tag Suggestion
+    [Arguments]    ${tagName}
+    [Documentation]    Confirms that the suggestion box doesn't contain the given name
+    Wait Until Page Does Not Contain Element    xpath=//*[@class='gwt-SuggestBoxPopup']//td[@class='item' and contains(text(),'${tagName}')]    10s
+
+Check Activity Type Set
+    [Arguments]    ${activityTypeId}
+    [Documentation]    Confirms that the given activity type checkbox is set
+    Wait Until Page Contains Element    xpath=//*[@id='${activityTypeId}']/input    30s
+    Checkbox Should Be Selected    //*[@id='${activityTypeId}']/input
+
+Check Activity Type Not Set
+    [Arguments]    ${activityTypeId}
+    [Documentation]    Confirms that the given activity type checkbox is not set
+    Wait Until Page Contains Element    xpath=//*[@id='${activityTypeId}']/input    30s
+    Checkbox Should Not Be Selected    //*[@id='${activityTypeId}']/input
+
+Set Activity Type
+    [Arguments]    ${activityTypeId}
+    [Documentation]    Sets the given acticity type checkbox
+    Wait Until Page Contains Element    xpath=//*[@id='${activityTypeId}' and not(contains(@class, 'on'))]    30s
+    Robust Click    xpath=//*[@id='${activityTypeId}']
+    Wait Until Page Contains Element    xpath=//*[@id='${activityTypeId}' and contains(@class, 'on')]    30s
+
+Clear Activity Type
+    [Arguments]    ${activityTypeId}
+    [Documentation]    Clears the given acticity type checkbox
+    Wait Until Page Contains Element    xpath=//*[@id='${activityTypeId}' and contains(@class, 'on')]    30s
+    Robust Click    xpath=//*[@id='${activityTypeId}']
+    Wait Until Page Contains Element    xpath=//*[@id='${activityTypeId}' and contains(@class, 'off')]    30s
+
+Remove All Following Settings For User
+    [Arguments]    ${user-name}
+    [Documentation]    Removes all the 'following' settings for the given user
+    Connect To Database    ${SEC_USERNAME}    ${SEC_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    ${queryResults}=    Query    select USER_ID from USERS where NAME='${user-name}'
+    ${userId}=    Set Variable    ${queryResults[0][0]}
+    Disconnect From Database
+    Connect To Database    ${CORE_USERNAME}    ${CORE_PASSWORD}    //${DB_SERVER}/${ORACLE_SID}
+    Execute    delete from followed_entities where user_id='${userId}'
+    Execute    delete from followed_tags where user_id='${userId}'
+    Execute    delete from followed_users where user_id='${userId}'
+    Execute    delete from user_settings where settings_name='followedActivityType' and user_id='${userId}'
+    Disconnect From Database
+
+Following Users Page Contains User
+    [Arguments]    ${username}
+    [Documentation]    Ensures that the following users tab of the Account Settings page contains a user card for a user identified by *${username}*
+    ...
+    ...    *${username}* = The username, case sensitive
+    Page Should Contain Element    xpath=//div[contains(@id,'following-user-name-')]/a[text()="${username}"]
+
+Following Users Page Does Not Contain User
+    [Arguments]    ${username}
+    [Documentation]    Ensures that the following users tab of the Account Settings page doesn't contain a user card for a user identified by *${username}*
+    ...
+    ...    *${username}* = The username, case sensitive
+    Page Should Not Contain Element    xpath=//div[contains(@id,'following-user-name-')]/a[text()="${username}"]
+
+Click Followed Tag Search Link
+    [Arguments]    ${tag_text}
+    [Documentation]    Keyword clicks the tag search link on a followed tag identified by *${tag_text}*
+    ...
+    ...    *Keyword can only be used from the Following Tags tab of the user Account Settings page*
+    ...
+    ...    *${tag_text}* = The case sensitive text of th etag you wish to click the search link for
+    ...
+    ...    _Note the search will only function if the *Run CDC Job* keyword is used to ensure the data is searchable_
+    Robust Click    xpath=//div[contains(@id,'following-tag-name-') and text()="${tag_text}"]/ancestor::div[contains(@class, 'ewb-account-settings-followed-panel')]//img[contains(@class, 'ewb-clickable opener')]

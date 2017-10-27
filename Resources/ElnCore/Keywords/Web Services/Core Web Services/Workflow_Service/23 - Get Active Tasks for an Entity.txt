@@ -1,0 +1,76 @@
+*** Settings ***
+Documentation     Covering the */services/1.0/tasks/active* endpoint
+Test Setup        Workflow Service Test Case Setup
+Resource          ../../../Libraries/common_resource.txt    # Common Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_workflow_service_resource.txt    # Workflow WS Resource
+Resource          ../../../Libraries/Web Services/REST_TaskService/rest_task_service_resource.txt    # Task WS Resource
+
+*** Test Cases ***
+Test 1 - Get Active Tasks for Non Existent EntityID
+    #Try to Get details using a dummy GUID
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${Entity id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    ${response body}=    Get Active Tasks For An EntityID    ${Entity id}
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+
+Test 2 - Unexpected Characters In EntityID
+    #Requesting with a series of unexpected characters in the EntityID, expect a 200 with no contents not a 500
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Uppercase
+    ${Entity id}=    Set Variable    FFFF69b05bd411e2ae4e0023ae89b843
+    ${response body}=    Get Active Tasks For An EntityID    ${Entity id}
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+    #non hex letters
+    ${Entity id}=    Set Variable    QWER69b05bd411e2ae4e0023ae89b843
+    ${response body}=    Get Active Tasks For An EntityID    ${Entity id}
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+    #Symbols
+    ${Entity id}=    Set Variable    !'?~.*()d411e2ae4e0023ae89b843ee
+    ${response body}=    Get Active Tasks For An EntityID    ${Entity id}
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+
+Test 3 - EntityID is too long
+    #Try to use an EntityID that is too long, expect a 200 with no results not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${Entity id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843ffffffffffff
+    ${response body}=    Get Active Tasks For An EntityID    ${Entity id}
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+
+Test 4 - EntityID is blank
+    #Try to use an EntityID that is blank, expect a 200 with no results not a 50x exception
+    ${SERVICES USERNAME}    Set Variable    WorkflowWSUser1
+    ${SERVICES PASSWORD}    Set Variable    WorkflowWSUser11
+    #Dummy GUID
+    ${Entity id}=    Set Variable
+    ${response body}=    Get Active Tasks For An EntityID    ${Entity id}
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+
+Test 5 - Get Active Tasks for Non Existent Task Type
+    #Check using a real experiment ID and non existent task type
+    ${response body}=    Get Active Tasks For An EntityID and Task Type    ${wf_experiment_1}    ABCDE
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+
+Test 6 - Unexpected Characters In Task Type
+    #Check using a real experiment ID and non existent task type
+    ${response body}=    Get Active Tasks For An EntityID and Task Type    ${wf_experiment_1}    A@B:C.D*E
+    #Check response has no contents (expected is a 200 with no contents)
+    Confirm No Task Detail    ${response body}
+
+Test 7 - Call endpoint without valid credentials
+    ${SERVICES USERNAME}    Set Variable    aaaaa
+    ${SERVICES PASSWORD}    Set Variable    bbbbb
+    #Dummy GUID
+    ${Entity id}=    Set Variable    ff8a69b05bd411e2ae4e0023ae89b843
+    ${response body}=    Get Active Tasks For An EntityID and Expect Error    ${Entity id}    401

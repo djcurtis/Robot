@@ -1,0 +1,46 @@
+*** Settings ***
+Documentation     Keywords for Navigator screen
+Library           IDBSSelenium2Library
+Library           String
+Resource          ../../../../Libraries/Web Client/Selenium/comments_resource.txt
+Resource          ../Search_Page/locators/search_ui.txt
+
+*** Keywords ***
+Verify No Search On The Navigator Screen
+    [Arguments]    ${searchName}
+    [Documentation]    Verify, that search with name ${searchName} does not appear on Navigator screen
+    Wait until page does not contain element    //*[text()='${searchName}']    30s
+
+Restore Search From Navigator
+    [Arguments]    ${treePath}    ${searchName}    # ${treePath} \ tree items should be separated by "/", like Root/project1/exp1/...
+    [Documentation]    Restore saved search with name ${searchName} from in navigator screen from tree in path \ ${treePath}.
+    @{treePath}    Split String    ${treePath}    /
+    : FOR    ${treePaElement}    IN    @{treePath}
+    \    Robust Click    //div[contains(@class, 'ewb-entity-treenode-text')]/a[text()='${treePaElement}']
+    Robust Click    //a[text()="${searchName}"]
+    Wait Until Page Contains Element    ${searchFrame}    20s
+
+Restore Search From Card View
+    [Arguments]    ${treePath}    ${searchName}    # ${treePath} tree items should be separated by "/", like \ Root/project1/exp1/...
+    [Documentation]    Restore saved search with name ${searchName} \ from card in navigator screen from tree in path \ ${treePath}.
+    @{treePath}    Split String    ${treePath}    /
+    : FOR    ${treePaElement}    IN    @{treePath}
+    \    Robust Click    //div[contains(@class, 'ewb-entity-treenode-text')]/a[text()='${treePaElement}']
+    Robust Click    //div[@class="app-shell-center-panel"]/div[@id="ewb-appshell-center"]//a[text()="${searchName}"]
+    Wait Until Page Contains Element    ${searchFrame}    20s
+
+Verify Search Is Not In Navigator In Path
+    [Arguments]    ${treePath}    ${searchName}    # ${treePath} tree items should be separated by "/", like Root/project1/exp1...
+    [Documentation]    Verify that saved search with name ${searchName} is not in navigator screen tree in path \ ${treePath}.
+    @{treePath}    Split String    ${treePath}    /
+    : FOR    ${treePaElement}    IN    @{treePath}
+    \    Robust Click    //div[contains(@class, 'ewb-entity-treenode-text')]/a[text()='${treePaElement}']
+    Page Should Not Contain    //a[text()="${searchName}"]    10s
+
+Verify Search In Navigator In Path
+    [Arguments]    ${treePath}    ${searchName}    # ${treePath} tree items should be separated by "/", like Root/project1/exp1...
+    [Documentation]    Verify that saved search with name ${searchName} is in navigator screen tree in path \ ${treePath}.
+    @{treePath}    Split String    ${treePath}    /
+    : FOR    ${treePaElement}    IN    @{treePath}
+    \    Robust Click    //div[contains(@class, 'ewb-entity-treenode-text')]/a[text()='${treePaElement}']
+    Wait Until Element Is Visible    //a[text()="${searchName}"]    10s

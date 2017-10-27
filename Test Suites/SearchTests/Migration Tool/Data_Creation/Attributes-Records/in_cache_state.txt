@@ -1,0 +1,48 @@
+*** Settings ***
+Documentation     Test case names have the format:
+...
+...               Test case name | [RecordSaveState(attr)] -> [RecordSaveState(attr)]
+...               - -> = a save state change action such as version/draft save, or no save
+...               - attr = the attributes (a, b) of the record, which can be in version 0, 1, 2, d (draft), c (cache)
+...
+...               Script for SH-1351 - data creation script to be run:
+...               - on a pre-EWB 10.2.1 system
+...
+...               (this script is written to work with the corresponding data verification scripts)
+Suite Setup       setup suite
+Library           Collections
+Library           DateTime
+Library           EntityAPILibrary
+Library           ../../../../Resources/python/SearchAPILibrary/
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+Resource          ../../migration_tool_variables.txt
+
+*** Test Cases ***
+C1 | [Va1b1]->[Cacbc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrRecordC1    Started
+    Edit Entity KeyWord    ${experimentId}    recordAttributeC1a1    MigrationToolAttrRecordC1a    Completed
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    Edit Entity KeyWord    ${experimentId}    recordAttributeC1ac    MigrationToolAttrRecordC1b    Postponed
+
+C2 | [Va1b1]->[Dadbd]->[Cacbc]
+    [Documentation]    Script to:
+    ...    - create experiment + text entity attributes in the required starting state
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    MigrationToolAttrRecordC2    Started
+    Edit Entity KeyWord    ${experimentId}    recordAttributeC2a1    MigrationToolAttrRecordC2a    Completed
+    EntityAPILibrary.Version Save    ${experimentId}    Data Added
+    Edit Entity KeyWord    ${experimentId}    recordAttributeC2ad    MigrationToolAttrRecordC2b    Planned
+    EntityAPILibrary.Draft Save    ${experimentId}
+    Edit Entity KeyWord    ${experimentId}    recordAttributeC2ac    MigrationToolAttrRecordC2c    Postponed
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    15s
+    Set Suite Variable    ${wait}
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    ${GROUP_NAME}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Ensure Project Is Present    ${groupId}    Attribute_Record_C
+    Set Suite Variable    ${projectId}

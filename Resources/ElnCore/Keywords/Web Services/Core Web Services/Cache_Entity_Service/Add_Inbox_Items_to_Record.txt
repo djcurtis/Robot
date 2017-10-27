@@ -1,0 +1,367 @@
+*** Settings ***
+Documentation     Contains tests for the addition of inbox items to a record endpoint of the cache entity service.
+...
+...               *end point:* /services/1.0/cache/entities/{recordId}/children/append/frominbox
+Suite Setup       Cache Entity Service Suite Setup
+Suite Teardown    Cache Entity Service Suite Teardown
+Test Setup        Add Inbox Items Test Setup
+Test Teardown     Add Inbox Items Test Teardown
+Force Tags        /services/1.0/cache/entities/{recordId}/children/append/frominbox
+Resource          cache_entity_service_suite_keywords.txt
+# Library           EntityAPILibrary
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Lock Service/rest_entity_lock_service.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity_Preview_Service/rest_entity_preview_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Cache Entity Service/rest_cache_entity_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/System Settings/system_setting_resource.txt
+Resource          ../../../Libraries/Core Web Services/SAPI_Types/ewb_types_resource.txt
+
+*** Variables ***
+${experiment_id}    ${EMPTY}
+@{inbox_items_to_delete}
+
+*** Test Cases ***
+Inbox items are added to a record
+    [Documentation]    
+    ...
+    ...    A successful call returns the HTTP status 204. The template contents are added.
+    ${inbox_id}=    Find Users Inbox Id
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\DaveL.png
+    ${inbox_entity_id_2}=    add File To users inbox    ${file_folder}\\DaveL.png
+    # record how many items are in the inbox (including \ our new ones)
+    ${original_inbox_count}=    Get Entity Child Count    ${inbox_id}
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}    ${inbox_entity_id_2}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .png    image/png    PNG_IMAGE
+    @{inbox_item_detail_2}=    Create List    ${inbox_entity_id_2}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}    ${inbox_item_detail_2}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    2    ${number of children}
+    # validate items are still in inbox - count is sufficient
+    ${new_inbox_count}=    Get Entity Child Count    ${inbox_id}
+    should be equal as numbers    ${new_inbox_count}    ${original_inbox_count}
+
+missing record id returns error
+    [Documentation]    
+    ...
+    ...    A missing record ID returns the HTTP status 404
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    ${EMPTY}    ${dummy_sequence}    404
+
+whitespace record id returns error
+    [Documentation]    
+    ...
+    ...    A whitespace record ID returns the HTTP status 400
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    ${SPACE}    ${dummy_sequence}    400
+
+missing item sequence detail returns error
+    [Documentation]    
+    ...
+    ...    A missing request body (the inbox sequence) returns the HTTP status 400
+    Add Inbox Items To Record    abc    ${EMPTY}    400
+
+missing id in item detail returns error
+    [Documentation]    
+    ...
+    ...    A missing inbox id in the inbox sequence returns the HTTP status 400
+    @{inbox_item_detail}=    Create List    ${EMPTY}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail}
+    Add Inbox Items To Record    abc    ${item_sequence}    400
+
+missing entity type in item detail returns error
+    [Documentation]    
+    ...
+    ...    A missing inbox entity type in the inbox sequence returns the HTTP status 400
+    @{inbox_item_detail}=    Create List    id    ${EMPTY}    .png    image/png    PNG_IMAGE
+    ${item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail}
+    Add Inbox Items To Record    abc    ${item_sequence}    400
+
+missing file type in item detail returns error
+    [Documentation]    
+    ...
+    ...    A missing inbox file type in the inbox sequence returns the HTTP status 400
+    @{inbox_item_detail}=    Create List    id    DOCUMENT    ${EMPTY}    image/png    PNG_IMAGE
+    ${item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail}
+    Add Inbox Items To Record    abc    ${item_sequence}    400
+
+missing mime type in item detail returns error
+    [Documentation]    
+    ...
+    ...    A missing inbox mime type in the inbox sequence returns the HTTP status 400
+    @{inbox_item_detail}=    Create List    id    DOCUMENT    .png    ${EMPTY}    PNG_IMAGE
+    ${item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail}
+    Add Inbox Items To Record    abc    ${item_sequence}    400
+
+missing data type in item detail returns error
+    [Documentation]    
+    ...
+    ...    A missing inbox data type in the inbox sequence returns the HTTP status 400
+    @{inbox_item_detail}=    Create List    id    DOCUMENT    .png    image/png    ${EMPTY}
+    ${item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail}
+    Add Inbox Items To Record    abc    ${item_sequence}    400
+
+wrong xml returns error
+    [Documentation]    
+    ...
+    ...    wrong xml format returns the HTTP status 400
+    Add Inbox Items To Record    abc    <xml><item>fred</item></xml>    400
+
+nonexistant record id returns error
+    [Documentation]    
+    ...
+    ...    A non-existant record ID returns the HTTP status 404
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    IShouldNotExist    ${dummy_sequence}    404
+
+specifying non record entity for record id returns error
+    [Documentation]    
+    ...
+    ...    Specifying a non record entity for the record ID returns the HTTP status 400
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    ${project_id}    ${dummy_sequence}    400
+
+unlocked record returns error
+    [Documentation]    
+    ...
+    ...    Trying to add to an unlocked record returns the HTTP status 403
+    Unlock Entity    ${experiment_id}
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    ${experiment_id}    ${dummy_sequence}    403
+
+using prevent further editing record returns error
+    [Documentation]    
+    ...
+    ...    Trying to add to record the is locked against further edit returns the HTTP status 403
+    Set Read Only    ${experiment_id}
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    ${experiment_id}    ${dummy_sequence}    403
+
+adding to confined experiment returns error
+    [Documentation]    
+    ...
+    ...    Trying to add to record that has been created from a confined template returns the HTTP status 403
+    [Tags]       exclusive_access
+    [Setup]    Disable Template Show Reviewed    # EWB default state for this setting is disabled
+    # create new confined template
+    ${confined_template_id}=    Create Confined Template    ${project_id}    I am confined
+    Lock Entity    ${confined_template_id}
+    Add Web Link Entity    ${confined_template_id}    http://www.google.com
+    Commit Versioned Entity    ${confined_template_id}
+    unlock entity    ${confined_template_id}
+    # create experiment from confined template
+    ${experiment_id}=    Create Confined Experiment from Template    ${project_id}    I am confined    ${confined_template_id}    200
+    Lock Entity    ${experiment_id}
+    # Add from inbox
+    ${dummy_sequence}=    Create Dummy Sequence
+    Add Inbox Items To Record    ${experiment_id}    ${dummy_sequence}    403
+
+adding to confined template is allowed
+    [Documentation]    
+    ...
+    ...    Trying to add to a template that has been created from a confined template works and returns the HTTP status 204
+    # create a confined template to add \ into
+    Unlock Entity    ${experiment_id}
+    ${experiment_id}=    Create Confined Template    ${project_id}    I am confined
+    Lock Entity    ${experiment_id}
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\DaveL.png
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    1    ${number of children}
+
+specifying non-existant inbox entity id returns error
+    [Documentation]    
+    ...
+    ...    Trying to add non existant inbox entity returns the HTTP status 404
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    IShouldNotExist    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    404
+
+specifying an entity that is not in the users inbox returns error
+    [Documentation]    
+    ...
+    ...    Trying to add non a non-users inbox entity returns the HTTP status 403
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${project_id}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    403
+
+Updated record is in CACHE
+    [Documentation]    
+    ...
+    ...    The added record is in the CACHE
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\DaveL.png
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # validate in cache
+    ${versionType}=    Get Entity Version Type    ${experiment_id}
+    Should Be Equal As Strings    CACHE    ${versionType}
+
+Added items are appended to end of record
+    [Documentation]    
+    ...
+    ...    Added items are appended to the record
+    # add an item to the experiment
+    Add Page Break Entity    ${experiment_id}
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\DaveL.png
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # validate in cache
+    ${versionType}=    Get Entity Version Type    ${experiment_id}
+    Should Be Equal As Strings    CACHE    ${versionType}
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    2    ${number of children}
+    # validate their data types
+    Check Child Data Type    ${experiment_id}    0    PAGE_BREAK
+    comment    NOTE: \ the image is converted internally into our SVG_IMAGE type that supports annotations
+    Check Child Data Type    ${experiment_id}    1    SVG_IMAGE
+
+Data for added items is copied across
+    [Documentation]    
+    ...
+    ...    Data for added items is copied across
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\HelloWorld.txt
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .txt    application/x-idbs-file    PLAIN_TEXT
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # validate in cache
+    ${versionType}=    Get Entity Version Type    ${experiment_id}
+    Should Be Equal As Strings    CACHE    ${versionType}
+    # validate data & data type
+    Check Child Data Type    ${experiment_id}    0    PLAIN_TEXT
+    Check Child Data    ${experiment_id}    0    HelloWorld
+
+newly added items are set to unpublished
+    [Documentation]    
+    ...
+    ...    newly added items are set to unpublished
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\HelloWorld.txt
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .txt    application/x-idbs-file    PLAIN_TEXT
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # check publishing state
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    publishingState    Unpublished
+
+Item type is set to file content
+    [Documentation]    
+    ...
+    ...    Item type attribute should be set to "File Content"
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\HelloWorld.txt
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .txt    application/x-idbs-file    PLAIN_TEXT
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # check publishing state
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    itemType    File Content
+
+Caption is set to inbox item file name
+    [Documentation]    
+    ...
+    ...    The caption of the added item is the name of the inbox item (i.e. the filename)
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\HelloWorld.txt
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .txt    application/x-idbs-file    PLAIN_TEXT
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}
+    # add inbox items
+    Add Inbox Items To Record    ${experiment_id}    ${inbox_item_sequence}    204
+    # check publishing state
+    ${child_id}=    Get Entity Id Of Child At Index    ${experiment_id}    0
+    Verify Attribute Value Is Present For Entity    ${child_id}    caption    HelloWorld.txt
+
+Items are removed from inbox after addition
+    [Documentation]    
+    ...
+    ...    If the “removeFromInbox” query parameter is set to True, then the items will be removed from the inbox once they are added to the record.
+    ${inbox_id}=    Find Users Inbox Id
+    # record how many items are in the inbox before we start adding/removing
+    ${original_inbox_count}=    Get Entity Child Count    ${inbox_id}
+    # create inbox items
+    ${file_folder}=    Set Variable    ${CURDIR}\\..\\..\\..\\Test Data\\Core Web Services\\Cache Entity Service\\
+    ${inbox_entity_id_1}=    add File To users inbox    ${file_folder}\\DaveL.png
+    ${inbox_entity_id_2}=    add File To users inbox    ${file_folder}\\DaveL.png
+    @{inbox_items_to_delete}=    create list    ${inbox_entity_id_1}    ${inbox_entity_id_2}
+    # create inbox item details
+    @{inbox_item_detail_1}=    Create List    ${inbox_entity_id_1}    DOCUMENT    .png    image/png    PNG_IMAGE
+    @{inbox_item_detail_2}=    Create List    ${inbox_entity_id_2}    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${inbox_item_sequence}=    Build Inbox Items DTO    ${inbox_item_detail_1}    ${inbox_item_detail_2}
+    # add inbox items
+    Add Inbox Items To Record And Remove Them Afterwards    ${experiment_id}    ${inbox_item_sequence}    204
+    # validate content added
+    ${number of children}=    Get Entity Child Count    ${experiment_id}
+    Should Be Equal As Numbers    2    ${number of children}
+    # validate items no longer in inbox
+    ${new_inbox_count}=    Get Entity Child Count    ${inbox_id}
+    should be equal as numbers    ${new_inbox_count}    ${original_inbox_count}
+
+*** Keywords ***
+Add Inbox Items Test Setup
+    [Documentation]    creates an experiment & obtains a lock on it, ready for the insertion of inbox items !
+    ${id}=    Create Experiment    ${project_id}    waiting for content
+    Set Suite Variable    ${experiment_id}    ${id}
+    Lock Entity    ${experiment_id}
+
+Add Inbox Items Test Teardown
+    [Documentation]    ensures that any created experiment is unlocked prior to deletion of the parent group
+    Unlock Entity    ${experiment_id}
+    # delete inbox items
+    : FOR    ${inbox_id}    IN    @{inbox_items_to_delete}
+    \    Run Keyword And Ignore Error    rest_entity_service_resource.Delete Entity    ${inbox_id}
+    # clear out the list to eliminate pontential delete duplication
+    @{inbox_items_to_delete}    Create List
+
+Create Dummy Sequence
+    [Documentation]    creates a dummy inbox sequence (i.e. valid XML structure) to be sent to the service to facilitate testing around the validation of the record ID. inbox entities do not need to exist to use this
+    @{inbox_item_detail}=    Create List    id1    DOCUMENT    .png    image/png    PNG_IMAGE
+    ${dummy_sequence}=    Build Inbox Items DTO    ${inbox_item_detail}
+    [Return]    ${dummy_sequence}

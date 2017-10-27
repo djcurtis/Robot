@@ -1,0 +1,145 @@
+*** Settings ***
+Library           IDBSHttpLibrary
+Resource          ../../HTTP Common/http_common_resource.txt
+
+*** Variables ***
+${TASK_SERVICE_ENDPOINT}    /ewb/services/1.0/tasks
+
+*** Keywords ***
+Get Task Priorities
+    [Arguments]    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/tasks/priorities
+    ...
+    ...    Retrieves all possible task priority values.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _priorities_ \ The tasks priority values (SAPITaskPrioritySequence)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    ${url}=    Set Variable    ${TASK SERVICE ENDPOINT}/priorities
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${priorities}=    Get Response Body
+    [Return]    ${priorities}    # The tasks priority values as a SAPITaskPrioritySequence
+
+Get Task Subset Summary
+    [Arguments]    ${filter}    ${expected_http_status}=200
+    [Documentation]    POST : /services/1.0/tasks/subset/summary
+    ...
+    ...    Count all tasks matching the provided filters. The tasks counted are those that the client is the requester, a responsible user or an assigned user for, however if the client has the VIEW_ANY_TASK permission then all tasks are returned.
+    ...
+    ...
+    ...    *Arguments*
+    ...
+    ...    _filter_ \ The filter criteria for task selection. Multiple filter results are combined from results of individual filter results.
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _task_summary_\ The filtered tasks summary (SAPITaskSummarySequence)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    ${url}=    Set Variable    ${TASK SERVICE ENDPOINT}/subset/summary
+    Set Request Body    ${filter}
+    Next Request May Not Succeed
+    POST    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${priorities}=    Get Response Body
+    [Return]    ${priorities}    # The tasks priority values as a SAPITaskPrioritySequence
+
+Get Task Summary
+    [Arguments]    ${filter}    ${expected_http_status}=200
+    [Documentation]    POST : /services/1.0/tasks/summary
+    ...
+    ...    Count all tasks matching the provided filter. The tasks counted are those that the client is the requester, a responsible user or an assigned user for, however if the client has the VIEW_ANY_TASK permission then all tasks are returned.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _filter_ \ The filter criteria for task selection. Multiple filter results are combined from results of individual filter results.
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _task_summary_\ The filtered tasks summary (SAPITaskSummarySequence)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    XML HTTP Header Setup
+    ${url}=    Set Variable    ${TASK SERVICE ENDPOINT}/summary
+    Set Request Body    ${filter}
+    Next Request May Not Succeed
+    POST    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${priorities}=    Get Response Body
+    [Return]    ${priorities}    # The tasks priority values as a SAPITaskPrioritySequence
+
+Get Next Synchronisation Task Run
+    [Arguments]    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/tasks/sync/next
+    ...
+    ...    Returns the time of the next task synchronisation run.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _next_sync_\The time of the next task synchronisation. (SAPIDateTimeResponse)
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    ${url}=    Set Variable    ${TASK SERVICE ENDPOINT}/sync/next
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sync_next}=    Get Response Body
+    [Return]    ${sync_next}    # The time of the next task synchronisation as a SAPIDateTimeResponse
+
+Get Last Synchronisation Task Run
+    [Arguments]    ${expected_http_status}=200
+    [Documentation]    GET : /services/1.0/tasks/sync
+    ...
+    ...    Returns the time of the last successful task synchronisation or task repair run.
+    ...
+    ...    *Arguments*
+    ...
+    ...    _expected_http_status_ \ If the request succeeds the expected response status is 200 (default)
+    ...
+    ...    *Return value*
+    ...
+    ...    _last_sync_\The time of the last successful task synchronisation (SAPIDateTimeResponse) Null reference can be returned if the task synchronisation or task repair has never run successfully.
+    ...
+    ...    *Precondition*
+    ...    None
+    ...
+    ...    *Example*
+    HTTP Header Setup
+    ${url}=    Set Variable    ${TASK SERVICE ENDPOINT}/sync
+    Next Request May Not Succeed
+    GET    ${url}
+    Response Status Code Should Equal    ${expected_http_status}
+    ${sync_next}=    Get Response Body
+    [Return]    ${sync_next}    # The time of the next task synchronisation as a SAPIDateTimeResponse

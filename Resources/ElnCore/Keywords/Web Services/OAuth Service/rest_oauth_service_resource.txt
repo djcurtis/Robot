@@ -1,0 +1,76 @@
+*** Settings ***
+Library           String
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+Library           TestDataGenerationLibrary
+Library           OperatingSystem
+# Library           OracleLibrary
+Resource          ../../HTTP Common/http_common_resource.txt    # HTTP common resources
+Resource          ../SAPI_Types/ewb_types_resource.txt    # Resources for building EWB DTO, e.g. DTO to commit, create experiment, list inbox items.
+Resource          ../Cache Entity Service/rest_cache_entity_service_resource.txt    # Cache entity service keywords
+
+*** Variables ***
+${OAUTH_SERVICE_ENDPOINT}    /ewb/services/1.0/oauth
+
+*** Keywords ***
+OAuth Register Client
+    [Arguments]    ${request_body}    ${expected_http_status}    ${username}=Administrator    ${password}=Administrator
+    [Documentation]    OAuth - Register Client
+    ...
+    ...    *Arguments*
+    ...
+    ...    - _request_body_: \ HTTP request body containing JSON doucment
+    ...
+    ...    - _expected_http_response_: the expected response
+    ...
+    ...    - _username_: User making the call. Default is 'Administrator'
+    ...
+    ...    - _password_: User password. Default is 'Administrator'
+    ...
+    ...    *Returns*
+    ...
+    ...    - successful calls returns the HTTP status code 201 and a response body containing a JSON dcoument with fields: client id, client_secreat, client_issued_at, secret_expires_at
+    ...
+    ...    - unsuccessful calls returns the HTTP status code 400 and a response body containing a JSON document with the following fields: error, error_description.
+    ...
+    ...    *Confluence*: http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${username}    ${password}
+    Set Request Header    Accept    application/json;charset=utf-8
+    Set Request Header    Content-Type    application/json;charset=utf-8
+    Set Request Body    ${request_body}
+    Next Request May Not Succeed
+    POST    ${OAUTH_SERVICE_ENDPOINT}/register
+    Response Status Code Should Equal    ${expected_http_status}
+
+OAuth Get Redirect URI
+    [Arguments]    ${response_type}    ${client_id}    ${state}=    ${redirect_uri}=    ${scope}=EWB_ALL_SAPI    ${expected_http_status}=302
+    ...    ${User}=Administrator    ${UserPW}=Administrator
+    [Documentation]    *OAuth - Authorize Client*
+    ...
+    ...    *ENDPOINT:* GET https://{server}:8443/ewb/services/1.0/oauth/authz
+    ...
+    ...    *Arguments*
+    ...    - _response_type_ (mandatory): value must be set to *code*
+    ...    - _client_id_ (mandatory): client identifier
+    ...    - _state_ (recommended): see Confluence link (below) for details
+    ...    - _redirect_uri_ (optional): if provided, MUST be the same used during client registration
+    ...    - _scope_ (optional): default is EWB_ALL_SAPI
+    ...
+    ...    - _expected_http_status_: default is 302
+    ...    - _User_: default is 'Administrator'
+    ...    - _UserPW_: default is 'Administrator'
+    ...
+    ...    *Returns*
+    ...    - The redirection URI includes an authorization code and any local state provided by the client earlier.
+    ...
+    ...    *Confluence*: http://20jira1.idbs.co.uk:8090/display/PLFM/Client+authorization
+    Create Http Context    ${SERVER}:${WEB_SERVICE_PORT}    https
+    Set Basic Auth    ${User}    ${UserPW}
+    Next Request May Not Succeed
+    GET    ${OAUTH_SERVICE_ENDPOINT}/authz?response_type=${response_type}&client_id=${client_id}&state=${state}&redirect_uri=${redirect_uri}&scope=${scope}
+    Response Status Code Should Equal    ${expected_http_status}
+    # Tries to get HTTP header location.
+    ${status}    ${value}=    Run Keyword And Ignore Error    Get Response Header    Location
+    ${redirect_uri}=    Set Variable If    '${status}' == 'PASS'    ${value}[0]
+    [Return]    ${redirect_uri}    # The redirection URI includes an authorization code and any local state provided by the client earlier.

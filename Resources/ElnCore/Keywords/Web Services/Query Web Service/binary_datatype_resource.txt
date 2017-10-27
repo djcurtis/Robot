@@ -1,0 +1,13 @@
+*** Settings ***
+Documentation     This resource file is for testing HUB-API-SSP-QUE-QLC.\n\nThis resource file contains queries that are based on binary properties. \n\nThe queries in this resource file will only work with the data that is stored in "....\\EWB Automated Tests\\Libraries\\Web Services\\Query Web Service\\tuple data resource.txt"
+Resource          query_resources.txt
+Library           TestDataGenerationLibrary
+
+*** Keywords ***
+Run Binary Datatype Query
+    [Arguments]    ${term path}    ${binaryColumn}
+    [Documentation]    This keyword will execute queries based on binary properties. \ \n\nThis is testing HUB-API-SSP-QUE-QLC. \n\n\n*Arguments*\n\n- ${term path} = The path to the term to be queried. \n- ${binaryColumn} = The name of the binary property in the term in ${term path}.
+    ${XLS file}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/IS QA AutoRun.xls
+    ${DOCX fle}=    Base64 Encode File To String    ${CURDIR}/../../../Test Data/Hubtech/Asset Hub/Query Web Service/IS Copper HLRA .docx
+    # select binary property
+    Execute Data Query and Verify Values    SELECT ${binaryColumn} from ${term path}    ${XLS file}    ${DOCX fle}

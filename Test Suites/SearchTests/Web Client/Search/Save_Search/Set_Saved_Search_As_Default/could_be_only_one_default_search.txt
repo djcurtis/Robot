@@ -1,0 +1,73 @@
+*** Settings ***
+Documentation     Sute to test only one deafult saved Search could be
+Suite Setup       setup
+Suite Teardown    close browser
+Test Setup        Navigate Search Screen
+Test Teardown     testteardown
+Library           String
+Resource          ../../../../../Resources/API/Search/search_api.txt
+Resource          ../../../../../Resources/UI/navigator.txt
+Resource          ../../../../../Resources/UI/Search_Page/search_ui.txt
+Resource          ../../../../../Resources/UI/Search_Page/my_searches_dialog.txt
+Library           DateTime
+
+*** Test Cases ***
+Only One Default Search
+    [Documentation]    Only One Deafult Search
+    ...    - create 4 searches
+    ...    - set Search 3 as default, then Search 2
+    ...    - Verify Only One Search to be default
+    ...    - set Search 3 to default
+    ...    - Relpoad page
+    ...    - Verify only Search 3 is still default
+    [Tags]    SRCH-SAV-DEFAULT
+    Open My Searches Dialog
+    Set Default Search    ${search3}
+    Set Default Search    ${search2}
+    Verify Search Is Default By Name    ${search2}
+    Verify Search Is Not Default By Name    ${search3}
+    Set Default Search    ${search3}
+    Verify Search Is Default By Name    ${search3}
+    Reload Page
+    sleep    5s
+    Open My Searches Dialog
+    Verify Search Is Not Default By Name    ${search2}
+    Verify Search Is Not Default By Name    ${search1}
+    Verify Search Is Default By Name    ${search3}
+
+Verify Both Advanced And Text Default Search Restoring Correctly
+    [Documentation]    Verify Both Advanced And Text Default Search Restoring Correctly
+    ...    - save dummy searches
+    ...    - save Advanced Search, set it as default
+    ...    - verify Default Search is Restored correctly after refresh/relogin
+    [Tags]    SRCH-SAV-DEFAULT
+    Create Advanced Search Via API By Name    Advanced Search
+    Open My Searches Dialog
+    Set Default Search    Advanced Search
+    Close My Searches Dialog
+    Reload Page
+    Verify Advanced Search Item    Name    starts with    Advanced_Data
+    Verify Search Text Field    Free_text
+    Verify Number Of Advanced Search Items    1    1
+    Logout
+    User Credentials
+    Navigate Search Screen
+    Verify Advanced Search Item    Name    starts with    Advanced_Data
+    Verify Search Text Field    Free_text
+    Verify Number Of Advanced Search Items    1    1
+
+*** Keywords ***
+testteardown
+    Delete All Searches Via API
+    reload page
+
+setup
+    ${currentDate}=    Get Current Date
+    ${search1}=    Set Variable    Search 1 ${currentDate}
+    ${search2}=    Set Variable    Search 2 ${currentDate}
+    ${search3}=    Set Variable    Search 3 ${currentDate}
+    Set Suite Variable    ${search1}
+    Set Suite Variable    ${search2}
+    Set Suite Variable    ${search3}
+    Create Searches Via API    ${search1}    ${search2}    ${search3}
+    Login To EWB

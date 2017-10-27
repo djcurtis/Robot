@@ -1,0 +1,75 @@
+*** Settings ***
+Documentation     Created for story SH-1302
+Suite Setup       setup suite
+Suite Teardown    teardown suite
+Test Setup        setup test
+Test Teardown     teardown test
+Library           ../../../../Resources/python/SearchAPILibrary/
+Library           DateTime
+Library           Collections
+Resource          ../../../../../Libraries/common_resource.txt
+Resource          ../../../../../Libraries/Web Client/Selenium/record_resource.txt
+Library           EntityAPILibrary
+Resource          ../../../../Resources/API/Entity/entity_api.txt
+
+*** Test Cases ***
+Record With Keyword
+    [Documentation]    Record With KeyWord
+    ...
+    ...    - just created is searchable by its attribute
+    ...
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started    keywords:::qwerty_keywords
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    qwerty_keywords    all    Experiment|title|is|"${experimentName}"
+    Execute Search And Verify Data Name    ${experimentName}    ${experimentName}    all    Experiment|title|is|"${experimentName}"
+
+Record With Non English Keyword
+    [Documentation]    Record With Non English Keyword
+    ...
+    ...    - just created is searchable by its attribute
+    ...
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started    keywords:::qwerty_ключевое_слово
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    qwerty_ключевое_слово    all    Experiment|title|is|"${experimentName}"
+
+Record With Symbols Keyword
+    [Documentation]    Record With Symbols Keyword
+    ...
+    ...    - just created is searchable by its attribute
+    ...
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started    keywords:::qwerty_script&gt;!
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    qwerty_script>!    all    Experiment|title|is|"${experimentName}"
+
+Record With Number Keyword
+    [Documentation]    Record With Number Keyword
+    ...
+    ...    - just created is searchable by its attribute
+    ${experimentId}=    EntityAPILibrary.Create Experiment    ${projectId}    ${experimentName}    Started    keywords:::qwerty_123
+    Sleep    ${wait}
+    Execute Search And Verify Data Name    ${experimentName}    qwerty_123    all    Experiment|title|is|"${experimentName}"
+
+*** Keywords ***
+setup suite
+    ${wait}=    Set Variable    5s
+    Set Suite Variable    ${wait}
+    ${currentDate}=    Get Current Date
+    ${groupId}=    EntityAPILibrary.Ensure Group Is Present    1    Group ${currentDate}
+    Set Suite Variable    ${groupId}
+    ${projectId}=    EntityAPILibrary.Create Project    ${groupId}    Project
+    Set Suite Variable    ${projectId}
+
+setup test
+    ${experimentId}=    Set Variable    ${EMPTY}
+    Set Suite Variable    ${experimentId}
+    ${currentDate}=    Get Current Date
+    ${experimentName}=    Set Variable    Experiment ${currentDate}
+    Set Suite Variable    ${experimentName}
+
+teardown suite
+    EntityAPILibrary.Unlock Entity And Children    ${groupId}
+    EntityAPILibrary.Delete Entity    ${groupId}    As intended    As intended
+
+teardown test
+    Unlock Entity    ${experimentId}
+    EntityAPILibrary.Delete Entity    ${experimentId}    As Intended    As Intended

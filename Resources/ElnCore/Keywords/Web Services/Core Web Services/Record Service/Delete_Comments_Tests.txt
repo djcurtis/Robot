@@ -1,0 +1,70 @@
+*** Settings ***
+Documentation     The following tests are all against the endpoint: /services/1.0/records/{entityId}/comments
+Suite Setup       Record Service Suite Setup
+Suite Teardown    Record Service Suite Teardown
+Force Tags        Record Service
+Resource          ../../../Libraries/common_resource.txt
+Resource          ../../../Libraries/General Setup/general setup tools.txt
+Resource          ../../../Libraries/Core Web Services/Record Service/rest_record_service_resource.txt
+Resource          ../../../Libraries/Core Web Services/Entity Service/rest_entity_service_resource.txt
+Resource          ../../../Libraries/Web Services/REST_SecurityService/rest_security_service_resource.txt
+Resource          record_service_common_resource.txt    # common record service setup and teardown
+# Library           EntityAPILibrary
+Library           IDBSHttpLibrary
+Library           XMLLibrary
+
+*** Variables ***
+@{PERMISSIONS}    VIEW_EXPERIMENT    OPEN_EXPERIMENT    EDIT_EXPERIMENT
+
+*** Test Cases ***
+Test Can Delete All Comments For An Entity
+    [Documentation]    A successful call returns the HTTP status 204 and all comments are deleted
+    ${experiment_name}=    Set Variable    DAC-S001
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${comment}=    EntityAPILibrary.Add Comment    ${experiment_id}    First Comment
+    ${comment}=    EntityAPILibrary.Add Comment    ${experiment_id}    Second Comment
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment}=    Get Comments    ${experiment_id}    ${entity_version_id}
+    Check Xml Element Count    Check there are just the 2 comments    ${comment}    2    comments    elementNamespace=http://entity.services.ewb.idbs.com
+    ${delete_response}=    Delete All Record Comments    ${experiment_id}
+    ${comment}=    Get Comments    ${experiment_id}    ${entity_version_id}
+    Log    ${comment}    INFO
+    Check Xml Element Count    Check there are no comments    ${comment}    0    comments    elementNamespace=http://entity.services.ewb.idbs.com
+
+Delete fails when entity does not exist
+    [Documentation]    If the entity does not exist, then the HTTP status code 404 is returned to the client
+    ${bad_id}=    Set Variable    EWB-SAPI-SSP-RES-DAC-S002
+    ${response}=    Delete All Record Comments    ${bad_id}    404
+    Response Body Should Contain    Resource not found for given ID: [entityId]
+
+Delete fails when entity is not of type record
+    [Documentation]    If the entity is not of type record, then the HTTP status code 400 is returned to the client
+    ${response}=    Delete All Record Comments    ${project_id}    400
+    Response Body Should Contain    All comments can only be deleted for record type entities
+
+Test Cannot Delete Comments Without DELETE_ANY_COMMENTS Permission
+    [Documentation]    A client requires the DELETE_ANY_COMMENT permission. If it does not have it, then the HTTP status code 403 is returned to the client
+    ${unique_id}=    Get Time    epoch
+    ${role_name}=    Set Variable    DAC-S004_${unique_id}
+    ${role_response}=    Create Role    ${role_name}    ${role_name}    custom role for Delete comment testing    false
+    : FOR    ${permission}    IN    @{PERMISSIONS}
+    \    Add Role Permission    ${role_name}    ${permission}
+    ${experiment_name}=    Set Variable    DAC-S004
+    ${experiment_id}=    Create Experiment    ${project_id}    ${experiment_name}
+    ${response}=    Assign User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
+    ${comment}=    EntityAPILibrary.Add Comment    ${experiment_id}    First Comment
+    ${comment}=    EntityAPILibrary.Add Comment    ${experiment_id}    Second Comment
+    ${entity_version_id}=    Get Entity Version ID    ${experiment_id}
+    ${comment}=    Get Comments    ${experiment_id}    ${entity_version_id}
+    Check Xml Element Count    Check there are just the 2 comments    ${comment}    2    comments    elementNamespace=http://entity.services.ewb.idbs.com
+    Set Test Variable    ${SERVICES USERNAME}    ${LIMITED_PERMISSIONS_USERNAME}
+    Set Test Variable    ${SERVICES PASSWORD}    ${PASSWORD}
+    Log    As a new user...    INFO
+    ${comment}=    Get Comments    ${experiment_id}    ${entity_version_id}
+    ${delete_response}=    Delete All Record Comments    ${experiment_id}    403
+    Comment    Response Body Should Contain    Authorization failure: The user does not have required permissions for EXPERIMENT: [DELETE_ANY_COMMENT]
+    ${comment}=    Get Comments    ${experiment_id}    ${entity_version_id}
+    Check Xml Element Count    Check no comments have been deleted    ${comment}    2    comments    elementNamespace=http://entity.services.ewb.idbs.com
+    : FOR    ${permission}    IN    @{PERMISSIONS}
+    \    Remove Role Permission    ${role_name}    ${permission}
+    ${unassign_role}=    Delete User Entity Role    ${LIMITED_PERMISSIONS_USERNAME}    ${role_name}    ${experiment_id}
